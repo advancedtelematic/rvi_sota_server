@@ -60,10 +60,16 @@ trait FilterRequests extends Matchers { self: ScalatestRouteTest =>
   def addFilter(name: String, expr: String): HttpRequest =
     Post(Resource.uri("filters"), Filter(Refined(name), Refined(expr)))
 
-  def addFilterOK(name: String, expr: String)(implicit route: Route): Unit =
+  def addFilterOK(name: String, expr: String)(implicit route: Route): Unit = {
+
+    import akka.http.scaladsl.testkit.RouteTestTimeout
+    import scala.concurrent.duration._
+    implicit val routeTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
+
     addFilter(name, expr) ~> route ~> check {
       status shouldBe StatusCodes.OK
     }
+  }
 
   def listFilters: HttpRequest =
     Get(Resource.uri("filters"))

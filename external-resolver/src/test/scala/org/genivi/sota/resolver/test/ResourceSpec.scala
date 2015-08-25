@@ -46,7 +46,7 @@ trait ResourceSpec extends Matchers
   }
 
   // Route
-  lazy implicit val route: Route = new org.genivi.sota.resolver.Routing(db).route
+  implicit val route: Route = new org.genivi.sota.resolver.Routing(db).route
 
 }
 
