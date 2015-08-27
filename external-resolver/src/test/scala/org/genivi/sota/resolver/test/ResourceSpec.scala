@@ -22,6 +22,10 @@ trait ResourceSpec extends
     with ScalatestRouteTest
     with BeforeAndAfterAll { self: Suite =>
 
+  import scala.concurrent.duration._
+  import akka.http.scaladsl.testkit.RouteTestTimeout
+  implicit val routeTestTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
+
   // Database
   val name = "test-database"
   val db = Database.forConfig(name)
