@@ -4,14 +4,14 @@
  */
 package org.genivi.sota.resolver.test
 
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.unmarshalling._
 import eu.timepit.refined.Refined
-import org.genivi.sota.refined.SprayJsonRefined._
+import io.circe.generic.auto._
+import org.genivi.sota.CirceSupport._
 import org.genivi.sota.resolver.types.Package.Metadata
 import org.genivi.sota.resolver.types.{Package, Filter, PackageFilter}
 import org.genivi.sota.rest.{ErrorCodes, ErrorRepresentation}
-import spray.json.DefaultJsonProtocol._
 
 
 class PackageFilterResourceWordSpec extends ResourceWordSpec {
@@ -32,6 +32,7 @@ class PackageFilterResourceWordSpec extends ResourceWordSpec {
 
     "not allow assignment of filters to non-existing packages " in {
       addPackageFilter("nonexistant", pkgVersion, filterName) ~> route ~> check {
+
         status shouldBe StatusCodes.BadRequest
         responseAs[ErrorRepresentation].code shouldBe PackageFilter.MissingPackage
       }
@@ -39,6 +40,7 @@ class PackageFilterResourceWordSpec extends ResourceWordSpec {
 
     "not allow assignment of non-existing filters to existing packages " in {
       addPackageFilter(pkgName, pkgVersion, "nonexistant") ~> route ~> check {
+
         status shouldBe StatusCodes.BadRequest
         responseAs[ErrorRepresentation].code shouldBe PackageFilter.MissingFilter
       }

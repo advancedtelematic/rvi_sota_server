@@ -4,9 +4,6 @@
  */
 package org.genivi.sota.resolver.types
 
-import spray.json.DefaultJsonProtocol._
-import org.genivi.sota.refined.SprayJsonRefined.refinedJsonFormat
-
 
 case class PackageFilter(
   packageName   : Package.Name,
@@ -15,8 +12,6 @@ case class PackageFilter(
 )
 
 object PackageFilter {
-
-  implicit val packageFilterFormat = jsonFormat3(PackageFilter.apply)
 
   import org.genivi.sota.rest.ErrorCode
 
