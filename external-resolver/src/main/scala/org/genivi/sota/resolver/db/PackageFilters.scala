@@ -7,11 +7,12 @@ package org.genivi.sota.resolver.db
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server._
+import cats.data.Xor
 import org.genivi.sota.resolver.db.Filters.filters
 import org.genivi.sota.resolver.db.Packages.packages
 import org.genivi.sota.resolver.types.PackageFilter
 import org.genivi.sota.resolver.types.{Filter, Package}
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NoStackTrace
 import scala.util.{Try, Success, Failure}
 import slick.driver.MySQLDriver.api._
@@ -75,9 +76,7 @@ object PackageFilters {
       .filter(_.filterName === fname)
       .delete
 
-  class MissingPackageFilterException extends Throwable with NoStackTrace
-
-  def delete
+  def deleteDb
     (pname: Package.Name, pversion: Package.Version, fname: Filter.Name)
     (implicit ec: ExecutionContext)
       : DBIO[Int]
@@ -86,7 +85,17 @@ object PackageFilters {
                  && pf.packageVersion === pversion
                  && pf.filterName     === fname)
       .delete
-      .map(i =>
-        if (i == 0) throw new MissingPackageFilterException else i)
 
+  sealed trait OurException
+  case object MissingPackageFilterException extends OurException
+
+  def delete
+    (pname: Package.Name, pversion: Package.Version, fname: Filter.Name)
+    (implicit ec: ExecutionContext, db: Database)
+      : Future[Xor[OurException, Unit]]
+  = db.run(deleteDb(pname, pversion, fname)
+             .map(i => if (i == 0)
+                         Xor.left(MissingPackageFilterException)
+                       else
+                         Xor.right(())))
 }

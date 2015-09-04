@@ -9,6 +9,7 @@ import akka.http.scaladsl.unmarshalling._
 import eu.timepit.refined.Refined
 import io.circe.generic.auto._
 import org.genivi.sota.CirceSupport._
+import org.genivi.sota.resolver.db.PackageFilters._
 import org.genivi.sota.resolver.types.Package.Metadata
 import org.genivi.sota.resolver.types.{Package, Filter, PackageFilter}
 import org.genivi.sota.rest.{ErrorCodes, ErrorRepresentation}
@@ -80,7 +81,7 @@ class PackageFilterResourceWordSpec extends ResourceWordSpec {
     "fail if package filter does not exist" in {
       deletePackageFilter("nonexistant", pkgVersion, filterName) ~> route ~> check {
         status shouldBe StatusCodes.BadRequest
-        responseAs[ErrorRepresentation].code shouldBe PackageFilter.MissingPackageFilter
+        responseAs[OurException] shouldBe MissingPackageFilterException
       }
     }
 
