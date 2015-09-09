@@ -8,8 +8,8 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.unmarshalling._
 import eu.timepit.refined.Refined
-import io.circe.generic.auto._
 import org.genivi.sota.CirceSupport._
+import org.genivi.sota.resolver.CirceInstances._
 import org.genivi.sota.resolver.types.Package
 import org.genivi.sota.resolver.types.Package._
 import org.genivi.sota.rest.{ErrorRepresentation, ErrorCodes}

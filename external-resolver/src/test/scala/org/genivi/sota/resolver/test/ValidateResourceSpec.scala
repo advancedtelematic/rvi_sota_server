@@ -9,7 +9,6 @@ import org.genivi.sota.rest.{ErrorRepresentation, ErrorCodes}
 class ValidateResourceSpec extends ResourceWordSpec {
 
   import akka.http.scaladsl.unmarshalling._
-  import io.circe.generic.auto._
   import org.genivi.sota.CirceSupport._
 
 

@@ -7,8 +7,8 @@ package org.genivi.sota.resolver.test
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.unmarshalling._
 import eu.timepit.refined.Refined
-import io.circe.generic.auto._
 import org.genivi.sota.CirceSupport._
+import org.genivi.sota.resolver.CirceInstances._
 import org.genivi.sota.resolver.types.Package.Metadata
 import org.genivi.sota.resolver.types.{Package, Filter, PackageFilter}
 import org.genivi.sota.rest.{ErrorCodes, ErrorRepresentation}

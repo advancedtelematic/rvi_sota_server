@@ -10,8 +10,9 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import akka.http.scaladsl.unmarshalling._
 import eu.timepit.refined.Refined
-import io.circe.generic.auto._
+import io.circe.generic.semiauto._
 import org.genivi.sota.CirceSupport._
+import org.genivi.sota.resolver.CirceInstances._
 import org.genivi.sota.resolver.db.Resolve.makeFakeDependencyMap
 import org.genivi.sota.resolver.types.Package.Metadata
 import org.genivi.sota.resolver.types.{Vehicle, Filter, Package, PackageFilter}

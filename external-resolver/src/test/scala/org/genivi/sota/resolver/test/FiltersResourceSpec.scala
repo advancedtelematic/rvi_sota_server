@@ -4,17 +4,16 @@
  */
 package org.genivi.sota.resolver.test
 
+import akka.http.scaladsl.unmarshalling._
 import akka.http.scaladsl.model.StatusCodes
 import eu.timepit.refined.Refined
+import org.genivi.sota.CirceSupport._
+import org.genivi.sota.resolver.CirceInstances._
 import org.genivi.sota.resolver.types.{Filter, PackageFilter}
 import org.genivi.sota.rest.{ErrorRepresentation, ErrorCodes}
 
 
 class FiltersResourceWordSpec extends ResourceWordSpec {
-
-  import org.genivi.sota.CirceSupport._
-  import io.circe.generic.auto._
-  import akka.http.scaladsl.unmarshalling._
 
   "Filters resource" should {
 
@@ -47,7 +46,7 @@ class FiltersResourceWordSpec extends ResourceWordSpec {
     "list available filters on a GET request" in {
       addFilterOK(filterName2, filterExpr2)
       listFilters ~> route ~> check {
-        responseAs[Seq[Filter]] shouldBe List(filter, filter2)
+        responseAs[List[Filter]] shouldBe List(filter, filter2)
       }
     }
 
@@ -82,7 +81,7 @@ class FiltersResourceWordSpec extends ResourceWordSpec {
 
       listFilters ~> route ~> check {
         status shouldBe StatusCodes.OK
-        responseAs[Seq[Filter]] shouldBe List(filter2)
+        responseAs[Seq[Filter]] shouldBe Vector(filter2)
       }
     }
 

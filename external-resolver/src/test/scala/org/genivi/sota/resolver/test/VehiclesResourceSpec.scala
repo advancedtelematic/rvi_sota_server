@@ -69,7 +69,7 @@ class VehiclesResourcePropSpec extends ResourcePropSpec {
 class VehiclesResourceWordSpec extends ResourceWordSpec {
 
   import org.genivi.sota.CirceSupport._
-  import io.circe.generic.auto._
+  import org.genivi.sota.resolver.CirceInstances._
   import akka.http.scaladsl.unmarshalling._
 
   "Vin resource" should {

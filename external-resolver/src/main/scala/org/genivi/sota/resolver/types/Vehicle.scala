@@ -6,7 +6,8 @@ package org.genivi.sota.resolver.types
 
 import eu.timepit.refined.{Refined, Predicate}
 import io.circe.{Encoder, Decoder}
-import io.circe.generic.auto._
+import io.circe.generic.semiauto._
+import org.genivi.sota.resolver.CirceInstances._
 
 
 case class Vehicle(vin: Vehicle.Vin)
