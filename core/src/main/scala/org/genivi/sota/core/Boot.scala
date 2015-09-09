@@ -4,6 +4,8 @@
  */
 package org.genivi.sota.core
 
+import java.net.URL
+
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
@@ -46,9 +48,12 @@ object Boot extends App with DatabaseConfig {
   val port = config.getInt("server.port")
 
   import Directives._
-  val routes = service.route ~ new rvi.WebService().route(deviceCommunication)
+  val routes = service.route ~ new rvi.WebService(deviceCommunication).route
 
   val bindingFuture = Http().bindAndHandle(routes, host, port)
+  bindingFuture.andThen { case _ =>
+    deviceCommunication.registerServices(new URL(s"http://$host:$port"))
+  }
 
   log.info(s"Server online at http://$host:$port")
 

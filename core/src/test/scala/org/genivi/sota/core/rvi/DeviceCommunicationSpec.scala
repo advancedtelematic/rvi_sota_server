@@ -5,9 +5,9 @@
 package org.genivi.sota.core.rvi
 
 import akka.http.scaladsl.model.HttpResponse
-import akka.util.ByteString
 import com.github.nscala_time.time.Imports._
 import eu.timepit.refined.Refined
+import java.net.URL
 import java.util.concurrent.TimeUnit
 import org.genivi.sota.core._
 import org.genivi.sota.core.data.{InstallCampaign, InstallRequest, Package, Vehicle, PackageId}
@@ -110,13 +110,14 @@ class RunCampaignsSpec extends PropSpec
 
   class RviMock(worksWhen: ((Vehicle.IdentificationNumber, Package)) => Boolean = Function.const(true)) extends RviInterface {
     val msgs = scala.collection.mutable.Set[(Vehicle.IdentificationNumber, Package)]()
+    def registerService(networkAddress: URL, service: String): Future[HttpResponse] = ???
     def notify(s: Vehicle.IdentificationNumber, p: Package): Future[HttpResponse] =
       if (worksWhen((s, p))) {
         this.synchronized(msgs += ((s,p)))
         Future.successful(HttpResponse())
       } else Future.failed[HttpResponse](new RviInterface.UnexpectedRviResponse(HttpResponse()))
     def transferStart(transactionId: Long, destination: String, packageIdentifier: String, byteSize: Long, chunkSize: Long, checksum: String): Future[HttpResponse] = ???
-    def transferChunk(transactionId: Long, destination: String, index: Long, data: ByteString): Future[HttpResponse] = ???
+    def transferChunk(transactionId: Long, destination: String, index: Long, data: Array[Byte]): Future[HttpResponse] = ???
     def transferFinish(transactionId: Long, destination: String): Future[HttpResponse] = ???
   }
 
