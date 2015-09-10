@@ -11,7 +11,6 @@ import akka.http.scaladsl.server._
 
 object Handlers {
 
-  import io.circe.generic.auto._
   import org.genivi.sota.CirceSupport._
 
   def rejectionHandler : RejectionHandler = RejectionHandler.newBuilder().handle {

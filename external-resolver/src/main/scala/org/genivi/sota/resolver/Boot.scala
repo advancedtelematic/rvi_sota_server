@@ -14,7 +14,7 @@ import akka.http.scaladsl.server.PathMatchers.Slash
 import akka.stream.ActorMaterializer
 import eu.timepit.refined.Refined
 import eu.timepit.refined.string.Regex
-import io.circe.generic.auto._
+import io.circe.generic.semiauto._
 import org.genivi.sota.CirceSupport._
 import org.genivi.sota.resolver.db._
 import org.genivi.sota.resolver.types.{Vehicle, Package, Filter, PackageFilter}
@@ -28,7 +28,7 @@ import slick.jdbc.JdbcBackend.Database
 
 
 class Routing(db: Database)
-  (implicit system: ActorSystem, mat: ActorMaterializer, exec: ExecutionContext) extends Directives {
+  (implicit system: ActorSystem, mat: ActorMaterializer, exec: ExecutionContext) extends CirceInstances with Directives {
 
   def vehiclesRoute: Route = {
     pathPrefix("vehicles") {
