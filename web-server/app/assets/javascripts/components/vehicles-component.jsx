@@ -2,7 +2,7 @@ define(['react', '../mixins/fluxbone', './vehicle-component', 'sota-dispatcher']
 
   var Vehicles = React.createClass({
     mixins: [
-      Fluxbone.Mixin("VehicleStore", "sync change")
+      Fluxbone.Mixin("VehicleStore", "sync")
     ],
     render: function() {
       var vehicles = this.props.VehicleStore.models.map(function(Vehicle) {
@@ -11,11 +11,18 @@ define(['react', '../mixins/fluxbone', './vehicle-component', 'sota-dispatcher']
         );
       });
       return (
-        <div>
-          <ul className="list-group">
+        <table className="table table-striped table-bordered">
+          <thead>
+            <tr>
+              <td>
+                VINs
+              </td>
+            </tr>
+          </thead>
+          <tbody>
             { vehicles }
-          </ul>
-        </div>
+          </tbody>
+        </table>
       );
     }
   });

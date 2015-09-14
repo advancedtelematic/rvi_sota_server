@@ -12,9 +12,11 @@ define(['jquery', 'react', '../mixins/fluxbone', 'sota-dispatcher'], function($,
     },
     render: function() {
       return (
-        <li className="list-group-item">
-          { this.props.Vehicle.get('vin') }
-        </li>
+        <tr>
+          <td>
+            { this.props.Vehicle.get('vin') }
+          </td>
+        </tr>
       );
     }
   });
