@@ -22,7 +22,7 @@ import org.genivi.sota.core.data._
 import org.genivi.sota.core.db.{Packages, Vehicles, InstallRequests, InstallCampaigns}
 import org.genivi.sota.rest.{ErrorCode, ErrorRepresentation}
 import org.genivi.sota.rest.Validation._
-import slick.driver.MySQLDriver.api.Database
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import Directives._
 import eu.timepit.refined._
@@ -30,6 +30,7 @@ import eu.timepit.refined.string._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol._
 import org.genivi.sota.refined.SprayJsonRefined._
+import slick.driver.MySQLDriver.api.Database
 
 object ErrorCodes {
   val ExternalResolverError = ErrorCode( "external_resolver_error" )
@@ -77,6 +78,17 @@ class CampaignsResource(resolver: ExternalResolverClient, db: Database)
   val route = path("install_campaigns") {
     (post & entity(as[InstallCampaign])) { campaign =>
       complete( createCampaign( campaign ) )
+    }
+  }
+}
+
+class UpdateRequestsResource(db: Database, updateService: UpdateService)
+                            (implicit system: ActorSystem, mat: ActorMaterializer) {
+  import system.dispatcher
+
+  val route = path("updates") {
+    get {
+      complete(updateService.all(db, system.dispatcher))
     }
   }
 }
@@ -157,7 +169,7 @@ class PackagesResource(resolver: ExternalResolverClient, db : Database)
 
 class WebService(resolver: ExternalResolverClient, db : Database)
                 (implicit system: ActorSystem, mat: ActorMaterializer) extends Directives {
-  val log = Logging(system, "webservice")
+  implicit val log = Logging(system, "webservice")
 
   import io.circe.Json
   import Json.{obj, string}
@@ -170,10 +182,10 @@ class WebService(resolver: ExternalResolverClient, db : Database)
         complete(HttpResponse(InternalServerError, entity = entity.toString()))
       }
   }
-
   val vehicles = new VehiclesResource( db )
   val campaigns = new CampaignsResource(resolver, db)
   val packages = new PackagesResource(resolver, db)
+  val updateRequests = new UpdateRequestsResource(db, new UpdateService())
 
   val route = pathPrefix("api" / "v1") {
     handleExceptions(exceptionHandler) {

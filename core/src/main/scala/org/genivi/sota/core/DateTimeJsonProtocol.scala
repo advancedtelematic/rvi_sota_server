@@ -4,10 +4,9 @@
  */
 package org.genivi.sota.core
 
-import org.joda.time.{ DateTimeZone, DateTime }
+import org.joda.time.{ DateTimeZone, DateTime, Interval }
 import org.joda.time.format.ISODateTimeFormat
-import spray.json.deserializationError
-import spray.json.{ JsString, JsValue, RootJsonFormat, DefaultJsonProtocol }
+import spray.json._
 
 trait DateTimeJsonProtocol extends DefaultJsonProtocol {
   implicit object DateTimeJsonFormat extends RootJsonFormat[DateTime] {
@@ -20,6 +19,21 @@ trait DateTimeJsonProtocol extends DefaultJsonProtocol {
                           }
       case x           => deserializationError("Expected DateTime as JsString, but got " + x)
     }
+  }
+
+  implicit object DateTimeIntervalJsonFormat extends JsonFormat[Interval] {
+    def write(interval: Interval): JsValue = JsObject(
+      "start" -> DateTimeJsonFormat.write(interval.getStart),
+      "end" -> DateTimeJsonFormat.write(interval.getEnd))
+
+    def read(json: JsValue): Interval =
+      json.asJsObject.getFields("start", "end") match {
+        case Seq(start, end) => new Interval(
+          DateTimeJsonFormat.read(start),
+          DateTimeJsonFormat.read(end)
+        )
+        case x => deserializationError("Expected Interval as an object with 'start' and 'end' Datetimes as JsStrings, but got " + x)
+      }
   }
 }
 
