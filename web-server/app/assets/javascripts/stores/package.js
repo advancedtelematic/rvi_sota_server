@@ -17,7 +17,7 @@ define(['backbone', 'underscore', '../lib/backbone-model-file-upload', '../mixin
     },
     updatePackage: function(payload) {
       // TODO find a good place to configure this url
-      sendRequest.doPost("/api/v1/install_campaigns", payload)
+      sendRequest.doPost("/api/v1/updates", payload)
         .fail(_.bind(function(xhr) {
           this.trigger("error", this, xhr);
         }, this));

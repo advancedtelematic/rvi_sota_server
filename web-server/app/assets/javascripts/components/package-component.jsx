@@ -8,7 +8,7 @@ define(['react', 'react-router', '../mixins/fluxbone', 'sota-dispatcher'], funct
       return (
         <Router.Link to='package' params={{name: this.props.Package.get('name'), version: this.props.Package.get('version')}}>
           <li className="list-group-item">
-            { this.props.Package.get('name') } - { this.props.Package.get('version') }
+            { this.props.Package.get('id').name } - { this.props.Package.get('id').version }
           </li>
         </Router.Link>
       );
