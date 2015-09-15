@@ -1,0 +1,17 @@
+language: scala
+
+scala:
+  - 2.11.7
+
+jdk:
+  - oraclejdk8
+
+addons:
+  mariadb: '10.0'
+
+env:
+  - CORE_TEST_DB_URL="jdbc:mariadb://localhost:3306/sota_core
+  - RESOLVER_TEST_DB_URL="jdbc:mariadb://localhost:3306/sota_resolver"
+
+notifications:
+  email: false
