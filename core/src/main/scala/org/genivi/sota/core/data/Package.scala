@@ -64,8 +64,7 @@ object Package {
         case None => ""
       }
       JsObject(
-        "name" -> JsString(pkg.id.name.get),
-        "version" -> JsString(pkg.id.version.get),
+        "id" -> JsObject("name" -> JsString(pkg.id.name.get), "version" -> JsString(pkg.id.version.get)),
         "uri" -> JsString(pkg.uri.toString()),
         "size" -> JsNumber(pkg.size),
         "checksum" -> JsString(pkg.checkSum),
@@ -74,9 +73,13 @@ object Package {
       )
     }
     def read(value: JsValue) = {
-      value.asJsObject.getFields("name", "version", "uri", "size", "checksum", "description", "vendor") match {
-        case Seq(JsString(name), JsString(version), JsString(uri), JsNumber(size), JsString(checksum), JsString(description), JsString(vendor)) =>
-          new Package(PackageId(Refined(name), Refined(version)), Uri(uri), size.toLong, checksum, Some(description), Some(vendor))
+      value.asJsObject.getFields("id", "uri", "size", "checksum", "description", "vendor") match {
+        case Seq(i, JsString(uri), JsNumber(size), JsString(checksum), JsString(description), JsString(vendor)) =>
+          i.asJsObject.getFields("name", "version") match {
+            case Seq(JsString(name), JsString(version)) =>
+              new Package(PackageId(Refined(name), Refined(version)), Uri(uri), size.toLong, checksum, Some(description), Some(vendor))
+            case _                                      => throw new DeserializationException("Package expected")
+          }
         case _ => throw new DeserializationException("Package expected")
       }
     }
