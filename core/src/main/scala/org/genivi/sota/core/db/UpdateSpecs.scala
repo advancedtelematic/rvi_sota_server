@@ -181,4 +181,13 @@ object UpdateSpecs {
    * @param vehicle The vehicle to get the VIN to delete from
    */
   def deleteRequiredPackageByVin(vehicle : Vehicle) : DBIO[Int] = requiredPackages.filter(_.vin === vehicle.vin).delete
+
+  def deleteAllUpdateSpecs: DBIO[Int] = {
+      updateSpecs.delete
+    }
+  
+  def deleteAllRequiredPackages: DBIO[Int] = {
+    requiredPackages.delete
+  }
+
 }

@@ -129,6 +129,7 @@ class UpdateRequestsResource(db: Database, resolver: ExternalResolverClient, upd
   import org.genivi.sota.core.db.UpdateSpecs
   import UpdateSpec._
   import CirceMarshallingSupport._
+  import slick.dbio.DBIO
 
   implicit val _db = db
   val route = pathPrefix("updates") {
@@ -150,6 +151,12 @@ class UpdateRequestsResource(db: Database, resolver: ExternalResolverClient, upd
             }
           )
         )
+      }
+    } ~
+    delete {
+      complete {
+        db.run(DBIO.seq(UpdateSpecs.deleteAllRequiredPackages, UpdateSpecs.deleteAllUpdateSpecs, 
+          updateService.deleteAll))
       }
     }
   }

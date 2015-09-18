@@ -83,5 +83,9 @@ object UpdateRequests {
    * @param request A new update request to add
    */
   def persist(request: UpdateRequest)
-             (implicit ec: ExecutionContext): DBIO[Unit] = (all += request).map( _ => ())
+             (implicit ec: ExecutionContext): DBIO[UpdateRequest] = (all += request).map( _ => request)
+
+  def deleteAll: DBIO[Int] = {
+    all.delete
+  }
 }

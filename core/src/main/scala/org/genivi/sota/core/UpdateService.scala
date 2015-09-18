@@ -103,6 +103,10 @@ class UpdateService(registeredServices: ServerServices)(implicit val log: Loggin
 
   def all(implicit db: Database, ec: ExecutionContext): Future[Set[UpdateRequest]] =
     db.run(UpdateRequests.list).map(_.toSet)
+
+  def deleteAll: DBIO[Int] = {
+    UpdateRequests.deleteAll
+  }
 }
 
 object UpdateService {

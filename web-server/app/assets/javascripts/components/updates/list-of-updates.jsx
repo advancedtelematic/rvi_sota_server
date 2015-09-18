@@ -3,7 +3,9 @@ define(function(require) {
       SotaDispatcher = require('sota-dispatcher'),
       Router = require('react-router'),
       db = require('../../stores/db'),
-      React = require('react');
+      React = require('react'),
+      Fluxbone = require('../../mixins/fluxbone'),
+      sendRequest = require('../../mixins/send-request');
 
   var ListOfUpdates = React.createClass({
     contextTypes: {
@@ -15,6 +17,12 @@ define(function(require) {
     componentWillMount: function(){
       SotaDispatcher.dispatch({actionType: 'get-updates'});
       this.props.Updates.addWatch("poll-updates", _.bind(this.forceUpdate, this, null));
+    },
+    handleDelete: function() {
+      sendRequest.doDelete('/api/v1/updates')
+      .done(_.bind(function() {
+        this.transitionTo("/updates");
+      }, this));
     },
     render: function() {
       var rows = _.map(this.props.Updates.deref(), function(update) {
@@ -85,6 +93,7 @@ define(function(require) {
               { rows }
             </tbody>
           </table>
+          <button className="btn btn-danger" onClick={this.handleDelete}>Delete All Update Campaigns</button>
         </div>
       );
     }
