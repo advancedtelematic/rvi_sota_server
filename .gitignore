@@ -51,3 +51,5 @@ deploy/roles
 # Generated files in docs/
 /docs/**/*.pdf
 /docs/_site/
+
+.agignore
