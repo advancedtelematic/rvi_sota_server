@@ -84,7 +84,6 @@ class ResolveResourceWordSpec extends ResourceWordSpec {
   }
 
 }
-/*
 
 class ResolveResourcePropSpec extends ResourcePropSpec {
 
@@ -101,7 +100,7 @@ class ResolveResourcePropSpec extends ResourcePropSpec {
   import akka.http.scaladsl.unmarshalling._
 
 
-  property("Resolve should give back the same thing as if we filtered with the filters") {
+  ignore("Resolve should give back the same thing as if we filtered with the filters") {
 
     forAll() { (
       vs: Seq[Vehicle],   // The available vehicles.
@@ -150,5 +149,3 @@ class ResolveResourcePropSpec extends ResourcePropSpec {
   }
 
 }
-
- */
