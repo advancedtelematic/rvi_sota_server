@@ -5,10 +5,9 @@
 package org.genivi.sota.resolver.resolve
 
 import akka.stream.ActorMaterializer
-import org.genivi.sota.resolver.db.PackageFilters
 import org.genivi.sota.resolver.filters.FilterAST._
 import org.genivi.sota.resolver.filters.{FilterAST, And, True}
-import org.genivi.sota.resolver.packages.{Package, PackageFunctions}
+import org.genivi.sota.resolver.packages.{Package, PackageFunctions, PackageFilterRepository}
 import org.genivi.sota.resolver.vehicles.{Vehicle, VehicleFunctions, VehicleRepository}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
@@ -29,7 +28,7 @@ object ResolveFunctions {
       : Future[Map[Vehicle.Vin, Seq[Package.Id]]] =
     for {
       _       <- PackageFunctions.exists(pkgId)
-      (p, fs) <- db.run(PackageFilters.listFiltersForPackage(pkgId))
+      (p, fs) <- db.run(PackageFilterRepository.listFiltersForPackage(pkgId))
       vs      <- db.run(VehicleRepository.list)
       ps : Seq[Seq[Package.Id]]
               <- Future.sequence(vs.map(v => VehicleFunctions.packagesOnVin(v.vin)))
