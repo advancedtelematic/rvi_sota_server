@@ -11,9 +11,8 @@ import io.circe.generic.auto._
 import org.genivi.sota.marshalling.CirceMarshallingSupport
 import CirceMarshallingSupport._
 import org.genivi.sota.resolver.common.Errors.Codes
-import org.genivi.sota.resolver.packages.Package
+import org.genivi.sota.resolver.packages.{Package, PackageFilter}
 import org.genivi.sota.resolver.vehicles.Vehicle
-import org.genivi.sota.resolver.types.PackageFilter
 import org.genivi.sota.rest.{ErrorCodes, ErrorRepresentation}
 import org.scalacheck._
 
