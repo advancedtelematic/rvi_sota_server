@@ -64,6 +64,11 @@ object TransferProtocolActor {
   def props(db: Database, rviClient: RviClient, transferActorProps: (ClientServices, Package) => Props) =
     Props( new TransferProtocolActor( db, rviClient, transferActorProps) )
 
+  def ttl() : DateTime = {
+    import com.github.nscala_time.time.Implicits._
+    DateTime.now + 5.minutes
+  }
+
   case object GetAllPackages
 
 }
@@ -126,7 +131,7 @@ class TransferProtocolActor(db: Database, rviClient: RviClient, transferActorPro
         log.debug(r.toString())
         if( pendingSpecs.isEmpty ) {
           log.debug( "All installation reports received." )
-          rviClient.sendMessage(services.getpackages, io.circe.Json.Empty, ttl())
+          rviClient.sendMessage(services.getpackages, io.circe.Json.Empty, TransferProtocolActor.ttl())
           context.stop( self )
         } else {
           log.debug( "Pending Specs remaining.")
@@ -134,11 +139,6 @@ class TransferProtocolActor(db: Database, rviClient: RviClient, transferActorPro
         }
       }
 
-  }
-
-  def ttl() : DateTime = {
-    import com.github.nscala_time.time.Implicits._
-    DateTime.now + 5.minutes
   }
 
   def startPackageUpload( services: ClientServices)( p: Package ) : (ActorRef, Package) = {

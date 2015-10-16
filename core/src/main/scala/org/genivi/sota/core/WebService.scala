@@ -22,6 +22,7 @@ import cats.data.Xor
 import eu.timepit.refined._
 import eu.timepit.refined.string._
 import io.circe.generic.auto._
+import org.genivi.sota.core.rvi.TransferProtocolActor
 import org.genivi.sota.marshalling.CirceMarshallingSupport
 import org.genivi.sota.core.data._
 import org.genivi.sota.core.db.{UpdateSpecs, Packages, Vehicles, InstallRequests, InstallHistories}
@@ -85,6 +86,11 @@ class VehiclesResource(db: Database)
       } ~
       (path("history") & get) {
         complete(db.run(InstallHistories.list(vin)))
+      } ~
+      (path("sync") & put) {
+        //TODO: need to specify which vin we are syncing
+        Boot.rviClient.sendMessage("", io.circe.Json.Empty, TransferProtocolActor.ttl())
+        complete(HttpResponse(NoContent))
       }
     } ~
     pathEnd {
