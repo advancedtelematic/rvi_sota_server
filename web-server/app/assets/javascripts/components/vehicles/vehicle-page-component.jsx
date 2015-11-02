@@ -9,11 +9,18 @@ define(function(require) {
       AddComponent = require('../components/add-component-to-vin'),
       ComponentsOnVin = require('../components/list-of-components-on-vin'),
       db = require('stores/db'),
+      SotaDispatcher = require('sota-dispatcher'),
       SearchBar = require('../search-bar');
 
   var VehiclesPageComponent = React.createClass({
     contextTypes: {
       router: React.PropTypes.func
+    },
+    failAllUpdates: function() {
+      SotaDispatcher.dispatch({
+        actionType: 'fail-all-updates-by-vin',
+        vin: this.props.params.vin
+      });
     },
     render: function() {
       var params = this.context.router.getCurrentParams();
@@ -24,6 +31,7 @@ define(function(require) {
         </div>
         <div className="row">
           <div className="col-md-12">
+            <button type="button" className="btn btn-primary" onClick={this.failAllUpdates} name="delete-filter">Fail All Pending Updates</button>
             <h2>Installed Packages</h2>
             <ListOfPackagesForVin Packages={db.packagesForVin} Vin={params.vin}/>
             <AddPackageManually Vin={params.vin}/>

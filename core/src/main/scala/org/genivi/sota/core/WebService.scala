@@ -63,6 +63,19 @@ class VehiclesResource(db: Database)
       _ <- db.run(Vehicles.deleteById(vehicle))
     } yield ()
 
+  /**
+   * Fail all updates to a given VIN.
+   * @param vehicle The vehicle to fail all updates for
+   */
+  def failAllUpdatesByVin(vehicle : Vehicle)(implicit ec: ExecutionContext) = {
+    for {
+      // Get the update UUIDs which are pending for this vin so we don't delete rows from RequiredPackages which, for
+      // example, refer to updates which have completed already.
+      ids <- db.run(UpdateSpecs.getPendingUpdatesByVin(vehicle))
+      _ <- db.run(UpdateSpecs.deleteRequiredPackageByUUID(vehicle, ids.toSet))
+      _ <- db.run(UpdateSpecs.failUpdates(vehicle, ids.toSet))
+    } yield()
+  }
 
   val extractVin : Directive1[Vehicle.Vin] = refined[Vehicle.ValidVin](Slash ~ Segment)
 
@@ -89,6 +102,9 @@ class VehiclesResource(db: Database)
       } ~
       (path("queued") & get) {
         complete(db.run(UpdateSpecs.getPackagesQueuedForVin(vin)))
+      } ~
+      (path("failAllUpdates") & delete) {
+        complete(failAllUpdatesByVin(Vehicle(vin)))
       } ~
       (path("history") & get) {
         complete(db.run(InstallHistories.list(vin)))
