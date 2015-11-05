@@ -186,4 +186,37 @@ object UpdateSpecs {
    * @param vehicle The vehicle to get the VIN to delete from
    */
   def deleteRequiredPackageByVin(vehicle : Vehicle) : DBIO[Int] = requiredPackages.filter(_.vin === vehicle.vin).delete
+
+  /**
+   * Delete all the required packages that are needed for a VIN where the update UUID is in update IDs
+   * @param vehicle The vehicle to get the VIN to delete from
+   * @param updateIds The list of update IDs to delete from
+   */
+  def deleteRequiredPackageByUUID(vehicle : Vehicle, updateIds : Set[UUID]) : DBIO[Int] = {
+    requiredPackages.filter(r => r.vin === vehicle.vin &&
+      r.requestId.inSet(updateIds.toSet)).delete
+  }
+
+  /**
+   * Return a list of update IDs for pending updates for a given VIN
+   * @param vehicle The vehicle to get pending updates for
+   * @return A list of pending updates for the given vehicle VIN
+   */
+  def getPendingUpdatesByVin(vehicle : Vehicle) : DBIO[Seq[UUID]] = {
+    val ids = for { u <- updateSpecs if u.vin === vehicle.vin && u.status === UpdateStatus.Pending} yield u.requestId
+    ids.result
+  }
+
+  /**
+   * Set all pending updates to failed for rows with the given vehicle VIN and where the request ID is in updateIds
+   * @param vehicle The vehicle to fail all pending updates for
+   * @param updateIds The list of update IDs to check
+   */
+  def failUpdates(vehicle : Vehicle, updateIds : Set[UUID]) : DBIO[Int] = {
+    val updateStatus = for {
+      u <- updateSpecs if u.vin === vehicle.vin && u.status === UpdateStatus.Pending &&
+        u.requestId.inSet(updateIds.toSet)
+    } yield u.status
+    updateStatus.update(UpdateStatus.Failed)
+  }
 }

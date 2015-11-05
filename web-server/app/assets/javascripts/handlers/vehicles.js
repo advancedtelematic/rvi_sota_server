@@ -73,6 +73,9 @@ define(function(require) {
                 SotaDispatcher.dispatch({actionType: 'list-components-on-vin', vin: payload.vin});
               });
           break;
+          case 'fail-all-updates-by-vin':
+            sendRequest.doDelete('/api/v1/vehicles/' + payload.vin + '/failAllUpdates')
+          break;
         }
       };
       SotaDispatcher.register(this.dispatchCallback.bind(this));
