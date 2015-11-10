@@ -42,11 +42,12 @@ object FilterRepository {
       .flatMap(_.
         fold[DBIO[Filter]](DBIO.failed(Errors.MissingFilterException))(DBIO.successful(_)))
 
-  def update(filter: Filter)(implicit ec: ExecutionContext): DBIO[Option[Filter]] = {
+  def update(filter: Filter)(implicit ec: ExecutionContext): DBIO[Filter] = {
     val q = for {
       f <- filters if f.name === filter.name
     } yield f.expression
-    q.update(filter.expression).map(i => if (i == 0) None else Some(filter))
+    q.update(filter.expression)
+     .flatMap(i => if (i == 0) DBIO.failed(Errors.MissingFilterException) else DBIO.successful(filter))
   }
 
   def delete(name: Filter.Name)(implicit ec: ExecutionContext): DBIO[Int] =
