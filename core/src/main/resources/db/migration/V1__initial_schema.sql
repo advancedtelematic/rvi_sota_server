@@ -27,6 +27,7 @@ CREATE TABLE UpdateRequest (
     start_after DATETIME NOT NULL,
     finish_before DATETIME NOT NULL,
     priority INT NOT NULL,
+    signature VARCHAR(256) NOT NULL,
 
     PRIMARY KEY (update_request_id),
     FOREIGN KEY fk_update_request_package_id (package_name, package_version) REFERENCES Package(name, version)
