@@ -22,10 +22,11 @@ import cats.data.Xor
 import eu.timepit.refined._
 import eu.timepit.refined.string._
 import io.circe.generic.auto._
+import org.genivi.sota.core.transfer.InstalledPackagesUpdate
 import org.genivi.sota.marshalling.CirceMarshallingSupport
 import org.genivi.sota.core.data._
 import org.genivi.sota.core.db.{UpdateSpecs, Packages, Vehicles, InstallHistories}
-import org.genivi.sota.core.rvi.{ServerServices, RviClient}
+import org.genivi.sota.core.rvi.{InstalledPackages, ServerServices, RviClient}
 import org.genivi.sota.rest.Validation._
 import org.genivi.sota.rest.{ErrorCode, ErrorRepresentation}
 import org.joda.time.DateTime
@@ -38,7 +39,7 @@ object ErrorCodes {
   val ExternalResolverError = ErrorCode( "external_resolver_error" )
 }
 
-class VehiclesResource(db: Database, rviClient: RviClient)
+class VehiclesResource(db: Database, rviClient: RviClient, resolverClient: ExternalResolverClient)
                       (implicit system: ActorSystem, mat: ActorMaterializer) {
 
   import system.dispatcher
@@ -106,7 +107,16 @@ class VehiclesResource(db: Database, rviClient: RviClient)
         rviClient.sendMessage(s"genivi.org/vin/${vin}/sota/getpackages", io.circe.Json.Empty, ttl())
         // TODO: Confirm getpackages in progress to vehicle?
         complete(NoContent)
-      }
+      } ~
+        (path("installed") & put) {
+          entity(as[InstalledPackages]) { req ⇒
+            val f = new InstalledPackagesUpdate(resolverClient)
+              .update(req)
+              .map(_ ⇒ NoContent)
+
+            complete(f)
+          }
+        }
     } ~
     pathEnd {
       get {
@@ -171,7 +181,7 @@ class WebService(registeredServices: ServerServices, resolver: ExternalResolverC
         complete(HttpResponse(InternalServerError, entity = entity.toString()))
       }
   }
-  val vehicles = new VehiclesResource(db, rviClient)
+  val vehicles = new VehiclesResource(db, rviClient, resolver)
   val packages = new PackagesResource(resolver, db)
   val updateRequests = new UpdateRequestsResource(db, resolver, new UpdateService(registeredServices))
 

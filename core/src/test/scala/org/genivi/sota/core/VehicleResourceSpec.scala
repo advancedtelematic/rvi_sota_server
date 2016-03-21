@@ -10,15 +10,17 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import eu.timepit.refined.api.Refined
 import io.circe.generic.auto._
+import io.circe.syntax._
 import org.genivi.sota.marshalling.CirceMarshallingSupport
 import CirceMarshallingSupport._
 import org.genivi.sota.core.data.Vehicle
-import org.genivi.sota.core.rvi.JsonRpcRviClient
+import org.genivi.sota.core.rvi.{InstalledPackages, JsonRpcRviClient}
 import org.genivi.sota.core.jsonrpc.HttpTransport
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfterAll, Matchers, PropSpec}
 import slick.driver.MySQLDriver.api._
+import org.genivi.sota.core.data.Package
 
 /**
  * Spec tests for vehicle REST actions
@@ -35,7 +37,9 @@ class VehicleResourceSpec extends PropSpec with PropertyChecks
   val serverTransport = HttpTransport( rviUri )
   implicit val rviClient = new JsonRpcRviClient( serverTransport.requestTransport, system.dispatcher)
 
-  lazy val service = new VehiclesResource(db, rviClient)
+  val fakeResolver = new FakeExternalResolver()
+
+  lazy val service = new VehiclesResource(db, rviClient, fakeResolver)
 
   override def beforeAll {
     TestDatabase.resetDatabase( databaseName )
@@ -92,9 +96,23 @@ class VehicleResourceSpec extends PropSpec with PropertyChecks
     }
   }
 
+  property("install updates are forwarded to external resolver") {
+    val fakeResolverClient = new FakeExternalResolver()
+    val vehiclesResource = new VehiclesResource(db, rviClient, fakeResolverClient)
+
+    forAll { (vin: Vehicle.Vin, packageIds: List[Package.Id]) ⇒
+      val uri = Uri.Empty.withPath(BasePath / vin.get / "installed")
+      val installedPackages = InstalledPackages(vin, packageIds.asJson)
+
+      Put(uri, installedPackages) ~> vehiclesResource.route ~> check {
+        status shouldBe StatusCodes.NoContent
+        fakeResolverClient.installedPackages should contain(installedPackages)
+      }
+    }
+  }
+
   override def afterAll() {
     system.terminate()
     db.close()
   }
-
 }
