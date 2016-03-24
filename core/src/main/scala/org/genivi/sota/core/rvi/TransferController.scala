@@ -15,22 +15,21 @@ import java.nio.file.{Paths, StandardOpenOption}
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import org.apache.commons.codec.binary.Base64
-import org.genivi.sota.core.data.UpdateStatus
-import org.genivi.sota.core.data.Vehicle
-import org.genivi.sota.core.data.{Package, UpdateSpec, Vehicle}
-import org.genivi.sota.core.db.{UpdateSpecs, InstallHistories, OperationResults, UpdateRequests}
+import org.genivi.sota.core.data._
+import org.genivi.sota.core.db._
 import org.joda.time.DateTime
 import scala.collection.immutable.Queue
 import scala.concurrent.Future
 import scala.concurrent.duration.{FiniteDuration, Duration}
-import scala.math.BigDecimal.RoundingMode
+import scala.util.{Success, Failure}
 import scala.util.control.NoStackTrace
+import scala.math.BigDecimal.RoundingMode
 import slick.driver.MySQLDriver.api.Database
 
 /**
  * Actor to handle events received from the RVI node.
  *
- * @param transferActorProps the configuration class for creating actors to handle a single vehicle
+ * @param transferProtocolProps the configuration class for creating actors to handle a single vehicle
  * @see SotaServices
  */
 class UpdateController(transferProtocolProps: Props) extends Actor with ActorLogging {
@@ -127,42 +126,63 @@ class TransferProtocolActor(db: Database, rviClient: RviClient,
     TimeUnit.MILLISECONDS
   )
 
-  def buildTransferQueue(specs: Iterable[UpdateSpec]) : Queue[(UUID, String, Package)] = (for {
-    spec <- specs
-    pkg <- spec.dependencies
-  } yield (spec.request.id, spec.request.signature, pkg)).to[Queue]
+  case class PackageNotFound(packageId: Package.Id)
+    extends Throwable(s"Package $packageId not found!") with NoStackTrace
+
+  case class UpdateNotFound(updateId: UUID)
+      extends Throwable(s"Update $updateId not found!") with NoStackTrace
+
+  def startPackageUpload(services: ClientServices)
+                        (updateId: UUID): Future[(ActorRef, UUID)] = {
+
+    db.run(UpdateRequests.byId(updateId)).flatMap(_ match {
+      case Some(r) => {
+        val pkgF = db.run(Packages.byId(r.packageId))
+        pkgF.map(_ match {
+          case Some(pkg) =>
+            val props = transferActorProps(updateId, r.signature, pkg, services)
+            val ref = context.actorOf(props, updateId.toString)
+            context.watch(ref)
+            ref -> updateId
+          case None => throw PackageNotFound(r.packageId)
+        })
+      }
+      case None => Future.failed(UpdateNotFound(updateId))
+    })
+  }
 
   /**
    * Create actors to handle each transfer to the vehicle.
    * Forward ChunksReceived messages from the vehicle to the transfer actors.
-   * Terminate when all updates and dependencies are successfully transferred,
+   * Terminate when all updates are successfully transferred,
    * or when the transfer is aborted because the vehicle is not responding.
    */
-  def running(services: ClientServices, updates: Set[UpdateSpec], pending: Queue[(UUID, String, Package)],
-              inProgress: Map[ActorRef, Package], done: Set[Package]) : Receive = {
+  def running(services: ClientServices, updates: Set[UpdateSpec], pending: Queue[UUID],
+              inProgress: Map[ActorRef, UUID], done: Set[UUID]) : Receive = {
     case akka.actor.Terminated(ref) =>
       // TODO: Handle actors terminated on errors (e.g. file exception in PackageTransferActor)
-      val p = inProgress.get(ref).get
-      log.debug(s"Package $p uploaded.")
-      val newInProgress = pending.headOption.map { case (id, signature, pkg) =>
-        startPackageUpload(services)(id, signature, pkg) }
-        .fold(inProgress - ref)(inProgress - ref + _)
-      if( newInProgress.isEmpty ) {
-        log.debug( s"All packages uploaded." )
-        context.setReceiveTimeout(installTimeout)
-        updates.foreach { x =>
-          context.system.eventStream.publish( UpdateEvents.PackagesTransferred( x ) )
-        }
-      } else {
-        val finishedPackageTransfers = done + p
-        val (finishedUpdates, unfinishedUpdates) = updates.span(_.dependencies.diff(finishedPackageTransfers).isEmpty)
-        context.become(
-          running( services, unfinishedUpdates, if(pending.isEmpty) pending else pending.tail,
-                   newInProgress, finishedPackageTransfers) )
+      val oldId = inProgress(ref)
+      log.debug(s"Package for update $oldId uploaded.")
+
+      pending.headOption match {
+        case Some(currentId) =>
+          val refF = startPackageUpload(services)(currentId)
+          refF onComplete(_ match {
+            case Success(current) =>
+              context.become(running(services,
+                updates.filter(_.request.id == currentId),
+                pending.tail, inProgress - ref + current, done + oldId))
+            case Failure(_) => log.error(s"Could not start package upload for update $currentId!")
+          })
+
+        case None =>
+          log.debug(s"All packages uploaded.")
+          context.setReceiveTimeout(installTimeout)
+          updates.foreach { x => context.system.eventStream.publish(UpdateEvents.PackagesTransferred(x)) }
       }
 
-    case x @ ChunksReceived(vin, updateId, _) =>
-      inProgress.find( _._2.id == updateId).foreach( _._1 ! x)
+    case x @ ChunksReceived(_, updateId, _) =>
+      inProgress.find(_._2 == updateId).foreach( _._1 ! x)
 
     case r @ InstallReport(vin, update) =>
       context.system.eventStream.publish( UpdateEvents.InstallReportReceived(r) )
@@ -199,21 +219,17 @@ class TransferProtocolActor(db: Database, rviClient: RviClient,
     DateTime.now + 5.minutes
   }
 
-  def startPackageUpload(services: ClientServices)
-                        (updateId: UUID,
-                         signature: String,
-                         pkg: Package): (ActorRef, Package) = {
-    val ref = context.actorOf(transferActorProps(updateId, signature, pkg, services), updateId.toString)
-    context.watch(ref)
-    ref -> pkg
-  }
-
   def loadSpecs(services: ClientServices) : Receive = {
     case TransferProtocolActor.Specs(values) =>
-      val todo = buildTransferQueue(values)
-      val workers : Map[ActorRef, Package] =
-        todo.take(3).map { case (id, signature, pkg) => startPackageUpload(services)(id, signature, pkg) }.toMap
-      context become running( services, values.toSet, todo.drop(3), workers, Set.empty )
+      val todo = values.map(_.request.id).to[Queue]
+      val workersF =
+        Future.sequence(todo.take(3).map(startPackageUpload(services)(_)))
+
+      workersF onSuccess {
+        case workers =>
+          context become running( services, values.toSet, todo.drop(3), workers.toMap, Set.empty)
+      }
+
 
     case Status.Failure(t) =>
       log.error(t, "Unable to load update specifications.")
