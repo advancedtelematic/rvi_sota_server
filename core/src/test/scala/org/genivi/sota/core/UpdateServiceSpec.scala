@@ -126,6 +126,32 @@ class UpdateServiceSpec extends PropSpec
     }
   }
 
+
+  property("create update campaign for vehicles in resolver's but not in core's database") {
+    // create a package whose id matches that in the UpdateRequest
+    val pkg = PackageGen.sample.get
+    val request = updateRequestGen(PackageIdGen).sample.get.copy(packageId = pkg.id)
+
+    // fabricate a resolver mapping a single vehicle (not in core's db) to a package in core's db
+    val vehicle = VehicleGenerators.genVehicle.sample.get
+    val depResolver: UpdateService.DependencyResolver = _ => FastFuture.successful( Map(vehicle.vin -> Set(pkg.id)) )
+
+    val steps = for (
+      vehicleWasMissing <- db.run(Vehicles.exists(vehicle.vin));
+      // persist the package, will be loaded by the method under test, service.queueUpdate()
+      _ <- db.run(Packages.create(pkg));
+      _ <- service.queueUpdate( request, depResolver );
+      optVin <- db.run(Vehicles.exists(vehicle.vin))
+    ) yield (vehicleWasMissing, optVin)
+
+    // make sure the vehicle was added to core's db
+    whenReady( steps ) { res =>
+      val (vehicleWasMissing, optVin) = res
+      vehicleWasMissing.isEmpty shouldBe true
+      optVin.isDefined shouldBe true
+    }
+  }
+
   override def afterAll() : Unit = {
     TestKit.shutdownActorSystem(system)
     super.afterAll()
