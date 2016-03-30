@@ -4,6 +4,7 @@
  */
 package org.genivi.sota.resolver.vehicles
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.NoContent
 import akka.http.scaladsl.server._
@@ -12,9 +13,11 @@ import akka.stream.ActorMaterializer
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Regex
 import io.circe.generic.auto._
+import org.genivi.sota.data.Namespace._
 import org.genivi.sota.data.{PackageId, Vehicle}
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
 import org.genivi.sota.marshalling.RefinedMarshallingSupport._
+import org.genivi.sota.resolver.common.Namespaces
 import org.genivi.sota.resolver.common.Errors
 import org.genivi.sota.resolver.common.RefinementDirectives.{refinedPackageId, refinedPartNumber}
 import org.genivi.sota.resolver.components.{Component, ComponentRepository}
@@ -30,7 +33,10 @@ import slick.jdbc.JdbcBackend.Database
  *
  * @see {@linktourl http://pdxostc.github.io/rvi_sota_server/dev/api.html}
  */
-class VehicleDirectives(implicit db: Database, mat: ActorMaterializer, ec: ExecutionContext) {
+class VehicleDirectives(implicit system: ActorSystem,
+                        db: Database,
+                        mat: ActorMaterializer,
+                        ec: ExecutionContext) extends Namespaces {
   import Directives._
 
   /**
@@ -54,27 +60,27 @@ class VehicleDirectives(implicit db: Database, mat: ActorMaterializer, ec: Execu
           parameters('regex.as[Refined[String, Regex]].?, 'packageName.as[PackageId.Name].?,
             'packageVersion.as[PackageId.Version].?, 'component.as[Component.PartNumber].?)
           { case (re, pn, pv, cp) =>
-              complete(db.run(VehicleRepository.search(re, pn , pv, cp)))
+              complete(db.run(VehicleRepository.search(extractNamespace, re, pn , pv, cp)))
           }
         }
       } ~
       extractVin { vin =>
         get {
           pathEnd {
-            completeOrRecoverWith(db.run(VehicleRepository.exists(vin))) {
+            completeOrRecoverWith(db.run(VehicleRepository.exists(extractNamespace, vin))) {
               Errors.onMissingVehicle
             }
           }
         } ~
         put {
           pathEnd {
-            complete(db.run(VehicleRepository.add(Vehicle(vin))).map(_ => NoContent))
+            complete(db.run(VehicleRepository.add(Vehicle(extractNamespace, vin))).map(_ => NoContent))
           }
         } ~
         handleExceptions(installedPackagesHandler) {
           delete {
             pathEnd {
-              complete(db.run(VehicleRepository.deleteVin(vin)))
+              complete(db.run(VehicleRepository.deleteVin(extractNamespace, vin)))
             }
           }
         } ~
@@ -86,7 +92,7 @@ class VehicleDirectives(implicit db: Database, mat: ActorMaterializer, ec: Execu
       extractVin { vin =>
         get {
           pathEnd {
-            completeOrRecoverWith(db.run(VehicleRepository.firmwareOnVin(vin))) {
+            completeOrRecoverWith(db.run(VehicleRepository.firmwareOnVin(extractNamespace, vin))) {
               Errors.onMissingVehicle
             }
           }
@@ -106,18 +112,18 @@ class VehicleDirectives(implicit db: Database, mat: ActorMaterializer, ec: Execu
   def packageRoute(vin: Vehicle.Vin): Route = {
     pathPrefix("package") {
       (pathEnd & get) {
-        completeOrRecoverWith(db.run(VehicleRepository.packagesOnVin(vin))) {
+        completeOrRecoverWith(db.run(VehicleRepository.packagesOnVin(extractNamespace, vin))) {
           Errors.onMissingVehicle
         }
       } ~
       refinedPackageId { pkgId =>
         put(
-          completeOrRecoverWith(db.run(VehicleRepository.installPackage(vin, pkgId))) {
+          completeOrRecoverWith(db.run(VehicleRepository.installPackage(extractNamespace, vin, pkgId))) {
             Errors.onMissingVehicle orElse Errors.onMissingPackage
           }
         ) ~
         delete (
-          completeOrRecoverWith(db.run(VehicleRepository.uninstallPackage(vin, pkgId))) {
+          completeOrRecoverWith(db.run(VehicleRepository.uninstallPackage(extractNamespace, vin, pkgId))) {
             Errors.onMissingVehicle orElse Errors.onMissingPackage
           }
         )
@@ -126,7 +132,7 @@ class VehicleDirectives(implicit db: Database, mat: ActorMaterializer, ec: Execu
     path("packages") {
       handleExceptions(installedPackagesHandler) {
         (put & entity(as[Set[PackageId]])) { packageIds =>
-          onSuccess(db.run(VehicleRepository.updateInstalledPackages(vin, packageIds))) {
+          onSuccess(db.run(VehicleRepository.updateInstalledPackages(extractNamespace, vin, packageIds))) {
             complete(StatusCodes.NoContent)
           }
         }
@@ -151,7 +157,7 @@ class VehicleDirectives(implicit db: Database, mat: ActorMaterializer, ec: Execu
   def componentRoute(vin: Vehicle.Vin): Route = {
     pathPrefix("component") {
       (pathEnd & get) {
-        completeOrRecoverWith(db.run(VehicleRepository.componentsOnVin(vin))) {
+        completeOrRecoverWith(db.run(VehicleRepository.componentsOnVin(extractNamespace, vin))) {
             Errors.onMissingVehicle
           }
       } ~
@@ -159,10 +165,10 @@ class VehicleDirectives(implicit db: Database, mat: ActorMaterializer, ec: Execu
       { part =>
         handleExceptions(installedComponentsHandler) {
           put {
-            complete(db.run(VehicleRepository.installComponent(vin, part)))
+            complete(db.run(VehicleRepository.installComponent(extractNamespace, vin, part)))
           } ~
           delete {
-            complete(db.run(VehicleRepository.uninstallComponent(vin, part)))
+            complete(db.run(VehicleRepository.uninstallComponent(extractNamespace, vin, part)))
           }
         }
       }

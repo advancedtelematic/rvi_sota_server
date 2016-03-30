@@ -4,21 +4,25 @@
  */
 package org.genivi.sota.core
 
-import akka.event.LoggingAdapter
+import akka.actor.ActorSystem
+import akka.event.Logging
 import akka.http.scaladsl.util.FastFuture
 import cats.Show
+import eu.timepit.refined._
+import eu.timepit.refined.string._
+import org.genivi.sota.core.common.Namespaces
 import org.genivi.sota.core.data._
 import org.genivi.sota.core.db._
 import org.genivi.sota.core.rvi.ServerServices
 import org.genivi.sota.core.transfer.UpdateNotifier
+import org.genivi.sota.data.Namespace._
 import org.genivi.sota.data.{PackageId, Vehicle}
+import scala.collection.immutable.ListSet
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NoStackTrace
 import slick.dbio.DBIO
 import slick.driver.MySQLDriver.api.Database
 
-import scala.collection.immutable.ListSet
-import scala.concurrent.{ExecutionContext, Future}
 
 case class PackagesNotFound(packageIds: (PackageId)*)
                            (implicit show: Show[PackageId])
@@ -38,8 +42,12 @@ object UploadConf {
 }
 
 class UpdateService(notifier: UpdateNotifier)
-                   (implicit val log: LoggingAdapter, val connectivity: Connectivity) {
+                   (implicit val system: ActorSystem, val connectivity: Connectivity)
+                   extends Namespaces {
+
   import UpdateService._
+
+  implicit private val log = Logging(system, "updateservice")
 
   def checkVins( dependencies: VinsToPackages ) : Future[Boolean] = FastFuture.successful( true )
 
@@ -57,7 +65,7 @@ class UpdateService(notifier: UpdateNotifier)
     val requirements : Set[PackageId]  =
       vinsToDeps.foldLeft(Set.empty[PackageId])((acc, vinDeps) => acc.union(vinDeps._2) )
     for {
-      foundPackages <- db.run( Packages.byIds( requirements ) )
+      foundPackages <- db.run(Packages.byIds(extractNamespace, requirements))
       mapping       <- if( requirements.size == foundPackages.size ) {
                          FastFuture.successful( mapPackagesToIds( foundPackages ) )
                        } else {
@@ -69,7 +77,7 @@ class UpdateService(notifier: UpdateNotifier)
 
   def loadPackage( id : PackageId)
                  (implicit db: Database, ec: ExecutionContext): Future[Package] = {
-    db.run(Packages.byId(id)).flatMap { x =>
+    db.run(Packages.byId(extractNamespace, id)).flatMap { x =>
       x.fold[Future[Package]](FastFuture.failed( PackagesNotFound(id)) )(FastFuture.successful)
     }
   }
@@ -79,7 +87,7 @@ class UpdateService(notifier: UpdateNotifier)
     vinsToPackageIds.map {
       case (vin, requiredPackageIds) =>
         val packages : Set[Package] = requiredPackageIds.map( idsToPackages.get ).map( _.get )
-        UpdateSpec( request, vin, UpdateStatus.Pending, packages)
+        UpdateSpec(request.namespace, request, vin, UpdateStatus.Pending, packages)
     }.toSet
   }
 
@@ -102,15 +110,15 @@ class UpdateService(notifier: UpdateNotifier)
     } yield updateSpecs
   }
 
-  def queueVehicleUpdate(vin: Vehicle.Vin, packageId: PackageId)
+  def queueVehicleUpdate(namespace: Namespace, vin: Vehicle.Vin, packageId: PackageId)
                         (implicit db: Database, ec: ExecutionContext): Future[UpdateRequest] = {
-    val newUpdateRequest = UpdateRequest.default(packageId)
+    val newUpdateRequest = UpdateRequest.default(namespace, packageId)
 
     for {
       p <- loadPackage(packageId)
       updateRequest = newUpdateRequest.copy(signature = p.signature.getOrElse(newUpdateRequest.signature),
         description = p.description)
-      spec = UpdateSpec(updateRequest, vin, UpdateStatus.Pending, Set.empty)
+      spec = UpdateSpec(namespace, updateRequest, vin, UpdateStatus.Pending, Set.empty)
       dbSpec <- persistRequest(updateRequest, ListSet(spec))
     } yield updateRequest
   }
@@ -122,5 +130,4 @@ class UpdateService(notifier: UpdateNotifier)
 object UpdateService {
   type VinsToPackages = Map[Vehicle.Vin, Set[PackageId]]
   type DependencyResolver = Package => Future[VinsToPackages]
-
 }

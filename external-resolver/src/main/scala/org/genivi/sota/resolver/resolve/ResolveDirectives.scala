@@ -4,10 +4,13 @@
  */
 package org.genivi.sota.resolver.resolve
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.server.{Route, Directives}
 import akka.stream.ActorMaterializer
 import io.circe.generic.auto._
+import org.genivi.sota.data.Namespace._
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
+import org.genivi.sota.resolver.common.Namespaces
 import org.genivi.sota.resolver.common.Errors
 import org.genivi.sota.resolver.common.RefinementDirectives.refinedPackageId
 import org.genivi.sota.resolver.vehicles.VehicleRepository
@@ -18,7 +21,10 @@ import Directives._
 /**
  * API routes for package resolution.
  */
-class ResolveDirectives(implicit db: Database, mat: ActorMaterializer, ec: ExecutionContext) {
+class ResolveDirectives(implicit system: ActorSystem,
+                        db: Database,
+                        mat: ActorMaterializer,
+                        ec: ExecutionContext) extends Namespaces {
   /**
    * API route for resolving a package, i.e. returning the list of VINs it applies to.
    * @return 			Route object containing route for package resolution
@@ -27,7 +33,7 @@ class ResolveDirectives(implicit db: Database, mat: ActorMaterializer, ec: Execu
   def route: Route = {
     pathPrefix("resolve") {
       (get & refinedPackageId) { id =>
-        completeOrRecoverWith(db.run(VehicleRepository.resolve(id))) {
+        completeOrRecoverWith(db.run(VehicleRepository.resolve(extractNamespace, id))) {
           Errors.onMissingPackage
         }
       }

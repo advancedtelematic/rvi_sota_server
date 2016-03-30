@@ -2,6 +2,7 @@ package org.genivi.sota.resolver.test.random
 
 import akka.http.scaladsl.model.{HttpRequest, StatusCode, StatusCodes}
 import cats.state.{State, StateT}
+import org.genivi.sota.data.Namespaces
 import org.genivi.sota.resolver.filters.Filter
 import org.genivi.sota.resolver.packages.{Package, PackageFilter}
 import org.genivi.sota.resolver.test._
@@ -35,7 +36,8 @@ object Command extends
     VehicleRequestsHttp with
     PackageRequestsHttp with
     FilterRequestsHttp  with
-    PackageFilterRequestsHttp {
+    PackageFilterRequestsHttp with
+    Namespaces {
 
   type SemCommand = (HttpRequest, StatusCode, Result)
 
@@ -95,10 +97,10 @@ object Command extends
         success =  !s.packages(pkg).contains(filt)
       } yield
           if (success)
-            Semantics(addPackageFilter2(PackageFilter(pkg.id.name, pkg.id.version, filt.name)),
+            Semantics(addPackageFilter2(PackageFilter(pkg.namespace, pkg.id.name, pkg.id.version, filt.name)),
               StatusCodes.OK, Success)
           else
-            Semantics(addPackageFilter2(PackageFilter(pkg.id.name, pkg.id.version, filt.name)),
+            Semantics(addPackageFilter2(PackageFilter(defaultNs, pkg.id.name, pkg.id.version, filt.name)),
               StatusCodes.Conflict, Failure(ErrorCodes.DuplicateEntry))
 
   }
