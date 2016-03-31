@@ -15,6 +15,8 @@ import io.circe.generic.auto._
 import org.genivi.sota.data.{PackageId, Vehicle}
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
 import org.genivi.sota.marshalling.RefinedMarshallingSupport._
+import org.genivi.sota.resolver.data.Firmware
+import org.genivi.sota.resolver.common.InstalledSoftware
 import org.genivi.sota.resolver.common.Errors
 import org.genivi.sota.resolver.common.RefinementDirectives.{refinedPackageId, refinedPartNumber}
 import org.genivi.sota.resolver.components.{Component, ComponentRepository}
@@ -125,8 +127,11 @@ class VehicleDirectives(implicit db: Database, mat: ActorMaterializer, ec: Execu
     } ~
     path("packages") {
       handleExceptions(installedPackagesHandler) {
-        (put & entity(as[Set[PackageId]])) { packageIds =>
-          onSuccess(db.run(VehicleRepository.updateInstalledPackages(vin, packageIds))) {
+        (put & entity(as[InstalledSoftware])) { installedSoftware =>
+          onSuccess(db.run(for {
+              _ <- VehicleRepository.updateInstalledPackages(vin, installedSoftware.packages)
+              _ <- VehicleRepository.updateInstalledFirmware(vin, installedSoftware.firmware)
+            } yield ())) {
             complete(StatusCodes.NoContent)
           }
         }
