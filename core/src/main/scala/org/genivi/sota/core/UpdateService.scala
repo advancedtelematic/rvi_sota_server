@@ -9,9 +9,9 @@ import akka.http.scaladsl.util.FastFuture
 import cats.Show
 import org.genivi.sota.core.data._
 import org.genivi.sota.core.db._
-import org.genivi.sota.core.rvi.ServerServices
 import org.genivi.sota.core.transfer.UpdateNotifier
 import org.genivi.sota.data.{PackageId, Vehicle}
+
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NoStackTrace
 import slick.dbio.DBIO
@@ -40,8 +40,6 @@ object UploadConf {
 class UpdateService(notifier: UpdateNotifier)
                    (implicit val log: LoggingAdapter, val connectivity: Connectivity) {
   import UpdateService._
-
-  def checkVins( dependencies: VinsToPackages ) : Future[Boolean] = FastFuture.successful( true )
 
   def mapIdsToPackages(vinsToDeps: VinsToPackages )
                       (implicit db: Database, ec: ExecutionContext): Future[Map[PackageId, Package]] = {
@@ -83,13 +81,28 @@ class UpdateService(notifier: UpdateNotifier)
     }.toSet
   }
 
+  /**
+    * Tables modified:
+    * - UpdateRequest (insert one row), UpdateSpec (insert many rows).
+    * - Vehicle (insert one row for each missing vehicle)
+    */
   def persistRequest(request: UpdateRequest, updateSpecs: Set[UpdateSpec])
                     (implicit db: Database, ec: ExecutionContext) : Future[Unit] = {
-    db.run(
-      DBIO.seq(UpdateRequests.persist(request) +: updateSpecs.map( UpdateSpecs.persist ).toArray: _*)).map( _ => ()
+
+    val dbIO = DBIO.seq(
+      Vehicles.insertMissing(updateSpecs.map(_.vin).toSeq),
+      UpdateRequests.persist(request),
+      DBIO.sequence(updateSpecs.map(UpdateSpecs.persist).toSeq)
     )
+
+    db.run(dbIO)
   }
 
+  /**
+    * From the given [[UpdateRequest]] the resolver prepares a map listing for each VIN its package dependencies.
+    * From that map a set of [[UpdateSpec]] is derived and persisted in core's db.
+    * The situation where resolver-provided VINs don't exist in core is handled by inserting them in core db.
+    */
   def queueUpdate(request: UpdateRequest, resolver : DependencyResolver )
                  (implicit db: Database, ec: ExecutionContext): Future[Set[UpdateSpec]] = {
     for {

@@ -4,7 +4,9 @@
  */
 package org.genivi.sota.core.db
 
+import org.genivi.sota.data
 import org.genivi.sota.data.Vehicle
+import org.genivi.sota.data.Vehicle.Vin
 
 import scala.concurrent.ExecutionContext
 import slick.driver.MySQLDriver.api._
@@ -96,4 +98,18 @@ object Vehicles {
       .result
       .head
   }
+
+  /**
+    * From the given VINs, insert those not present in the Vehicle table.
+    */
+  def insertMissing(vs: Seq[Vehicle.Vin])(implicit ec: ExecutionContext): DBIO[Seq[Vin]] = {
+    val res = for {
+      existing <- vins.map(_.vin).filter(_.inSet(vs)).result
+      missing <- DBIO.successful(vs.filterNot(v => existing.contains(v)))
+      a <- DBIO.sequence(missing map (vv => create(data.Vehicle(vv))))
+    } yield a
+
+    res.transactionally
+  }
+
 }
