@@ -8,9 +8,10 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.marshalling.Marshaller._
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.server.{Directive0, Directives, ExceptionHandler}
+import akka.http.scaladsl.model.{HttpHeader, HttpResponse}
+import akka.http.scaladsl.server._
 import akka.stream.ActorMaterializer
+import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Uuid
 import org.genivi.sota.core.rvi.InstallReport
 import org.genivi.sota.core.transfer.{InstalledPackagesUpdate, PackageDownloadProcess}
@@ -22,7 +23,6 @@ import org.genivi.sota.rest.Validation.refined
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
 import io.circe.Json
 import org.genivi.sota.core.data.VehicleSearch
-
 
 class VehicleService(db : Database, resolverClient: ExternalResolverClient)
                     (implicit system: ActorSystem, mat: ActorMaterializer) extends Directives {
@@ -52,40 +52,52 @@ class VehicleService(db : Database, resolverClient: ExternalResolverClient)
     } flatMap (_ => pass)
   }
 
-  val route = pathPrefix("api" / "v1") {
-    handleExceptions(exceptionHandler) {
-      pathPrefix("vehicles") {
-        WebService.extractVin { vin =>
-          pathPrefix("updates") {
-            (pathEnd & post) {
-              entity(as[List[PackageId]]) { ids =>
-                val f = InstalledPackagesUpdate
-                  .update(vin, ids, resolverClient)
-                  .map(_ => NoContent)
+  def updateInstalledPackages(vin: Vehicle.Vin) = {
+    (pathEnd & post) {
+      entity(as[List[PackageId]]) { ids =>
+        val f = InstalledPackagesUpdate
+          .update(vin, ids, resolverClient)
+          .map(_ => NoContent)
 
-                complete(f)
-              }
-            } ~
-              (get & logVehicleSeen(vin) & pathEnd) {
-                val vehiclePackages = InstalledPackagesUpdate.findPendingPackageIdsFor(vin)
-                complete(db.run(vehiclePackages))
-              } ~
-              (get & withRangeSupport & extractUuid & path("download")) { uuid =>
-                val responseF = packageDownloadProcess.buildClientDownloadResponse(uuid)
-                complete(responseF)
-              } ~
-              (post & extractUuid) { uuid =>
-                entity(as[InstallReport]) { report =>
-                  val responseF =
-                    InstalledPackagesUpdate
-                      .buildReportInstallResponse(report.vin, report.update_report)
-
-                  complete(responseF)
-              }
-            }
-          }
-        }
-        }
+        complete(f)
+      }
     }
+  }
+
+  def pendingPackages(vin: Vehicle.Vin) = {
+    (get & logVehicleSeen(vin) & pathEnd) {
+      val vehiclePackages = InstalledPackagesUpdate.findPendingPackageIdsFor(vin)
+      complete(db.run(vehiclePackages))
+    }
+  }
+
+  def downloadPackage = {
+    (get & withRangeSupport & extractUuid & path("download")) { uuid =>
+      val responseF = packageDownloadProcess.buildClientDownloadResponse(uuid)
+      complete(responseF)
+    }
+  }
+
+  def reportInstall = {
+    (post & extractUuid) { uuid =>
+      entity(as[InstallReport]) { report =>
+        val responseF =
+          InstalledPackagesUpdate
+            .buildReportInstallResponse(report.vin, report.update_report)
+        complete(responseF)
+      }
+    }
+  }
+
+  def buildVehicleRoutes(vinRoutes: (Vehicle.Vin, VehicleService) => Route): Route =
+    pathPrefix("api" / "v1" / "vehicles") {
+      (handleExceptions(exceptionHandler) & WebService.extractVin & pathPrefix("updates"))(vinRoutes(_, this))
+    }
+
+  val route = buildVehicleRoutes { (vin: Vehicle.Vin, _) =>
+    updateInstalledPackages(vin) ~
+    pendingPackages(vin) ~
+    downloadPackage ~
+    reportInstall
   }
 }
