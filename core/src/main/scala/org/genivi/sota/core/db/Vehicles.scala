@@ -4,10 +4,13 @@
  */
 package org.genivi.sota.core.db
 
-import org.genivi.sota.core.data.Vehicle
+import org.genivi.sota.data.Vehicle
+
 import scala.concurrent.ExecutionContext
 import slick.driver.MySQLDriver.api._
 import org.genivi.sota.db.Operators.regex
+import org.joda.time.DateTime
+import slick.lifted.TableQuery
 
 /**
  * Database mapping definition for the Vehicles table.
@@ -17,6 +20,7 @@ import org.genivi.sota.db.Operators.regex
  */
 object Vehicles {
   import org.genivi.sota.refined.SlickRefined._
+  import org.genivi.sota.db.SlickExtensions._
 
   /**
    * Slick mapping definition for the Vehicle table
@@ -25,7 +29,8 @@ object Vehicles {
   // scalastyle:off
   class VehicleTable(tag: Tag) extends Table[Vehicle](tag, "Vehicle") {
     def vin = column[Vehicle.Vin]("vin")
-    def * = (vin) <> (Vehicle.apply, Vehicle.unapply)
+    def lastSeen = column[Option[DateTime]]("last_seen")
+    def * = (vin, lastSeen) <> (Vehicle.tupled, Vehicle.unapply)
     def pk = primaryKey("vin", vin)  // insertOrUpdate doesn't work if
                                      // we use O.PrimaryKey in the vin
                                      // column, see Slick issue #966.
@@ -42,6 +47,9 @@ object Vehicles {
    * @return A list of Vehicles
    */
   def list(): DBIO[Seq[Vehicle]] = vins.result
+
+
+  def all(): TableQuery[VehicleTable] = vins
 
   /**
    * Check if a VIN exists
@@ -74,5 +82,21 @@ object Vehicles {
    * @param reg A regular expression
    * @return A list of matching VINs
    */
-  def searchByRegex(reg:String) : DBIO[Seq[Vehicle]] = vins.filter(vins => regex(vins.vin, reg)).result
+  def searchByRegex(reg:String) : Query[VehicleTable, Vehicle, Seq] = vins.filter(vins => regex(vins.vin, reg))
+
+  def updateLastSeen(vin: Vehicle.Vin, lastSeen: DateTime = DateTime.now)
+                    (implicit ec: ExecutionContext): DBIO[DateTime] = {
+    vins
+      .filter(_.vin === vin)
+      .map(_.lastSeen)
+      .update(Some(lastSeen))
+      .map(_ => lastSeen)
+  }
+
+  def findBy(vin: Vehicle.Vin): DBIO[Vehicle] = {
+    vins
+      .filter(_.vin === vin)
+      .result
+      .head
+  }
 }

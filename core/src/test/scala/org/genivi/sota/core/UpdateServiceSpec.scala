@@ -1,61 +1,52 @@
 package org.genivi.sota.core
 
-import akka.http.scaladsl.model.Uri
+
 import akka.http.scaladsl.util.FastFuture
 import akka.testkit.TestKit
 import eu.timepit.refined.api.Refined
-import java.util.UUID
-import org.genivi.sota.core.data.Vehicle, Vehicle._
 import org.genivi.sota.core.data.Package
-import org.genivi.sota.core.db.{UpdateSpecs, Packages, Vehicles}
-import org.scalacheck.Arbitrary
+import org.genivi.sota.core.db.{Packages, UpdateSpecs, Vehicles}
+import org.genivi.sota.core.transfer.DefaultUpdateNotifier
+import org.genivi.sota.data.{PackageId, Vehicle, VehicleGenerators}
 import org.scalacheck.Gen
-import org.scalatest.time.Millis
-import org.scalatest.time.Second
-import org.scalatest.time.Span
-import org.scalatest.{BeforeAndAfterAll, PropSpec, Matchers}
 import org.scalatest.prop.PropertyChecks
-import scala.util.Random
-import slick.jdbc.JdbcBackend._
+import org.scalatest.time.{Millis, Second, Span}
+import org.scalatest.{BeforeAndAfterAll, Matchers, PropSpec}
 
 import scala.concurrent.{Await, Future}
+import scala.util.Random
+import slick.jdbc.JdbcBackend._
 
 /**
  * Spec tests for Update service
  */
-class UpdateServiceSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterAll {
-
-  val databaseName = "test-database"
-
-  implicit val db = Database.forConfig(databaseName)
+class UpdateServiceSpec extends PropSpec
+  with PropertyChecks
+  with Matchers
+  with DatabaseSpec
+  with BeforeAndAfterAll {
 
   val packages = PackagesReader.read().take(1000)
+
+  implicit val _db = db
 
   val system = akka.actor.ActorSystem("UpdateServiseSpec")
   import system.dispatcher
 
   override def beforeAll() : Unit = {
-    TestDatabase.resetDatabase( databaseName )
+    super.beforeAll()
     import scala.concurrent.duration.DurationInt
     Await.ready( Future.sequence( packages.map( p => db.run( Packages.create(p) ) )), 50.seconds)
   }
 
   import Generators._
 
-
   implicit val updateQueueLog = akka.event.Logging(system, "sota.core.updateQueue")
 
-  import org.genivi.sota.core.rvi.{RviClient, ServerServices}
-  implicit val rviClient =  new RviClient {
+  import org.genivi.sota.core.Connectivity
+  implicit val connectivity = DefaultConnectivity
 
-    import org.joda.time.DateTime
-    import io.circe.Encoder
-    def sendMessage[A](service: String, message: A, expirationDate: DateTime)
-      (implicit encoder: Encoder[A] ) : Future[Int] = FastFuture.successful(0)
-
-  }
-
-  val service = new UpdateService( ServerServices("", "", "", "") )
+  val service = new UpdateService(DefaultUpdateNotifier)
 
   import org.genivi.sota.core.data.UpdateRequest
   import org.scalatest.concurrent.ScalaFutures.{whenReady, PatienceConfig}
@@ -75,15 +66,15 @@ class UpdateServiceSpec extends PropSpec with PropertyChecks with Matchers with 
   }
 
   property("decline if some of dependencies not found") {
-    def vinDepGen(missingPackages: Seq[Package.Id]) : Gen[(Vehicle.Vin, Set[Package.Id])] = for {
-      vin               <- genVin
+    def vinDepGen(missingPackages: Seq[PackageId]) : Gen[(Vehicle.Vin, Set[PackageId])] = for {
+      vin               <- VehicleGenerators.genVin
       m                 <- Gen.choose(1, 10)
       availablePackages <- Gen.pick(m, packages).map( _.map(_.id) )
       n                 <- Gen.choose(1, missingPackages.length)
       deps              <- Gen.pick(n, missingPackages).map( xs => Random.shuffle(availablePackages ++ xs).toSet )
     } yield vin -> deps
 
-    val resolverGen : Gen[(Seq[Package.Id], UpdateService.DependencyResolver)] = for {
+    val resolverGen : Gen[(Seq[PackageId], UpdateService.DependencyResolver)] = for {
       n                 <- Gen.choose(1, 10)
       missingPackages   <- Gen.listOfN(n, PackageIdGen).map( _.toSeq )
       m                 <- Gen.choose(1, 10)
@@ -114,9 +105,29 @@ class UpdateServiceSpec extends PropSpec with PropertyChecks with Matchers with 
     }
   }
 
-  override def afterAll() : Unit = {
-    TestKit.shutdownActorSystem(system)
-    db.close()
+  property("queue an update for a single vehicle creates an update request") {
+    val newVehicle = VehicleGenerators.genVehicle.sample.get
+    val newPackage = PackageGen.sample.get
+
+    val dbSetup = for {
+      vin <- Vehicles.create(newVehicle)
+      packageM <- Packages.create(newPackage)
+    } yield (vin, packageM)
+
+    val f = for {
+      (vin, packageM) <- db.run(dbSetup)
+      updateRequest <- service.queueVehicleUpdate(vin, packageM.id)
+      queuedPackages <- db.run(UpdateSpecs.getPackagesQueuedForVin(vin))
+    } yield (updateRequest, queuedPackages)
+
+    whenReady(f) { case (updateRequest, queuedPackages) =>
+      updateRequest.packageId shouldBe newPackage.id
+      queuedPackages should contain(newPackage.id)
+    }
   }
 
+  override def afterAll() : Unit = {
+    TestKit.shutdownActorSystem(system)
+    super.afterAll()
+  }
 }

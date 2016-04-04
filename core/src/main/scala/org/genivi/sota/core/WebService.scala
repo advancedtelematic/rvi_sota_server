@@ -4,47 +4,49 @@
  */
 package org.genivi.sota.core
 
-import java.io.File
-
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.http.scaladsl.common.StrictForm
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model.{StatusCodes, Uri, HttpResponse}
-import akka.http.scaladsl.server.{Directive1, PathMatchers, ExceptionHandler, Directives}
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.PathMatchers.Slash
+import akka.http.scaladsl.server.{Directive1, Directives, ExceptionHandler}
 import Directives._
-import akka.parboiled2.util.Base64
 import akka.stream.ActorMaterializer
-import akka.stream.io.SynchronousFileSink
-import akka.util.ByteString
-import cats.data.Xor
 import eu.timepit.refined._
 import eu.timepit.refined.string._
 import io.circe.generic.auto._
+import org.genivi.sota.core.transfer.UpdateNotifier
 import org.genivi.sota.marshalling.CirceMarshallingSupport
+import akka.http.scaladsl.marshalling.Marshaller._
 import org.genivi.sota.core.data._
-import org.genivi.sota.core.db.{UpdateSpecs, Packages, Vehicles, InstallHistories}
-import org.genivi.sota.core.rvi.{ServerServices, RviClient}
+import org.genivi.sota.core.db.{InstallHistories, UpdateSpecs, Vehicles}
+import org.genivi.sota.data.{PackageId, Vehicle}
 import org.genivi.sota.rest.Validation._
 import org.genivi.sota.rest.{ErrorCode, ErrorRepresentation}
 import org.joda.time.DateTime
-import scala.concurrent.Future
 import slick.driver.MySQLDriver.api.Database
-import slick.dbio.DBIO
-import scala.util.Failure
+import slick.driver.MySQLDriver.api._
+import scala.concurrent.{ExecutionContext, Future}
+import io.circe.syntax._
 
 object ErrorCodes {
   val ExternalResolverError = ErrorCode( "external_resolver_error" )
+
+  val MissingVehicle = new ErrorCode("missing_vehicle")
 }
 
-class VehiclesResource(db: Database, rviClient: RviClient)
+object VehiclesResource {
+  val extractVin : Directive1[Vehicle.Vin] = refined[Vehicle.ValidVin](Slash ~ Segment)
+}
+
+class VehiclesResource(db: Database, client: ConnectivityClient, resolverClient: ExternalResolverClient)
                       (implicit system: ActorSystem, mat: ActorMaterializer) {
 
   import system.dispatcher
   import CirceMarshallingSupport._
+  import VehiclesResource._
 
-  import scala.concurrent.{ExecutionContext, Future}
+  implicit val _db = db
 
   case object MissingVehicle extends Throwable
 
@@ -66,21 +68,19 @@ class VehiclesResource(db: Database, rviClient: RviClient)
     } yield ()
 
 
-  val extractVin : Directive1[Vehicle.Vin] = refined[Vehicle.ValidVin](Slash ~ Segment)
-
   def ttl() : DateTime = {
     import com.github.nscala_time.time.Implicits._
     DateTime.now + 5.minutes
   }
 
   val route = pathPrefix("vehicles") {
-    extractVin { vin =>
+    WebService.extractVin { vin =>
       pathEnd {
         get {
           completeOrRecoverWith(exists(Vehicle(vin))) {
             case MissingVehicle =>
               complete(StatusCodes.NotFound ->
-                ErrorRepresentation(Vehicle.MissingVehicle, "Vehicle doesn't exist"))
+                ErrorRepresentation(ErrorCodes.MissingVehicle, "Vehicle doesn't exist"))
           }
         } ~
         put {
@@ -90,7 +90,7 @@ class VehiclesResource(db: Database, rviClient: RviClient)
           completeOrRecoverWith(deleteVin(Vehicle(vin))) {
             case MissingVehicle =>
               complete(StatusCodes.NotFound ->
-                ErrorRepresentation(Vehicle.MissingVehicle, "Vehicle doesn't exist"))
+                ErrorRepresentation(ErrorCodes.MissingVehicle, "Vehicle doesn't exist"))
           }
         }
       } ~
@@ -103,19 +103,16 @@ class VehiclesResource(db: Database, rviClient: RviClient)
       } ~
       (path("sync") & put) {
         // TODO: Config RVI destination path (or ClientServices.getpackages)
-        rviClient.sendMessage(s"genivi.org/vin/${vin}/sota/getpackages", io.circe.Json.Empty, ttl())
+        client.sendMessage(s"genivi.org/vin/${vin}/sota/getpackages", io.circe.Json.Empty, ttl())
         // TODO: Confirm getpackages in progress to vehicle?
         complete(NoContent)
       }
     } ~
     pathEnd {
       get {
-        parameters('regex.?) { (regex) =>
-          val query = regex match {
-            case Some(r) => Vehicles.searchByRegex(r)
-            case _ => Vehicles.list()
-          }
-          complete(db.run(query))
+        parameters(('status.?(false), 'regex.?)) { (includeStatus: Boolean, regex: Option[String]) =>
+          val resultIO = VehicleSearch.search(regex, includeStatus)
+          complete(db.run(resultIO))
         }
       }
     }
@@ -136,28 +133,43 @@ class UpdateRequestsResource(db: Database, resolver: ExternalResolverClient, upd
       complete(db.run(UpdateSpecs.listUpdatesById(uuid)))
     }
   } ~
-  path("updates") {
-    get {
-      complete(updateService.all(db, system.dispatcher))
-    } ~
-    post {
-      entity(as[UpdateRequest]) { req =>
-        complete(
-          updateService.queueUpdate(
-            req,
-            pkg => resolver.resolve(pkg.id).map {
-              m => m.map { case (v, p) => (v.vin, p) }
-            }
-          )
-        )
+  pathPrefix("updates") {
+    VehiclesResource.extractVin { vin =>
+      post {
+        entity(as[PackageId]) { packageId =>
+          val result = updateService.queueVehicleUpdate(vin, packageId)
+          complete(result)
+        }
       }
+    } ~
+    pathEnd {
+      get {
+        complete(updateService.all(db, system.dispatcher))
+      } ~
+        post {
+          entity(as[UpdateRequest]) { req =>
+            complete(
+              updateService.queueUpdate(
+                req,
+                pkg => resolver.resolve(pkg.id).map {
+                  m => m.map { case (v, p) => (v.vin, p) }
+                }
+              )
+            )
+          }
+        }
     }
   }
 }
 
+object WebService {
+  val extractVin : Directive1[Vehicle.Vin] = refined[Vehicle.ValidVin](Slash ~ Segment)
+}
 
-class WebService(registeredServices: ServerServices, resolver: ExternalResolverClient, db : Database)
-                (implicit system: ActorSystem, mat: ActorMaterializer, rviClient: RviClient) extends Directives {
+
+class WebService(notifier: UpdateNotifier, resolver: ExternalResolverClient, db : Database)
+                (implicit system: ActorSystem, mat: ActorMaterializer,
+                 connectivity: Connectivity) extends Directives {
   implicit val log = Logging(system, "webservice")
 
   import io.circe.Json
@@ -171,14 +183,14 @@ class WebService(registeredServices: ServerServices, resolver: ExternalResolverC
         complete(HttpResponse(InternalServerError, entity = entity.toString()))
       }
   }
-  val vehicles = new VehiclesResource(db, rviClient)
+
+  val vehicles = new VehiclesResource(db, connectivity.client, resolver)
   val packages = new PackagesResource(resolver, db)
-  val updateRequests = new UpdateRequestsResource(db, resolver, new UpdateService(registeredServices))
+  val updateRequests = new UpdateRequestsResource(db, resolver, new UpdateService(notifier))
 
   val route = pathPrefix("api" / "v1") {
     handleExceptions(exceptionHandler) {
        vehicles.route ~ packages.route ~ updateRequests.route
     }
   }
-
 }
