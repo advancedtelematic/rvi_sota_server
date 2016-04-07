@@ -21,6 +21,7 @@ import eu.timepit.refined.string.Regex
 import org.apache.commons.codec.binary.Hex
 import org.genivi.sota.core.data.Package
 import org.genivi.sota.core.db.{Packages, UpdateSpecs}
+import org.genivi.sota.core.resolver.{ExternalResolverClient, ExternalResolverRequestFailed}
 import org.genivi.sota.data.PackageId
 import org.genivi.sota.marshalling.RefinedMarshallingSupport._
 import org.genivi.sota.rest.ErrorRepresentation
