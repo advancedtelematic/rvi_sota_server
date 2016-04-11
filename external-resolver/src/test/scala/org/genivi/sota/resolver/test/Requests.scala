@@ -17,11 +17,9 @@ import org.genivi.sota.resolver.data.Firmware
 import org.genivi.sota.resolver.filters.Filter
 import org.genivi.sota.resolver.packages.{Package, PackageFilter}
 import org.genivi.sota.resolver.resolve.ResolveFunctions
+import io.circe.generic.auto._
 import org.genivi.sota.resolver.vehicles.Vehicle
 import org.scalatest.Matchers
-import scala.concurrent.ExecutionContext
-import io.circe.generic.auto._
-import org.genivi.sota.resolver.resolve.ResolveFunctions
 
 import scala.concurrent.duration._
 
@@ -124,12 +122,12 @@ trait PackageRequests extends Matchers { self: ScalatestRouteTest =>
 trait FirmwareRequests extends Matchers { self: ScalatestRouteTest =>
 
   def installFirmware
-    (vin: Vehicle.Vin, packages: Set[Package.Id], firmware: Set[(Firmware.Module, Firmware.FirmwareId, Long)])
+    (vin: Vehicle.Vin, packages: Set[Package.Id], firmware: Set[Firmware])
       : HttpRequest
   = Put(Resource.uri("vehicles", vin.get, "packages"), InstalledSoftware(packages, firmware))
 
   def installFirmwareOK
-    (vin: Vehicle.Vin, packages: Set[Package.Id], firmware: Set[(Firmware.Module, Firmware.FirmwareId, Long)])
+    (vin: Vehicle.Vin, packages: Set[Package.Id], firmware: Set[Firmware])
     (implicit route: Route)
       : Unit
   = installFirmware(vin, packages, firmware) ~> route ~> check {

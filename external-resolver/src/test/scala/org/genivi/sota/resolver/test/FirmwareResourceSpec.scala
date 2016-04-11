@@ -17,7 +17,7 @@ class FirmwareResourceSpec extends ResourceWordSpec {
     "be able to accept installed software updates" in {
       val vin: Vehicle.Vin = Refined.unsafeApply("TESTVAN0123456789")
       addVehicleOK(vin)
-      installFirmwareOK(vin, Set(), Set((Refined.unsafeApply("ec1"): Firmware.Module,
+      installFirmwareOK(vin, Set(), Set(Firmware(Refined.unsafeApply("ec1"): Firmware.Module,
           Refined.unsafeApply("1.0.0"): Firmware.FirmwareId, 42356329L)))
     }
   }
