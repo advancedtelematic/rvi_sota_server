@@ -7,28 +7,32 @@ package org.genivi.sota.core
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.marshalling.Marshaller._
-import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directive0, Directives, ExceptionHandler}
 import akka.stream.ActorMaterializer
-import eu.timepit.refined.string.Uuid
+import eu.timepit.refined._
+import eu.timepit.refined.string._
+import io.circe.Json
+import io.circe.generic.auto._
+import org.genivi.sota.core.common.Namespaces
+import org.genivi.sota.core.data.VehicleSearch
+import org.genivi.sota.core.db.Vehicles
 import org.genivi.sota.core.rvi.InstallReport
 import org.genivi.sota.core.transfer.{InstalledPackagesUpdate, PackageDownloadProcess}
+import org.genivi.sota.data.Namespace._
 import org.genivi.sota.data.{PackageId, Vehicle}
-import slick.driver.MySQLDriver.api.Database
-import io.circe.generic.auto._
-import org.genivi.sota.core.db.Vehicles
-import org.genivi.sota.rest.Validation.refined
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
-import io.circe.Json
-import org.genivi.sota.core.data.VehicleSearch
+import org.genivi.sota.rest.Validation.refined
+import slick.driver.MySQLDriver.api.Database
 
 
 class VehicleService(db : Database, resolverClient: ExternalResolverClient)
-                    (implicit system: ActorSystem, mat: ActorMaterializer) extends Directives {
-  implicit val log = Logging(system, "vehicleservice")
+                    (implicit system: ActorSystem, mat: ActorMaterializer) extends Directives with Namespaces {
 
   import Json.{obj, string}
+
+  val log = Logging(system, "vehicleservice")
 
   val exceptionHandler = ExceptionHandler {
     case e: Throwable =>
@@ -46,9 +50,9 @@ class VehicleService(db : Database, resolverClient: ExternalResolverClient)
   implicit val ec = system.dispatcher
   implicit val _db = db
 
-  def logVehicleSeen(vin: Vehicle.Vin): Directive0 = {
+  def logVehicleSeen(vehicle: Vehicle): Directive0 = {
     extractRequestContext flatMap { _ =>
-      onComplete(db.run(Vehicles.updateLastSeen(vin)))
+      onComplete(db.run(Vehicles.updateLastSeen(vehicle)))
     } flatMap (_ => pass)
   }
 
@@ -62,11 +66,10 @@ class VehicleService(db : Database, resolverClient: ExternalResolverClient)
                 val f = InstalledPackagesUpdate
                   .update(vin, ids, resolverClient)
                   .map(_ => NoContent)
-
                 complete(f)
               }
             } ~
-              (get & logVehicleSeen(vin) & pathEnd) {
+              (get & logVehicleSeen(Vehicle(extractNamespace, vin)) & pathEnd) {
                 val vehiclePackages = InstalledPackagesUpdate.findPendingPackageIdsFor(vin)
                 complete(db.run(vehiclePackages))
               } ~

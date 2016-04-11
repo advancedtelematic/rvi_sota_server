@@ -4,6 +4,7 @@
  */
 package org.genivi.sota.resolver.filters
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
@@ -12,6 +13,8 @@ import akka.stream.ActorMaterializer
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Regex
 import io.circe.generic.auto._
+import org.genivi.sota.data.Namespace._
+import org.genivi.sota.resolver.common.Namespaces
 import org.genivi.sota.resolver.packages.PackageFilterRepository
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
 import org.genivi.sota.marshalling.RefinedMarshallingSupport._
@@ -25,7 +28,10 @@ import slick.jdbc.JdbcBackend.Database
  * API routes for filters.
  * @see {@linktourl http://pdxostc.github.io/rvi_sota_server/dev/api.html}
  */
-class FilterDirectives(implicit db: Database, mat: ActorMaterializer, ec: ExecutionContext) {
+class FilterDirectives(implicit system: ActorSystem,
+                       db: Database,
+                       mat: ActorMaterializer,
+                       ec: ExecutionContext) extends Namespaces {
 
   /**
    * API route for filters.
@@ -37,12 +43,12 @@ class FilterDirectives(implicit db: Database, mat: ActorMaterializer, ec: Execut
     pathPrefix("filters") {
       (get & pathEnd) {
         parameter('regex.as[Refined[String, Regex]].?) { re =>
-          val query = re.fold(FilterRepository.list)(re => FilterRepository.searchByRegex(re))
+          val query = re.fold(FilterRepository.list)(re => FilterRepository.searchByRegex(extractNamespace, re))
           complete(db.run(query))
         }
       } ~
       (get & refined[Filter.ValidName](Slash ~ Segment) & path("package")) { filter =>
-        completeOrRecoverWith(db.run(PackageFilterRepository.listPackagesForFilter(filter))) {
+        completeOrRecoverWith(db.run(PackageFilterRepository.listPackagesForFilter(extractNamespace, filter))) {
           Errors.onMissingFilter
         }
       } ~
@@ -53,11 +59,11 @@ class FilterDirectives(implicit db: Database, mat: ActorMaterializer, ec: Execut
            & entity(as[Filter.ExpressionWrapper])
            & pathEnd)
       { (fname, expr) =>
-        complete(db.run(FilterRepository.update(Filter(fname, expr.expression))))
+        complete(db.run(FilterRepository.update(Filter(extractNamespace, fname, expr.expression))))
       } ~
       (delete & refined[Filter.ValidName](Slash ~ Segment ~ PathEnd) & pathEnd)
       { fname =>
-        complete(db.run(FilterRepository.deleteFilterAndPackageFilters(fname)))
+        complete(db.run(FilterRepository.deleteFilterAndPackageFilters(extractNamespace, fname)))
       }
 
     }

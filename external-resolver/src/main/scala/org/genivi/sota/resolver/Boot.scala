@@ -9,6 +9,7 @@ import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.stream.ActorMaterializer
+import org.genivi.sota.data.Namespace._
 import org.genivi.sota.resolver.filters.FilterDirectives
 import org.genivi.sota.resolver.packages.PackageDirectives
 import org.genivi.sota.resolver.resolve.ResolveDirectives

@@ -4,9 +4,6 @@
  */
 package org.genivi.sota.core
 
-import java.nio.file.{Path, Paths}
-import java.security.MessageDigest
-
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.common.StrictForm
@@ -16,22 +13,29 @@ import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 import akka.stream.io.SynchronousFileSink
 import akka.util.ByteString
+import eu.timepit.refined._
 import eu.timepit.refined.api.Refined
+import eu.timepit.refined.auto._
 import eu.timepit.refined.string.Regex
+import java.nio.file.{Path, Paths}
+import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
+import org.genivi.sota.core.common.Namespaces
 import org.genivi.sota.core.data.Package
 import org.genivi.sota.core.db.{Packages, UpdateSpecs}
+import org.genivi.sota.data.Namespace._
 import org.genivi.sota.data.PackageId
 import org.genivi.sota.marshalling.RefinedMarshallingSupport._
 import org.genivi.sota.rest.ErrorRepresentation
 import org.genivi.sota.rest.Validation._
-import slick.driver.MySQLDriver.api.Database
-
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
+import slick.driver.MySQLDriver.api.Database
+
 
 class PackagesResource(resolver: ExternalResolverClient, db : Database)
-                      (implicit system: ActorSystem, mat: ActorMaterializer) {
+                      (implicit system: ActorSystem, mat: ActorMaterializer)
+                      extends Namespaces {
 
   import akka.stream.stage._
   import system.dispatcher
@@ -110,12 +114,12 @@ class PackagesResource(resolver: ExternalResolverClient, db : Database)
     refined[PackageId.ValidVersion](Slash ~ Segment)).as(PackageId.apply _)
 
   import io.circe.generic.auto._
-  val route = pathPrefix("packages") {
+  def route = pathPrefix("packages") {
     (pathEnd & get) {
       parameters('regex.as[String Refined Regex].?) { (regex: Option[String Refined Regex]) =>
         import org.genivi.sota.marshalling.CirceMarshallingSupport._
         val query = (regex) match {
-          case Some(r) => Packages.searchByRegex(r.get)
+          case Some(r) => Packages.searchByRegex(extractNamespace, r.get)
           case None => Packages.list
         }
         complete(db.run(query))
@@ -128,37 +132,39 @@ class PackagesResource(resolver: ExternalResolverClient, db : Database)
           rejectEmptyResponse {
             import org.genivi.sota.marshalling.CirceMarshallingSupport._
             complete {
-              db.run(Packages.byId(packageId))
+              db.run(Packages.byId(extractNamespace, packageId))
             }
           }
         } ~
         put {
-        // TODO: Fix form fields metadata causing error for large upload
-        parameters('description.?, 'vendor.?, 'signature.?) { (description, vendor, signature) =>
-          formFields('file.as[StrictForm.FileData]) { fileData =>
-            completeOrRecoverWith(
-              for {
-                _                   <- resolver.putPackage(packageId, description, vendor)
-                (uri, size, digest) <- savePackage(packageId, fileData)
-                _                   <- db.run(Packages.create(
-                                        Package(packageId, uri, size, digest, description, vendor, signature)))
-              } yield StatusCodes.NoContent
-            ) {
-              case ExternalResolverRequestFailed(msg, cause) =>
-                import org.genivi.sota.marshalling.CirceMarshallingSupport._
-                log.error(cause, s"Unable to create/update package: $msg")
-                complete(
-                  StatusCodes.ServiceUnavailable ->
-                  ErrorRepresentation(ErrorCodes.ExternalResolverError, msg))
-              case e => failWith(e)
+          // TODO: Fix form fields metadata causing error for large upload
+          parameters('description.?, 'vendor.?, 'signature.?) { (description, vendor, signature) =>
+            formFields('file.as[StrictForm.FileData]) { fileData =>
+              completeOrRecoverWith(
+                for {
+                  _                   <- resolver.putPackage(extractNamespace, packageId, description, vendor)
+                  (uri, size, digest) <- savePackage(packageId, fileData)
+                  _                   <- db.run(Packages.create(
+                                          Package(extractNamespace, packageId, uri,
+                                                  size, digest, description, vendor, signature)))
+                } yield StatusCodes.NoContent
+                )
+                {
+                  case ExternalResolverRequestFailed(msg, cause) =>
+                    import org.genivi.sota.marshalling.CirceMarshallingSupport._
+                    log.error(cause, s"Unable to create/update package: $msg")
+                    complete(
+                      StatusCodes.ServiceUnavailable ->
+                      ErrorRepresentation(ErrorCodes.ExternalResolverError, msg))
+                  case e => failWith(e)
+                }
             }
           }
-        }
         }
       } ~
       path("queued") {
         import org.genivi.sota.marshalling.CirceMarshallingSupport._
-        complete(db.run(UpdateSpecs.getVinsQueuedForPackage(packageId.name, packageId.version)))
+        complete(db.run(UpdateSpecs.getVinsQueuedForPackage(extractNamespace, packageId.name, packageId.version)))
       }
     }
   }
