@@ -176,7 +176,7 @@ class TransferProtocolActor(db: Database, rviClient: RviClient,
           db.run(UpdateSpecs.setStatus(spec, UpdateStatus.Finished))
           update.operation_results.foreach { r: OperationResult =>
             db.run(OperationResults.persist(org.genivi.sota.core.data.OperationResult(
-              r.id, update.update_id, r.result_code, r.result_text)))
+              r.id, update.update_id, r.result_code, r.result_text, vin)))
           }
           db.run(UpdateRequests.byId(update.update_id)).map { updateRequestO =>
             db.run(InstallHistories.log(vin, update.update_id, updateRequestO.get.packageId, true))

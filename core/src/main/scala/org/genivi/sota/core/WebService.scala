@@ -101,6 +101,9 @@ class VehiclesResource(db: Database, rviClient: RviClient)
       (path("history") & get) {
         complete(db.run(InstallHistories.list(vin)))
       } ~
+      (path("operationresults") & get) {
+        complete(db.run(OperationResults.byVin(vin)))
+      } ~
       (path("sync") & put) {
         // TODO: Config RVI destination path (or ClientServices.getpackages)
         rviClient.sendMessage(s"genivi.org/vin/${vin}/sota/getpackages", io.circe.Json.Empty, ttl())

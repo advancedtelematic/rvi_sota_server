@@ -13,12 +13,14 @@ import java.util.UUID
  * @param updateId Id of update this operation belongs to.
  * @param resultCode The status of operation.
  * @param resultText The description of operation.
+ * @param vin The vin of the vehicle the operation was performed on
  */
 case class OperationResult(
-  id : String,
-  updateId: UUID,
-  resultCode : Int,
-  resultText : String
+  id        : String,
+  updateId  : UUID,
+  resultCode: Int,
+  resultText: String,
+  vin       : Vehicle.Vin
 )
 
 /**

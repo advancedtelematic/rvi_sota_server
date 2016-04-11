@@ -16,7 +16,10 @@ CREATE TABLE OperationResult (
     update_request_id CHAR(36) NOT NULL,
     result_code INT NOT NULL,
     result_text TEXT NOT NULL,
+    vin varchar(64) NOT NULL,
 
-    PRIMARY KEY (id),
-    FOREIGN KEY fk_operation_result_update_request_id (update_request_id) REFERENCES UpdateRequest(update_request_id)
+    PRIMARY KEY (vin, id, update_request_id),
+    FOREIGN KEY fk_operation_result_update_request_id (update_request_id) REFERENCES UpdateRequest(update_request_id),
+    FOREIGN KEY fk_operation_result_vin (vin) REFERENCES Vehicle(vin)
 );
+

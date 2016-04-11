@@ -79,6 +79,12 @@ define(function(require) {
           case 'sync-packages-for-vin':
             sendRequest.doPut('/api/v1/vehicles/' + payload.vin + '/sync');
           break;
+          case 'get-operation-results-for-vin':
+            sendRequest.doGet('api/v1/vehicles/' + payload.vin + '/operationresults')
+              .success(function(operationResults) {
+                db.operationResultsForVin.reset(operationResults);
+              });
+          break;
         }
       };
       SotaDispatcher.register(this.dispatchCallback.bind(this));

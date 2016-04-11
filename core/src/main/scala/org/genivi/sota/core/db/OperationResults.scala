@@ -7,7 +7,7 @@ package org.genivi.sota.core.db
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Uuid
 import java.util.UUID
-import org.genivi.sota.core.data.OperationResult
+import org.genivi.sota.core.data.{OperationResult, Vehicle}
 import scala.concurrent.ExecutionContext
 import slick.driver.MySQLDriver.api._
 
@@ -26,16 +26,17 @@ object OperationResults {
    * @see {@link http://slick.typesafe.com/}
    */
   class OperationResultTable(tag: Tag) extends Table[OperationResult](tag, "OperationResult") {
-    def id = column[String]("id", O.PrimaryKey)
-    def updateId = column[UUID]("update_request_id")
-    def resultCode = column[Int]("result_code")
-    def resultText = column[String]("result_text")
+    def id          = column[String]("id", O.PrimaryKey)
+    def updateId    = column[UUID]("update_request_id")
+    def resultCode  = column[Int]("result_code")
+    def resultText  = column[String]("result_text")
+    def vin         = column[Vehicle.Vin]("vin")
 
     import shapeless._
 
-    def * = (id, updateId, resultCode, resultText).shaped <>
-      (x => OperationResult(x._1, x._2, x._3, x._4),
-      (x: OperationResult) => Some((x.id, x.updateId, x.resultCode, x.resultText)))
+    def * = (id, updateId, resultCode, resultText, vin).shaped <>
+      (x => OperationResult(x._1, x._2, x._3, x._4, x._5),
+      (x: OperationResult) => Some((x.id, x.updateId, x.resultCode, x.resultText, x.vin)))
   }
 
   /**
@@ -54,6 +55,9 @@ object OperationResults {
    */
   def byId(id: Refined[String, Uuid])(implicit ec: ExecutionContext): DBIO[Seq[OperationResult]] =
     all.filter{_.updateId === UUID.fromString(id.get)}.result
+
+  def byVin(vin: Vehicle.Vin)(implicit ec: ExecutionContext): DBIO[Seq[OperationResult]] =
+    all.filter{_.vin === vin}.result
 
   /**
    * Add a new package update. Package updated specify a specific package at a
