@@ -11,7 +11,7 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Directive1, Route}
 import akka.stream.ActorMaterializer
-import akka.stream.io.SynchronousFileSink
+import akka.stream.scaladsl.FileIO
 import akka.util.ByteString
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Regex
@@ -103,9 +103,9 @@ class PackagesResource(resolver: ExternalResolverClient, db : Database)
     val file = storePath.resolve(fileName).toFile
     val data = fileData.entity.dataBytes
     val uploadResult: Future[(Uri, Long, String)] = for {
-      size <- data.runWith(SynchronousFileSink(file))
+      ioResult <- data.runWith(FileIO.toFile(file))
       digest <- data.transform(() => digestCalculator("SHA-1")).runFold("")((acc, data) => acc ++ data)
-    } yield (file.toURI().toString(), size, digest)
+    } yield (file.toURI().toString(), ioResult.count, digest)
 
     uploadResult.onComplete {
       case Success((uri, size, digest)) =>

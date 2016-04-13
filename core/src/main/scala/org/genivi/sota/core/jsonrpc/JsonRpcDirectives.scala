@@ -41,7 +41,7 @@ private[this] object ResultResponse {
     ResultResponse("2.0", et(t), id)
 
   import io.circe.generic.semiauto._
-  implicit val encoderInstance = deriveFor[ResultResponse].encoder
+  implicit val encoderInstance = deriveEncoder[ResultResponse]
 }
 
 /**
