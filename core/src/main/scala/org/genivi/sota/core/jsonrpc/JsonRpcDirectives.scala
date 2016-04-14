@@ -77,6 +77,10 @@ trait JsonRpcDirectives {
 
     case MalformedRequestContentRejection(_, Some(DecodingFailure(msg, _))) =>
       complete(ErrorResponse( PredefinedErrors.InvalidRequest(msg.asJson), None ) )
+
+    case ml @ MalformedRequestContentRejection(msg, None) =>
+      complete(ErrorResponse( PredefinedErrors.InvalidRequest(msg.asJson), None ) )
+
   }.result()
 
   def service(methods: (String, MethodFn)*) : Route = service(methods.toMap)
