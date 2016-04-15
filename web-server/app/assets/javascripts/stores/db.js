@@ -9,14 +9,14 @@ define(function(require) {
       this.updateStatus = atom.createAtom({});
 
       this.packagesForFilter = atom.createAtom([]);
-      this.packagesForVin = atom.createAtom([]);
-      this.packageQueueForVin = atom.createAtom([]);
-      this.packageHistoryForVin = atom.createAtom([]);
-      this.componentsOnVin = atom.createAtom([]);
-      this.firmwareOnVin = atom.createAtom([]);
+      this.packagesForDevice = atom.createAtom([]);
+      this.packageQueueForDevice = atom.createAtom([]);
+      this.packageHistoryForDevice = atom.createAtom([]);
+      this.componentsOnDevice = atom.createAtom([]);
+      this.firmwareOnDevice = atom.createAtom([]);
       this.filtersForPackage = atom.createAtom([]);
-      this.vehiclesForPackage = atom.createAtom([]);
-      this.vehiclesQueuedForPackage = atom.createAtom([]);
+      this.devicesForPackage = atom.createAtom([]);
+      this.devicesQueuedForPackage = atom.createAtom([]);
 
       this.packages = atom.createAtom([]);
       this.showPackage = atom.createAtom({});
@@ -28,10 +28,10 @@ define(function(require) {
 
       this.searchableComponents = atom.createAtom([]);
       this.showComponent = atom.createAtom({});
-      this.vinsForComponent = atom.createAtom([]);
+      this.devicesForComponent = atom.createAtom([]);
 
-      this.affectedVins = atom.createAtom([]);
-      this.searchableVehicles = atom.createAtom([]);
+      this.affectedDevices = atom.createAtom([]);
+      this.searchableDevices = atom.createAtom([]);
       this.postStatus = atom.createAtom([]);
     }
 

@@ -19,7 +19,7 @@ import org.genivi.sota.core.data._
 import org.genivi.sota.core.db.UpdateSpecs
 import org.genivi.sota.core.resolver.ExternalResolverClient
 import org.genivi.sota.data.Namespace._
-import org.genivi.sota.data.{PackageId, Vehicle}
+import org.genivi.sota.data.{PackageId, Device}
 import org.genivi.sota.marshalling.CirceMarshallingSupport
 import org.genivi.sota.rest.Validation._
 import slick.driver.MySQLDriver.api.Database
@@ -50,7 +50,7 @@ class UpdateRequestsResource(db: Database, resolver: ExternalResolverClient, upd
         updateService.queueUpdate(
           req,
           pkg => resolver.resolve(ns, pkg.id).map {
-            m => m.map { case (v, p) => (v.vin, p) }
+            m => m.map { case (d, p) => (d.uuid, p) }
           }
         )
       )

@@ -8,10 +8,10 @@ define(function(require) {
   var Handler = (function() {
       this.dispatchCallback = function(payload) {
         switch(payload.actionType) {
-          case 'list-firmware-on-vin':
-            sendRequest.doGet('/api/v1/firmware/' + payload.vin)
+          case 'list-firmware-on-device':
+            sendRequest.doGet('/api/v1/firmware/' + payload.device)
               .success(function(firmware) {
-                db.firmwareOnVin.reset(firmware);
+                db.firmwareOnDevice.reset(firmware);
               });
           break;
         }

@@ -7,7 +7,7 @@ package org.genivi.sota.core.data
 import io.circe._
 import java.util.UUID
 import org.genivi.sota.data.Namespace._
-import org.genivi.sota.data.{PackageId, Vehicle}
+import org.genivi.sota.data.{PackageId, Device}
 import org.joda.time.{DateTime, Interval, Period}
 
 
@@ -74,14 +74,14 @@ import UpdateStatus._
 /**
  * A set of package updates to apply to a single VIN.
  * @param request The update campaign that these updates are a part of
- * @param vin The vehicle to which these updates should be applied
+ * @param deviceUuid The device to which these updates should be applied
  * @param status The status of the update
  * @param dependencies The packages to be installed
  */
 case class UpdateSpec(
   namespace: Namespace,
   request: UpdateRequest,
-  vin: Vehicle.Vin,
+  deviceUuid: Device.Id,
   status: UpdateStatus,
   dependencies: Set[Package] ) {
 

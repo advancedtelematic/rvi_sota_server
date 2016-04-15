@@ -7,8 +7,8 @@ define(function(require) {
       e.preventDefault();
 
       SotaDispatcher.dispatch({
-        actionType: 'sync-packages-for-vin',
-        vin: this.props.Vin
+        actionType: 'sync-packages-for-device',
+        device: this.props.Device
       });
     },
     render: function() {

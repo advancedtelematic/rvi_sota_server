@@ -19,7 +19,7 @@ import scala.concurrent.ExecutionContext
  * These refer to a single software package that should be installed as part
  * of a install campaign.  There one of these shared among multiple VINs: the
  * UpdateSpecs table records the result of the individual install for each
- * vehicle.
+ * device.
  */
 object UpdateRequests {
 

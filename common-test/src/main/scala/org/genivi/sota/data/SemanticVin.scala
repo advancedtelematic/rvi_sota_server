@@ -14,7 +14,7 @@ import org.scalacheck.Gen
 
 case class SemanticVin(
                           wmi              : SemanticVin.WMI,
-                          vehicleAttributes: SemanticVin.VehicleAttributes,
+                          vehicleAttributes: SemanticVin.DeviceAttributes,
                           checkDigit       : SemanticVin.CheckDigit,
                           modelYear        : SemanticVin.ModelYear,
                           plantCode        : SemanticVin.PlantCode,
@@ -36,7 +36,7 @@ object SemanticVin {
   def genSemanticVin: Gen[SemanticVin] =
     for {
       wmi       <- genWMI
-      vehAttr   <- genVehicleAttributes
+      vehAttr   <- genDeviceAttributes
       checkDig  <- Gen.const(D9)
       modelYr   <- genModelYear
       plantCode <- genPlantCode
@@ -46,7 +46,7 @@ object SemanticVin {
   def genVinRegex: Gen[Refined[String, Regex]] =
     for {
       part <- Gen.frequency(
-                (1, genVehicleAttributes.map(_.show)),
+                (1, genDeviceAttributes.map(_.show)),
                 (1, genPlantCode        .map(_.show)),
                 (1, genModelYear        .map(_.show))
               )
@@ -66,21 +66,21 @@ object SemanticVin {
     Gen.const(VolvoCars)
 
   // The attributes of the vehicle (5 characters).
-  sealed trait VehicleAttributes
+  sealed trait DeviceAttributes
 
   // 1L engine.
-  final case object ENG1L extends VehicleAttributes
+  final case object ENG1L extends DeviceAttributes
 
   // 2L engine.
-  final case object ENG2L extends VehicleAttributes
+  final case object ENG2L extends DeviceAttributes
 
-  implicit val showVehicleAttributes: Show[VehicleAttributes] =
+  implicit val showDeviceAttributes: Show[DeviceAttributes] =
     Show.show {
       case ENG1L => "ENG1L"
       case ENG2L => "ENG2L"
     }
 
-  def genVehicleAttributes: Gen[VehicleAttributes] =
+  def genDeviceAttributes: Gen[DeviceAttributes] =
     Gen.oneOf(ENG1L, ENG2L)
 
   // Check digit (1 character).

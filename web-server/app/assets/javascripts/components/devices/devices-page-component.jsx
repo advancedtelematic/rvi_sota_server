@@ -1,30 +1,30 @@
 define(function(require) {
 
   var React = require('react'),
-      ListOfVehicles = require('./list-of-vehicles'),
-      VehiclesHeaderComponent = require('./vehicles-header-component'),
+      ListOfDevices = require('./list-of-devices'),
+      DevicesHeaderComponent = require('./devices-header-component'),
       db = require('stores/db'),
       Errors = require('../errors'),
       SearchBar = require('../search-bar');
 
-  var VehiclesPageComponent = React.createClass({
+  var DevicesPageComponent = React.createClass({
     render: function() {
       return (
       <div>
         <div>
-          <VehiclesHeaderComponent/>
+          <DevicesHeaderComponent/>
         </div>
         <div className="row">
           <div className="col-md-12">
             <Errors />
-            <SearchBar label="Filter" event="search-vehicles-by-regex"/>
-            <ListOfVehicles Vehicles={db.searchableVehicles}/>
+            <SearchBar label="Filter" event="search-devices-by-regex"/>
+            <ListOfDevices Devices={db.searchableDevices}/>
           </div>
         </div>
       </div>
     );}
   });
 
-  return VehiclesPageComponent;
+  return DevicesPageComponent;
 
 });

@@ -5,7 +5,7 @@
 package org.genivi.sota.resolver.common
 
 /**
-  * The resolver deals with vehicles, packages, filters and components,
+  * The resolver deals with devices, packages, filters and components,
   * sometimes when working with these entities they might not exist, in
   * which case we have to throw an error. This file contains common
   * exceptions and handlers for how to complete requests in which the
@@ -24,7 +24,7 @@ object Errors {
     val FilterNotFound     = ErrorCode("filter_not_found")
     val PackageNotFound    = ErrorCode("package_not_found")
     val FirmwareNotFound   = ErrorCode("firmware_not_found")
-    val MissingVehicle     = ErrorCode("missing_vehicle")
+    val MissingDevice     = ErrorCode("missing_device")
     val MissingComponent   = ErrorCode("missing_component")
     val ComponentInstalled = ErrorCode("component_is_installed")
   }
@@ -35,7 +35,7 @@ object Errors {
 
   case object MissingFilterException        extends Throwable with NoStackTrace
 
-  case object MissingVehicle                extends Throwable with NoStackTrace
+  case object MissingDevice                extends Throwable with NoStackTrace
 
   case object MissingComponent              extends Throwable with NoStackTrace
 
@@ -57,9 +57,9 @@ object Errors {
       complete(StatusCodes.NotFound -> ErrorRepresentation(Codes.FirmwareNotFound, "Firmware doesn't exist"))
   }
 
-  val onMissingVehicle : PF = {
-    case Errors.MissingVehicle =>
-      complete(StatusCodes.NotFound -> ErrorRepresentation(Codes.MissingVehicle, "Vehicle doesn't exist"))
+  val onMissingDevice : PF = {
+    case Errors.MissingDevice =>
+      complete(StatusCodes.NotFound -> ErrorRepresentation(Codes.MissingDevice, "Device doesn't exist"))
   }
 
   val onMissingComponent : PF = {
@@ -71,7 +71,7 @@ object Errors {
     case Errors.ComponentIsInstalledException =>
       complete(StatusCodes.BadRequest ->
         ErrorRepresentation(Codes.ComponentInstalled,
-          "Components that are installed on vehicles cannot be removed."))
+          "Components that are installed on devices cannot be removed."))
   }
 
 }

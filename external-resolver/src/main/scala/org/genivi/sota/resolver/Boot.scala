@@ -12,7 +12,7 @@ import akka.stream.ActorMaterializer
 import org.genivi.sota.resolver.filters.FilterDirectives
 import org.genivi.sota.resolver.packages.PackageDirectives
 import org.genivi.sota.resolver.resolve.ResolveDirectives
-import org.genivi.sota.resolver.vehicles.VehicleDirectives
+import org.genivi.sota.resolver.devices.DeviceDirectives
 import org.genivi.sota.resolver.components.ComponentDirectives
 import org.genivi.sota.rest.Handlers.{rejectionHandler, exceptionHandler}
 import scala.concurrent.ExecutionContext
@@ -30,7 +30,7 @@ class Routing
   val route: Route = pathPrefix("api" / "v1") {
     handleRejections(rejectionHandler) {
       handleExceptions(exceptionHandler) {
-        new VehicleDirectives().route ~
+        new DeviceDirectives().route ~
         new PackageDirectives().route ~
         new FilterDirectives().route ~
         new ResolveDirectives().route ~

@@ -10,7 +10,7 @@ import org.genivi.sota.data.Namespace._
 import org.genivi.sota.db.Operators._
 import org.genivi.sota.refined.SlickRefined._
 import org.genivi.sota.resolver.common.Errors
-import org.genivi.sota.resolver.vehicles.VehicleRepository
+import org.genivi.sota.resolver.devices.DeviceRepository
 import scala.concurrent.ExecutionContext
 import scala.util.control.NoStackTrace
 import slick.driver.MySQLDriver.api._
@@ -42,7 +42,7 @@ object ComponentRepository {
                      (implicit ec: ExecutionContext): DBIO[Int] =
     for {
       // TODO: namespace
-      vs <- VehicleRepository.search(namespace, None, None, None, Some(part))
+      vs <- DeviceRepository.search(namespace, None, None, None, Some(part))
       r  <- if (vs.nonEmpty) DBIO.failed(Errors.ComponentIsInstalledException)
             else components.filter(i => i.namespace === namespace && i.partNumber === part).delete
     } yield r

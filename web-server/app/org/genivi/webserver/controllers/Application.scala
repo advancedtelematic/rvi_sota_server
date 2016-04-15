@@ -45,7 +45,10 @@ class Application @Inject() (ws: WSClient, val messagesApi: MessagesApi, val acc
     case "packages" :: _ :: _ :: "filter" :: _ => resolverApiUri
     case "packages" :: _ => coreApiUri
     case "update_requests" :: _ => coreApiUri
-    case "vehicle_updates" :: _ => coreApiUri
+    case "device_updates" :: _ => coreApiUri
+    case "updates" :: _ => coreApiUri
+    case "devices" :: id :: part :: _
+      if Set("queued", "history", "sync")(part) => coreApiUri
     case _ => resolverApiUri
   }
 
@@ -102,7 +105,7 @@ class Application @Inject() (ws: WSClient, val messagesApi: MessagesApi, val acc
       auditLogger.info(s"Request: $req from user ${loggedIn.name}")
     }
 
-    // Must PUT "vehicles" on both core and resolver
+    // Must PUT "devices" on both core and resolver
     // TODO: Retry until both responses are success
     for {
       respCore <- proxyTo(coreApiUri, req)

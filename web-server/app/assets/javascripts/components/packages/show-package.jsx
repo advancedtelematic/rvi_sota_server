@@ -2,9 +2,9 @@ define(function(require) {
 
   var _ = require('underscore'),
       Router = require('react-router'),
-      VehiclesListPanel = require('../vehicles/vehicles-list-panel'),
+      DevicesListPanel = require('../devices/devices-list-panel'),
       PackageFilterAssociation = require('../package-filters/package-filter-association'),
-      AffectedVins = require('../vehicles/affected-vins'),
+      AffectedDevices = require('../devices/affected-devices'),
       SotaDispatcher = require('sota-dispatcher'),
       db = require('stores/db'),
       React = require('react');
@@ -94,18 +94,18 @@ define(function(require) {
             createResourceName="Filters"
             getDeleteList={{actionType: 'get-filters-for-package', name: params.name, version: params.version}}/>
           <br/>
-          <AffectedVins AffectedVins={db.affectedVins} />
-          <h2>Vehicles</h2>
-          <VehiclesListPanel
-            Vehicles={db.vehiclesForPackage}
-            PollEventName="poll-vehicles-for-package"
-            DispatchObject={{actionType: "get-vehicles-for-package", name: params.name, version: params.version}}
-            Label="Vehicles with this package installed"/>
-          <VehiclesListPanel
-            Vehicles={db.vehiclesQueuedForPackage}
-            PollEventName="poll-vehicles-for-package"
-            DispatchObject={{actionType: "get-vehicles-queued-for-package", name: params.name, version: params.version}}
-            Label="Vehicles with this package queued for install"/>
+          <AffectedDevices AffectedDevices={db.affectedDevices} />
+          <h2>Devices</h2>
+          <DevicesListPanel
+            Devices={db.devicesForPackage}
+            PollEventName="poll-devices-for-package"
+            DispatchObject={{actionType: "get-devices-for-package", name: params.name, version: params.version}}
+            Label="Devices with this package installed"/>
+          <DevicesListPanel
+            Devices={db.devicesQueuedForPackage}
+            PollEventName="poll-devices-for-package"
+            DispatchObject={{actionType: "get-devices-queued-for-package", name: params.name, version: params.version}}
+            Label="Devices with this package queued for install"/>
         </div>
       );
     }

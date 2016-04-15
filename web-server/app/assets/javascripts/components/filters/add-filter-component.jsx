@@ -33,7 +33,7 @@ define(function(require) {
   		    </div>
             <div className="form-group">
               <label htmlFor="expression">Filter Expression</label>
-                <textarea type="text" className="form-control" id="expression" ref="expression" name="expression" placeholder='vin_matches "678$"' />
+                <textarea type="text" className="form-control" id="expression" ref="expression" name="expression" placeholder='device_matches "678$"' />
 		    </div>
 	        <div className="form-group">
               <button type="submit" className="btn btn-primary">Add Filter</button>

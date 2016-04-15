@@ -16,10 +16,10 @@ import io.circe.generic.auto._
 import io.circe.syntax._
 import org.genivi.sota.core.common.NamespaceDirective._
 import org.genivi.sota.core.data._
-import org.genivi.sota.core.db.{InstallHistories, UpdateSpecs, Vehicles}
+import org.genivi.sota.core.db.{InstallHistories, UpdateSpecs, Devices}
 import org.genivi.sota.core.resolver.{ConnectivityClient, ExternalResolverClient}
 import org.genivi.sota.data.Namespace._
-import org.genivi.sota.data.Vehicle
+import org.genivi.sota.data.Device
 import org.genivi.sota.marshalling.CirceMarshallingSupport
 import org.genivi.sota.rest.ErrorRepresentation
 import org.genivi.sota.rest.Validation._
@@ -30,7 +30,7 @@ import scala.languageFeature.postfixOps
 import slick.driver.MySQLDriver.api.Database
 
 
-class VehiclesResource(db: Database, client: ConnectivityClient, resolverClient: ExternalResolverClient)
+class DevicesResource(db: Database, client: ConnectivityClient, resolverClient: ExternalResolverClient)
                       (implicit system: ActorSystem, mat: ActorMaterializer) {
 
   import CirceMarshallingSupport._
@@ -40,63 +40,63 @@ class VehiclesResource(db: Database, client: ConnectivityClient, resolverClient:
 
   implicit val _db = db
 
-  case object MissingVehicle extends Throwable
+  case object MissingDevice extends Throwable
 
-  def exists(vehicle: Vehicle)
-    (implicit ec: ExecutionContext): Future[Vehicle] =
-    db.run(Vehicles.exists(vehicle))
+  def exists(device: Device)
+    (implicit ec: ExecutionContext): Future[Device] =
+    db.run(Devices.exists(device))
       .flatMap(_
-        .fold[Future[Vehicle]]
-          (Future.failed(MissingVehicle))(Future.successful))
+        .fold[Future[Device]]
+          (Future.failed(MissingDevice))(Future.successful))
 
-  def deleteVehicle(ns: Namespace, vehicle: Vehicle)
+  def deleteDevice(ns: Namespace, device: Device)
   (implicit ec: ExecutionContext): Future[Unit] =
     for {
-      _ <- exists(vehicle)
-      _ <- db.run(UpdateSpecs.deleteRequiredPackageByVin(ns, vehicle))
-      _ <- db.run(UpdateSpecs.deleteUpdateSpecByVin(ns, vehicle))
-      _ <- db.run(Vehicles.deleteById(vehicle))
+      _ <- exists(device)
+      _ <- db.run(UpdateSpecs.deleteRequiredPackageByUuid(ns, device))
+      _ <- db.run(UpdateSpecs.deleteUpdateSpecByUuid(ns, device))
+      _ <- db.run(Devices.deleteById(device))
     } yield ()
 
-  def fetchVehicle(ns: Namespace, vin: Vehicle.Vin): Route = {
-    completeOrRecoverWith(exists(Vehicle(ns, vin))) {
-      case MissingVehicle =>
+  def fetchDevice(ns: Namespace, uuid: Device.Id): Route  = {
+    completeOrRecoverWith(exists(Device(ns, uuid))) {
+      case MissingDevice =>
         complete(StatusCodes.NotFound ->
-          ErrorRepresentation(ErrorCodes.MissingVehicle, "Vehicle doesn't exist"))
+          ErrorRepresentation(ErrorCodes.MissingDevice, "Device doesn't exist"))
     }
   }
 
-  def updateVehicle(ns: Namespace, vin: Vehicle.Vin): Route = {
-    complete(db.run(Vehicles.create(Vehicle(ns, vin))).map(_ => NoContent))
+  def updateDevice(ns: Namespace, uuid: Device.Id): Route = {
+    complete(db.run(Devices.create(Device(ns, uuid))).map(_ => NoContent))
   }
 
-  def deleteVehicle(ns: Namespace, vin: Vehicle.Vin): Route = {
-    completeOrRecoverWith(deleteVehicle(ns, Vehicle(ns, vin))) {
-      case MissingVehicle =>
+  def deleteDevice(ns: Namespace, uuid: Device.Id) = {
+    completeOrRecoverWith(deleteDevice(ns, Device(ns, uuid))) {
+      case MissingDevice =>
         complete(StatusCodes.NotFound ->
-          ErrorRepresentation(ErrorCodes.MissingVehicle, "Vehicle doesn't exist"))
+          ErrorRepresentation(ErrorCodes.MissingDevice, "Device doesn't exist"))
     }
   }
 
   def search(ns: Namespace): Route = {
     parameters(('status.?(false), 'regex.?)) { (includeStatus: Boolean, regex: Option[String]) =>
-      val resultIO = VehicleSearch.search(ns, regex, includeStatus)
+      val resultIO = DeviceSearch.search(ns, regex, includeStatus)
       complete(db.run(resultIO))
     }
   }
 
   val route =
-    (pathPrefix("vehicles") & extractNamespace) { ns =>
-      extractVin { vin =>
+    (pathPrefix("devices") & extractNamespace) { ns =>
+      extractUuid { deviceUuid =>
         pathEnd {
           get {
-            fetchVehicle(ns, vin)
+            fetchDevice(ns, toUUID(deviceUuid))
           } ~
           put {
-            updateVehicle(ns, vin)
+            updateDevice(ns, toUUID(deviceUuid))
           } ~
           delete {
-            deleteVehicle(ns, vin)
+            deleteDevice(ns, toUUID(deviceUuid))
           }
         }
       } ~

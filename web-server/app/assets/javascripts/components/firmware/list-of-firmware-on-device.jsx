@@ -3,16 +3,16 @@ define(function(require) {
       SotaDispatcher = require('sota-dispatcher'),
       React = require('react');
 
-  var FirmwareOnVin = React.createClass({
+  var FirmwareOnDevice = React.createClass({
     contextTypes: {
       router: React.PropTypes.func
     },
     componentWillUnmount: function(){
-      this.props.Firmware.removeWatch("poll-firmware-on-vin");
+      this.props.Firmware.removeWatch("poll-firmware-on-device");
     },
     componentWillMount: function(){
-      SotaDispatcher.dispatch({actionType: 'list-firmware-on-vin', vin: this.props.Vin});
-      this.props.Firmware.addWatch("poll-firmware-on-vin", _.bind(this.forceUpdate, this, null));
+      SotaDispatcher.dispatch({actionType: 'list-firmware-on-device', device: this.props.Device});
+      this.props.Firmware.addWatch("poll-firmware-on-device", _.bind(this.forceUpdate, this, null));
     },
     render: function() {
       var firmware = _.map(this.props.Firmware.deref(), function(firmware) {
@@ -47,5 +47,5 @@ define(function(require) {
     }
   });
 
-  return FirmwareOnVin;
+  return FirmwareOnDevice;
 });

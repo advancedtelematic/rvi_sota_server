@@ -18,9 +18,9 @@ define(function(require) {
       var pkgName = React.findDOMNode(this.refs.name).value.trim();
       var pkgVersion = React.findDOMNode(this.refs.version).value.trim();
 
-      sendRequest.doPut('/api/v1/vehicles/' + this.props.Vin + "/package/" + pkgName + "/" + pkgVersion)
+      sendRequest.doPut('/api/v1/devices/' + this.props.Device + "/package/" + pkgName + "/" + pkgVersion)
         .success(_.bind(function() {
-          SotaDispatcher.dispatch({actionType: 'get-packages-for-vin', vin: this.props.Vin});
+          SotaDispatcher.dispatch({actionType: 'get-packages-for-device', device: this.props.Device});
         }, this));
 
       React.findDOMNode(this.refs.name).value = '';

@@ -17,8 +17,8 @@ define(function(require) {
       });
       this.props.UpdateStatus.addWatch("poll-update-status", _.bind(this.forceUpdate, this, null));
     },
-    failedVINsTable: function() {
-      var failedVINRows = _.map(this.props.UpdateStatus.deref(), function(value) {
+    failedDevicesTable: function() {
+      var failedDeviceRows = _.map(this.props.UpdateStatus.deref(), function(value) {
         if(Array.isArray(value)) {
           if(value[2] === "Failed") {
             return (
@@ -36,7 +36,7 @@ define(function(require) {
           <div className="row">
             <div className="col-md-12">
               <h2>
-                Failed Vehicles
+                Failed Devices
               </h2>
             </div>
           </div>
@@ -45,7 +45,7 @@ define(function(require) {
             <div className="col-xs-12">
               <table className="table table-striped table-bordered">
                 <tbody>
-                  { failedVINRows }
+                  { failedDeviceRows }
                 </tbody>
               </table>
             </div>
@@ -53,8 +53,8 @@ define(function(require) {
         </div>
       );
     },
-    completedVINsTable: function() {
-      var completedVINRows = _.map(this.props.UpdateStatus.deref(), function(value) {
+    completedDevicesTable: function() {
+      var completedDeviceRows = _.map(this.props.UpdateStatus.deref(), function(value) {
         if(Array.isArray(value)) {
           if(value[2] === "Finished") {
             return (
@@ -72,7 +72,7 @@ define(function(require) {
           <div className="row">
             <div className="col-md-12">
               <h2>
-                Completed Vehicles
+                Completed Devices
               </h2>
             </div>
           </div>
@@ -81,7 +81,7 @@ define(function(require) {
             <div className="col-xs-12">
               <table className="table table-striped table-bordered">
                 <tbody>
-                  { completedVINRows }
+                  { completedDeviceRows }
                 </tbody>
               </table>
             </div>
@@ -89,30 +89,30 @@ define(function(require) {
         </div>
       );
     },
-    toggleFailedVINs: function() {
-      this.setState({showFailedVINs: !this.state.showFailedVINs});
+    toggleFailedDevices: function() {
+      this.setState({showFailedDevices: !this.state.showFailedDevices});
     },
-    toggleCompletedVINs: function() {
-      this.setState({showCompletedVINs: !this.state.showCompletedVINs});
+    toggleCompletedDevices: function() {
+      this.setState({showCompletedDevices: !this.state.showCompletedDevices});
     },
     getInitialState: function() {
-      return {showFailedVINs: false,
-              showCompletedVINs: false
+      return {showFailedDevices: false,
+              showCompletedDevices: false
       };
     },
     render: function() {
-      var completedVINs = 0;
-      var pendingVINs = 0;
-      var failedVINs = 0;
+      var completedDevices = 0;
+      var pendingDevices = 0;
+      var failedDevices = 0;
 
       var rows = _.map(this.props.UpdateStatus.deref(), function(value) {
         if(Array.isArray(value)) {
           if(value[2] === "Pending") {
-            pendingVINs++;
+            pendingDevices++;
           } else if (value[2] === "Finished") {
-            completedVINs++;
+            completedDevices++;
           } else if(value[2] === "Failed") {
-            failedVINs++;
+            failedDevices++;
           }
           return (
             <tr key={value[1]}>
@@ -142,15 +142,15 @@ define(function(require) {
               <tbody>
                 <tr>
                   <td>Pending:</td>
-                  <td>{pendingVINs}</td>
+                  <td>{pendingDevices}</td>
                 </tr>
                 <tr>
                   <td>Completed:</td>
-                  <td>{completedVINs}</td>
+                  <td>{completedDevices}</td>
                 </tr>
                 <tr>
                   <td>Failed:</td>
-                  <td>{failedVINs}</td>
+                  <td>{failedDevices}</td>
                 </tr>
               </tbody>
               </table>
@@ -159,7 +159,7 @@ define(function(require) {
           <div className="row">
             <div className="col-md-12">
               <h2>
-                All Vehicles
+                All Devices
               </h2>
             </div>
           </div>
@@ -173,14 +173,14 @@ define(function(require) {
               </table>
             </div>
           </div>
-          <button className="btn btn-primary pull-right" onClick={this.toggleFailedVINs}>
-            { this.state.showFailedVINs ? "HIDE" : "Show failed VINs" }
+          <button className="btn btn-primary pull-right" onClick={this.toggleFailedDevices}>
+            { this.state.showFailedDevices ? "HIDE" : "Show failed Devices" }
           </button>
-          <button className="btn btn-primary pull-right" onClick={this.toggleCompletedVINs}>
-            { this.state.showCompletedVINs ? "HIDE" : "Show completed VINs" }
+          <button className="btn btn-primary pull-right" onClick={this.toggleCompletedDevices}>
+            { this.state.showCompletedDevices ? "HIDE" : "Show completed Devices" }
           </button>
-          { this.state.showFailedVINs ? this.failedVINsTable() : null }
-          { this.state.showCompletedVINs ? this.completedVINsTable() : null }
+          { this.state.showFailedDevices ? this.failedDevicesTable() : null }
+          { this.state.showCompletedDevices ? this.completedDevicesTable() : null }
         </div>
       );
     }

@@ -13,7 +13,7 @@ import akka.http.scaladsl.marshalling.Marshaller._
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.ActorMaterializer
 import org.genivi.sota.data.Namespace._
-import org.genivi.sota.data.{PackageId, Vehicle}
+import org.genivi.sota.data.{PackageId, Device}
 import org.genivi.sota.marshalling.CirceMarshallingSupport
 
 import scala.concurrent.Future
@@ -23,9 +23,9 @@ trait ExternalResolverClient {
   def putPackage(namespace: Namespace, packageId: PackageId, description: Option[String],
                  vendor: Option[String]): Future[Unit]
 
-  def resolve(namespace: Namespace, packageId: PackageId): Future[Map[Vehicle, Set[PackageId]]]
+  def resolve(namespace: Namespace, packageId: PackageId): Future[Map[Device, Set[PackageId]]]
 
-  def setInstalledPackages( vin: Vehicle.Vin, json: io.circe.Json) : Future[Unit]
+  def setInstalledPackages( uuid: Device.Id, json: io.circe.Json) : Future[Unit]
 }
 
 /**
@@ -70,7 +70,7 @@ object ExternalResolverRequestFailed {
  * An implementation of the External Resolver that talks via HTTP to the
  * external resolver in this project
  */
-class DefaultExternalResolverClient(baseUri : Uri, resolveUri: Uri, packagesUri: Uri, vehiclesUri: Uri)
+class DefaultExternalResolverClient(baseUri : Uri, resolveUri: Uri, packagesUri: Uri, devicesUri: Uri)
                                    (implicit system: ActorSystem, mat: ActorMaterializer)
     extends ExternalResolverClient {
 
@@ -82,15 +82,15 @@ class DefaultExternalResolverClient(baseUri : Uri, resolveUri: Uri, packagesUri:
   private[this] val log = Logging( system, "org.genivi.sota.externalResolverClient" )
 
   /**
-   * Given a package name and version, return vehicles that it should be
+   * Given a package name and version, return devices that it should be
    * installed on.
    *
    * @param packageId The name and version of the package
-   * @return Which packages need to be installed on which vehicles
+   * @return Which packages need to be installed on which devices
    */
-  override def resolve(namespace: Namespace, packageId: PackageId): Future[Map[Vehicle, Set[PackageId]]] = {
-    implicit val responseDecoder : Decoder[Map[Vehicle.Vin, Set[PackageId]]] =
-      Decoder[Seq[(Vehicle.Vin, Set[PackageId])]].map(_.toMap)
+  override def resolve(namespace: Namespace, packageId: PackageId): Future[Map[Device, Set[PackageId]]] = {
+    implicit val responseDecoder : Decoder[Map[Device.Id, Set[PackageId]]] =
+      Decoder[Seq[(Device.Id, Set[PackageId])]].map(_.toMap)
 
       def request(packageId: PackageId): Future[HttpResponse] = {
         Http().singleRequest(
@@ -99,10 +99,10 @@ class DefaultExternalResolverClient(baseUri : Uri, resolveUri: Uri, packagesUri:
       }
 
     request(packageId).flatMap { response =>
-      Unmarshal(response.entity).to[Map[Vehicle.Vin, Set[PackageId]]].map { parsed =>
-        parsed.map { case (k, v) => Vehicle(namespace, k) -> v }
+      Unmarshal(response.entity).to[Map[Device.Id, Set[PackageId]]].map { parsed =>
+        parsed.map { case (k, v) => Device(namespace, k) -> v }
       }
-    }.recover { case _ => Map.empty[Vehicle, Set[PackageId]] }
+    }.recover { case _ => Map.empty[Device, Set[PackageId]] }
   }
 
   def handlePutResponse( futureResponse: Future[HttpResponse] ) : Future[Unit] =
@@ -119,7 +119,7 @@ class DefaultExternalResolverClient(baseUri : Uri, resolveUri: Uri, packagesUri:
     }
 
   /**
-   * Update the list of packages that are installed on a vehicle.
+   * Update the list of packages that are installed on a device.
    * During normal operation SOTA will keep track of the state of of the
    * clients that are in the field. However there may be cases where this gets
    * out of sync for example if a ECU is replaced in the field, or when
@@ -130,11 +130,11 @@ class DefaultExternalResolverClient(baseUri : Uri, resolveUri: Uri, packagesUri:
    * @param vin The VIN that is sending the update
    * @param json A JSON encoded list of installed packages
    */
-  def setInstalledPackages( vin: Vehicle.Vin, json: io.circe.Json) : Future[Unit] = {
+  def setInstalledPackages( uuid: Device.Id, json: io.circe.Json) : Future[Unit] = {
     import akka.http.scaladsl.client.RequestBuilding.Put
     import org.genivi.sota.rest.ErrorRepresentation
 
-    val uri = vehiclesUri.withPath( vehiclesUri.path / vin.get / "packages" )
+    val uri = devicesUri.withPath( devicesUri.path / uuid.toString / "packages" )
     val futureResult = Http().singleRequest( Put(uri, json) ).flatMap {
       case HttpResponse( StatusCodes.NoContent, _, _, _ ) =>
         FastFuture.successful( () )

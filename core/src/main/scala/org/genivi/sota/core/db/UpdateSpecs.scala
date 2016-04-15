@@ -11,7 +11,7 @@ import eu.timepit.refined.string.Uuid
 import org.genivi.sota.core.data.{Package, UpdateSpec, UpdateStatus}
 import org.genivi.sota.core.db.UpdateRequests.UpdateRequestTable
 import org.genivi.sota.data.Namespace._
-import org.genivi.sota.data.{PackageId, Vehicle}
+import org.genivi.sota.data.{PackageId, Device}
 import org.genivi.sota.db.SlickExtensions
 import slick.driver.MySQLDriver.api._
 
@@ -36,15 +36,15 @@ object UpdateSpecs {
    * @see [[http://slick.typesafe.com/]]
    */
   class UpdateSpecTable(tag: Tag)
-      extends Table[(Namespace, UUID, Vehicle.Vin, UpdateStatus)](tag, "UpdateSpec") {
+      extends Table[(Namespace, UUID, Device.Id, UpdateStatus)](tag, "UpdateSpec") {
     def namespace = column[Namespace]("namespace")
     def requestId = column[UUID]("update_request_id")
-    def vin = column[Vehicle.Vin]("vin")
+    def deviceUuid = column[Device.Id]("device_uuid")
     def status = column[UpdateStatus]("status")
 
-    def pk = primaryKey("pk_update_specs", (requestId, vin))
+    def pk = primaryKey("pk_update_specs", (requestId, deviceUuid))
 
-    def * = (namespace, requestId, vin, status)
+    def * = (namespace, requestId, deviceUuid, status)
   }
 
   /**
@@ -52,16 +52,16 @@ object UpdateSpecs {
    * @see {@link http://slick.typesafe.com/}
    */
   class RequiredPackageTable(tag: Tag)
-      extends Table[(Namespace, UUID, Vehicle.Vin, PackageId.Name, PackageId.Version)](tag, "RequiredPackage") {
+      extends Table[(Namespace, UUID, Device.Id, PackageId.Name, PackageId.Version)](tag, "RequiredPackage") {
     def namespace = column[Namespace]("namespace")
     def requestId = column[UUID]("update_request_id")
-    def vin = column[Vehicle.Vin]("vin")
+    def deviceUuid = column[Device.Id]("device_uuid")
     def packageName = column[PackageId.Name]("package_name")
     def packageVersion = column[PackageId.Version]("package_version")
 
-    def pk = primaryKey("pk_downloads", (namespace, requestId, vin, packageName, packageVersion))
+    def pk = primaryKey("pk_downloads", (namespace, requestId, deviceUuid, packageName, packageVersion))
 
-    def * = (namespace, requestId, vin, packageName, packageVersion)
+    def * = (namespace, requestId, deviceUuid, packageName, packageVersion)
   }
 
   /**
@@ -86,11 +86,11 @@ object UpdateSpecs {
    * @param updateSpec The list of packages that should be installed
    */
   def persist(updateSpec: UpdateSpec) : DBIO[Unit] = {
-    val specProjection = (updateSpec.namespace, updateSpec.request.id, updateSpec.vin,  updateSpec.status)
+    val specProjection = (updateSpec.namespace, updateSpec.request.id, updateSpec.deviceUuid,  updateSpec.status)
 
     def dependencyProjection(p: Package) =
       // TODO: we're taking the namespace of the update spec, not necessarily the namespace of the package!
-      (updateSpec.namespace, updateSpec.request.id, updateSpec.vin, p.id.name, p.id.version)
+      (updateSpec.namespace, updateSpec.request.id, updateSpec.deviceUuid, p.id.name, p.id.version)
 
     DBIO.seq(
       updateSpecs += specProjection,
@@ -100,21 +100,21 @@ object UpdateSpecs {
 
   /**
    * Install a list of specific packages on a VIN
-   * @param vin The VIN to install on
+   * @param deviceUuid The VIN to install on
    * @param updateId Update Id of the update to install
    */
-  def load(vin: Vehicle.Vin, updateId: UUID)
+  def load(deviceUuid: Device.Id, updateId: UUID)
           (implicit ec: ExecutionContext) : DBIO[Iterable[UpdateSpec]] = {
     val q = for {
       r  <- updateRequests if (r.id === updateId)
-      s  <- updateSpecs if (s.vin === vin && s.namespace === r.namespace && s.requestId === r.id)
-      rp <- requiredPackages if (rp.vin === vin && rp.namespace === r.namespace && rp.requestId === s.requestId)
+      s  <- updateSpecs if (s.deviceUuid === deviceUuid && s.namespace === r.namespace && s.requestId === r.id)
+      rp <- requiredPackages if (rp.deviceUuid === deviceUuid && rp.namespace === r.namespace && rp.requestId === s.requestId)
       p  <- Packages.packages if (p.namespace === r.namespace &&
                                   p.name === rp.packageName &&
                                   p.version === rp.packageVersion)
-    } yield (r, s.vin, s.status, p)
+    } yield (r, s.deviceUuid, s.status, p)
     q.result.map( _.groupBy(x => (x._1, x._2, x._3) ).map {
-      case ((request, vin, status), xs) => UpdateSpec(request.namespace, request, vin, status, xs.map(_._4).toSet)
+      case ((request, deviceUuid, status), xs) => UpdateSpec(request.namespace, request, deviceUuid, status, xs.map(_._4).toSet)
     })
   }
 
@@ -125,12 +125,33 @@ object UpdateSpecs {
    *                  InFlight, Canceled, Failed or Finished.
    */
   def setStatus( spec: UpdateSpec, newStatus: UpdateStatus ) : DBIO[Int] = {
-    updateSpecs.filter(t => t.namespace === spec.namespace && t.vin === spec.vin && t.requestId === spec.request.id)
+    updateSpecs.filter(t => t.namespace === spec.namespace && t.deviceUuid === spec.deviceUuid && t.requestId === spec.request.id)
       .map( _.status )
       .update( newStatus )
   }
 
   /**
+<<<<<<< HEAD
+=======
+   * Get the packages that are queued for installation on a VIN.
+   * @param deviceUuid The VIN to query
+   * @return A List of package names + versions that are due to be installed.
+   */
+  def getPackagesQueuedForDevice(ns: Namespace, deviceUuid: Device.Id)
+                                (implicit ec: ExecutionContext) : DBIO[Iterable[PackageId]] = {
+    val specs = updateSpecs.filter(r => r.namespace === ns && r.deviceUuid === deviceUuid &&
+      (r.status === UpdateStatus.InFlight || r.status === UpdateStatus.Pending))
+    val q = for {
+      s <- specs
+      u <- updateRequests if s.requestId === u.id
+    } yield (u.packageName, u.packageVersion)
+    q.result.map(_.map {
+      case (packageName, packageVersion) => PackageId(packageName, packageVersion)
+    })
+  }
+
+  /**
+>>>>>>> 8d84ae8... vehicles->devices
    * Return a list of all the VINs that a specific version of a package will be
    * installed on.  Note that VINs where the package has started installation,
    * or has either been installed or where the install failed are not included.
@@ -138,13 +159,13 @@ object UpdateSpecs {
    * @param pkgVer The version of the package to search for
    * @return A list of VINs that the package will be installed on
    */
-  def getVinsQueuedForPackage(ns: Namespace, pkgName: PackageId.Name, pkgVer: PackageId.Version) :
-    DBIO[Seq[Vehicle.Vin]] = {
+  def getDevicesQueuedForPackage(ns: Namespace, pkgName: PackageId.Name, pkgVer: PackageId.Version) :
+    DBIO[Seq[Device.Id]] = {
     val specs = updateSpecs.filter(r => r.namespace === ns && r.status === UpdateStatus.Pending)
     val q = for {
       s <- specs
       u <- updateRequests if (s.requestId === u.id) && (u.packageName === pkgName) && (u.packageVersion === pkgVer)
-    } yield s.vin
+    } yield s.deviceUuid
     q.result
   }
 
@@ -152,22 +173,22 @@ object UpdateSpecs {
    * Return the status of a specific update
    * @return The update status
    */
-  def listUpdatesById(uuid: Refined[String, Uuid]): DBIO[Seq[(Namespace, UUID, Vehicle.Vin, UpdateStatus)]] =
+  def listUpdatesById(uuid: Refined[String, Uuid]): DBIO[Seq[(Namespace, UUID, Device.Id, UpdateStatus)]] =
     updateSpecs.filter(s => s.requestId === UUID.fromString(uuid.get)).result
 
   /**
    * Delete all the updates for a specific VIN
    * This is part of the process for deleting a VIN from the system
-   * @param vehicle The vehicle to get the VIN to delete from
+   * @param device The device to get the VIN to delete from
    */
-  def deleteUpdateSpecByVin(ns: Namespace, vehicle: Vehicle) : DBIO[Int] =
-    updateSpecs.filter(s => s.namespace === ns && s.vin === vehicle.vin).delete
+  def deleteUpdateSpecByUuid(ns: Namespace, device: Device) : DBIO[Int] =
+    updateSpecs.filter(s => s.namespace === ns && s.deviceUuid === device.uuid).delete
 
   /**
    * Delete all the required packages that are needed for a VIN.
    * This is part of the process for deleting a VIN from the system
-   * @param vehicle The vehicle to get the VIN to delete from
+   * @param device The device to get the VIN to delete from
    */
-  def deleteRequiredPackageByVin(ns: Namespace, vehicle : Vehicle) : DBIO[Int] =
-    requiredPackages.filter(rp => rp.namespace === ns && rp.vin === vehicle.vin).delete
+  def deleteRequiredPackageByUuid(ns: Namespace, device : Device) : DBIO[Int] =
+    requiredPackages.filter(rp => rp.namespace === ns && rp.deviceUuid === device.uuid).delete
 }

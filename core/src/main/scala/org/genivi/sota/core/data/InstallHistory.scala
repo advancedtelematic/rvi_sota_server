@@ -5,7 +5,7 @@
 package org.genivi.sota.core.data
 
 import org.genivi.sota.data.Namespace._
-import org.genivi.sota.data.{PackageId, Vehicle}
+import org.genivi.sota.data.{PackageId, Device}
 import org.joda.time.DateTime
 import java.util.UUID
 
@@ -26,7 +26,7 @@ case class OperationResult(
 /**
  * Domain object for the install history of a VIN
  * @param id The Id in the database. Initialize to Option.None
- * @param vin The VIN that this install history belongs to
+ * @param deviceUuid The VIN that this install history belongs to
  * @param updateId The Id of the update
  * @param packageId Id of package which belongs to this update.
  * @param success The outcome of the install attempt
@@ -35,7 +35,7 @@ case class OperationResult(
 case class InstallHistory(
   id            : Option[Long],
   namespace     : Namespace,
-  vin           : Vehicle.Vin,
+  deviceUuid    : Device.Id,
   updateId      : UUID,
   packageId     : PackageId,
   success       : Boolean,

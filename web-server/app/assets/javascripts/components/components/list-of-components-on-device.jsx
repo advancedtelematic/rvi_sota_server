@@ -4,16 +4,16 @@ define(function(require) {
       Router = require('react-router'),
       React = require('react');
 
-  var ComponentsOnVin = React.createClass({
+  var ComponentsOnDevice = React.createClass({
     contextTypes: {
       router: React.PropTypes.func
     },
     componentWillUnmount: function(){
-      this.props.Components.removeWatch("poll-components-on-vin");
+      this.props.Components.removeWatch("poll-components-on-device");
     },
     componentWillMount: function(){
-      SotaDispatcher.dispatch({actionType: 'list-components-on-vin', vin: this.props.Vin});
-      this.props.Components.addWatch("poll-components-on-vin", _.bind(this.forceUpdate, this, null));
+      SotaDispatcher.dispatch({actionType: 'list-components-on-device', device: this.props.Device});
+      this.props.Components.addWatch("poll-components-on-device", _.bind(this.forceUpdate, this, null));
     },
     render: function() {
       var components = _.map(this.props.Components.deref(), function(component) {
@@ -44,5 +44,5 @@ define(function(require) {
     }
   });
 
-  return ComponentsOnVin;
+  return ComponentsOnDevice;
 });

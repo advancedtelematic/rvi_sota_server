@@ -3,7 +3,7 @@ define(function(require) {
       React = require('react'),
       SotaDispatcher = require('sota-dispatcher'),
       Errors = require('../errors'),
-      VehiclesListPanel = require('../vehicles/vehicles-list-panel'),
+      DevicesListPanel = require('../devices/devices-list-panel'),
       db = require('stores/db');
 
   var ShowComponent = React.createClass({
@@ -20,7 +20,7 @@ define(function(require) {
     fetchComponent: function() {
       var partNumber = this.context.router.getCurrentParams().partNumber;
       SotaDispatcher.dispatch({ actionType: 'get-component', partNumber: partNumber });
-      SotaDispatcher.dispatch({ actionType: 'get-vins-for-component', partNumber: partNumber });
+      SotaDispatcher.dispatch({ actionType: 'get-devices-for-component', partNumber: partNumber });
     },
     removeComponent: function() {
       SotaDispatcher.dispatch({
@@ -59,11 +59,11 @@ define(function(require) {
           <button type="button" className="btn btn-primary" onClick={this.removeComponent} name="delete-component">Delete Component</button>
           <Errors />
           <br/>
-          <VehiclesListPanel
-            Vehicles={db.vinsForComponent}
-            PollEventName="poll-vehicles"
-            DispatchObject={{actionType: 'get-vins-for-component', partNumber: params.partNumber}}
-            Label="Vehicles with this component installed"/>
+          <DevicesListPanel
+            Devices={db.devicesForComponent}
+            PollEventName="poll-devices"
+            DispatchObject={{actionType: 'get-devices-for-component', partNumber: params.partNumber}}
+            Label="Devices with this component installed"/>
         </div>
       );
     }

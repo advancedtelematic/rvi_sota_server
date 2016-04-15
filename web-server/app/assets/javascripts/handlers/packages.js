@@ -49,19 +49,19 @@ define(function(require) {
                 db.searchablePackages.reset(packages);
               });
           break;
-          case 'get-packages-for-vin':
-            sendRequest.doGet('/api/v1/vehicles/' + payload.vin + '/package')
+          case 'get-packages-for-device':
+            sendRequest.doGet('/api/v1/devices/' + payload.device + '/package')
               .success(function(packages) {
                 var list = _.map(packages, function(package) {
                   return {id: package}
                 });
-                db.packagesForVin.reset(list);
+                db.packagesForDevice.reset(list);
               });
           break;
-          case 'get-vehicles-queued-for-package':
+          case 'get-devices-queued-for-package':
             sendRequest.doGet('/api/v1/packages/' + payload.name + "/" + payload.version + "/queued")
-              .success(function(vehicles) {
-                db.vehiclesQueuedForPackage.reset(vehicles);
+              .success(function(devices) {
+                db.devicesQueuedForPackage.reset(devices);
               });
           break;
         }

@@ -15,7 +15,7 @@ import org.genivi.sota.rest.ErrorCode
 object ErrorCodes {
   val ExternalResolverError = ErrorCode( "external_resolver_error" )
 
-  val MissingVehicle = new ErrorCode("missing_vehicle")
+  val MissingDevice = new ErrorCode("missing_device")
 }
 
 object ErrorHandler {
