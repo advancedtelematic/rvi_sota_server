@@ -14,8 +14,10 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Uuid
 
 import slick.ast.{Node, TypedType}
+import slick.driver.MySQLDriver.MappedJdbcType
 import slick.driver.MySQLDriver.api._
 import slick.lifted.Rep
+
 
 /**
   * Explain to the database layer, Slick, how to map Uri and UUIDs into
@@ -23,6 +25,10 @@ import slick.lifted.Rep
   *
   * @see {@link http://slick.typesafe.com/docs/}
   */
+
+trait SlickEnum extends Enumeration {
+  implicit val enumMapper = MappedJdbcType.base[Value, Int](_.id, this.apply)
+}
 
 object SlickExtensions {
   implicit val UriColumnType = MappedColumnType.base[Uri, String](_.toString(), Uri.apply)

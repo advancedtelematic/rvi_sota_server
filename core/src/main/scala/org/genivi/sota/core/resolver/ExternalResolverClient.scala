@@ -23,7 +23,7 @@ trait ExternalResolverClient {
   def putPackage(namespace: Namespace, packageId: PackageId, description: Option[String],
                  vendor: Option[String]): Future[Unit]
 
-  def resolve(namespace: Namespace, packageId: PackageId): Future[Map[Device, Set[PackageId]]]
+  def resolve(namespace: Namespace, packageId: PackageId): Future[Map[(Namespace, Device.Id), Set[PackageId]]]
 
   def setInstalledPackages( uuid: Device.Id, json: io.circe.Json) : Future[Unit]
 }
@@ -88,7 +88,7 @@ class DefaultExternalResolverClient(baseUri : Uri, resolveUri: Uri, packagesUri:
    * @param packageId The name and version of the package
    * @return Which packages need to be installed on which devices
    */
-  override def resolve(namespace: Namespace, packageId: PackageId): Future[Map[Device, Set[PackageId]]] = {
+  override def resolve(namespace: Namespace, packageId: PackageId): Future[Map[(Namespace, Device.Id), Set[PackageId]]] = {
     implicit val responseDecoder : Decoder[Map[Device.Id, Set[PackageId]]] =
       Decoder[Seq[(Device.Id, Set[PackageId])]].map(_.toMap)
 
@@ -100,9 +100,9 @@ class DefaultExternalResolverClient(baseUri : Uri, resolveUri: Uri, packagesUri:
 
     request(packageId).flatMap { response =>
       Unmarshal(response.entity).to[Map[Device.Id, Set[PackageId]]].map { parsed =>
-        parsed.map { case (k, v) => Device(namespace, k) -> v }
+        parsed.map { case (k, v) => (namespace, k) -> v }
       }
-    }.recover { case _ => Map.empty[Device, Set[PackageId]] }
+    }.recover { case _ => Map.empty[(Namespace, Device.Id), Set[PackageId]] }
   }
 
   def handlePutResponse( futureResponse: Future[HttpResponse] ) : Future[Unit] =

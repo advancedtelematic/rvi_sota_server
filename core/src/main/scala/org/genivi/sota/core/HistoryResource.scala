@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.server.{Directives, Route}
 import org.genivi.sota.core.db.InstallHistories
 import org.genivi.sota.data.Namespace.Namespace
-import org.genivi.sota.data.Vehicle.Vin
+import org.genivi.sota.data.Device
 import slick.driver.MySQLDriver.api._
 import akka.http.scaladsl.marshalling.Marshaller._
 import org.genivi.sota.marshalling.CirceMarshallingSupport
@@ -21,14 +21,14 @@ class HistoryResource (db: Database)(implicit system: ActorSystem) extends Direc
   import org.genivi.sota.core.common.NamespaceDirective._
   import CirceMarshallingSupport._
 
-  def history(ns: Namespace, vin: Vin): Route = {
-    complete(db.run(InstallHistories.list(ns, vin)))
+  def history(ns: Namespace, uuid: Device.Id) = {
+    complete(db.run(InstallHistories.list(ns, uuid)))
   }
 
   val route =
-    (pathPrefix("history") & parameter('vin.as[Vin])) { vin =>
+    (pathPrefix("history") & extractUuid) { deviceUuid =>
       extractNamespace(system) { ns =>
-        (get & pathEnd) { history(ns, vin) }
+        (get & pathEnd) { history(ns, toUUID(deviceUuid)) }
       }
     }
 }

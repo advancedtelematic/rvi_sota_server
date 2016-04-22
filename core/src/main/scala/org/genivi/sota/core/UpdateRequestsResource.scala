@@ -50,7 +50,7 @@ class UpdateRequestsResource(db: Database, resolver: ExternalResolverClient, upd
         updateService.queueUpdate(
           req,
           pkg => resolver.resolve(ns, pkg.id).map {
-            m => m.map { case (d, p) => (d.uuid, p) }
+            m => m.map { case ((_, deviceId), p) => (deviceId, p) }
           }
         )
       )

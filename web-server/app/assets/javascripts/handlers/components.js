@@ -48,7 +48,7 @@ define(function(require) {
             sendRequest.doGet('/api/v1/devices?component=' + payload.partNumber )
               .success(function(devices) {
                 var formattedDevices = _.map(devices, function(device) {
-                  return {device: device};
+                  return device.uuid;
                 });
                 db.devicesForComponent.reset(formattedDevices);
               });

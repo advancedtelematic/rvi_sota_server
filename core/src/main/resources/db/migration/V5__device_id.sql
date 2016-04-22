@@ -19,8 +19,6 @@ ALTER TABLE Vehicle
   RENAME TO Device
 , DROP PRIMARY KEY
 , CHANGE vin uuid CHAR(36) NOT NULL -- regular UUID
--- , ADD device_id VARCHAR(200) NOT NULL -- subsumes VINs and other undspecified schemes
--- , ADD device_type SMALLINT NOT NULL
 , ADD PRIMARY KEY (namespace, uuid)
 ;
 
@@ -43,12 +41,17 @@ ALTER TABLE InstallHistory
 
 -- additions to schema
 
--- CREATE TABLE DeviceType (
---   id SMALLINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
---   name VARCHAR(200) NULL
--- );
+ALTER TABLE Device
+  ADD device_id VARCHAR (200) NOT NULL UNIQUE -- subsumes VINs and other unspecified schemes
+, ADD device_type SMALLINT NOT NULL
+;
+
+CREATE TABLE DeviceType (
+  id SMALLINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(200) NULL
+);
 
 -- populate device types
 
--- INSERT INTO DeviceType (name) VALUES ("Other");
--- INSERT INTO DeviceType (name) VALUES ("Vehicle");
+INSERT INTO DeviceType (name) VALUES ("Other");
+INSERT INTO DeviceType (name) VALUES ("Vehicle");

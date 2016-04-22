@@ -22,7 +22,7 @@ define(function(require) {
       return (
       <div>
         <div>
-          <h1>Devices &gt; {params.device}</h1>
+          <h1>Devices &gt; {params.uuid}</h1>
         </div>
         <div className="row">
           <div className="col-md-12">
@@ -30,18 +30,18 @@ define(function(require) {
             <ListOfPackages
               Packages={db.packagesForDevice}
               PollEventName="poll-packages"
-              DispatchObject={{actionType: 'get-packages-for-device', device: params.deviceId}}
+              DispatchObject={{actionType: 'get-packages-for-device', device: params.uuid}}
               DisplayCampaignLink={false}/>
-            <AddPackageManually Device={params.deviceId}/>
-            <SyncPackages Device={params.deviceId}/>
+            <AddPackageManually Device={params.uuid}/>
+            <SyncPackages Device={params.uuid}/>
             <h2>Installed Firmware</h2>
-            <FirmwareOnDevice Firmware={db.firmwareOnDevice} Device={params.deviceId}/>
+            <FirmwareOnDevice Firmware={db.firmwareOnDevice} Device={params.uuid}/>
             <h2>Installed Components</h2>
-            <ComponentsOnDevice Components={db.componentsOnDevice} Device={params.deviceId}/>
-            <AddComponent Device={params.deviceId}/>
+            <ComponentsOnDevice Components={db.componentsOnDevice} Device={params.uuid}/>
+            <AddComponent Device={params.uuid}/>
             <h2>Package Updates</h2>
-            <QueuedPackages Packages={db.packageQueueForDevice} Device={params.deviceId}/>
-            <PackageHistory Packages={db.packageHistoryForDevice} Device={params.deviceId}/>
+            <QueuedPackages Packages={db.packageQueueForDevice} Device={params.uuid}/>
+            <PackageHistory Packages={db.packageHistoryForDevice} Device={params.uuid}/>
           </div>
         </div>
       </div>

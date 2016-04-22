@@ -181,14 +181,14 @@ object UpdateSpecs {
    * This is part of the process for deleting a VIN from the system
    * @param device The device to get the VIN to delete from
    */
-  def deleteUpdateSpecByUuid(ns: Namespace, device: Device) : DBIO[Int] =
-    updateSpecs.filter(s => s.namespace === ns && s.deviceUuid === device.uuid).delete
+  def deleteUpdateSpecByDevice(ns: Namespace, uuid: Device.Id) : DBIO[Int] =
+    updateSpecs.filter(s => s.namespace === ns && s.deviceUuid === uuid).delete
 
   /**
    * Delete all the required packages that are needed for a VIN.
    * This is part of the process for deleting a VIN from the system
    * @param device The device to get the VIN to delete from
    */
-  def deleteRequiredPackageByUuid(ns: Namespace, device : Device) : DBIO[Int] =
-    requiredPackages.filter(rp => rp.namespace === ns && rp.deviceUuid === device.uuid).delete
+  def deleteRequiredPackageByDevice(ns: Namespace, uuid: Device.Id) : DBIO[Int] =
+    requiredPackages.filter(rp => rp.namespace === ns && rp.deviceUuid === uuid).delete
 }

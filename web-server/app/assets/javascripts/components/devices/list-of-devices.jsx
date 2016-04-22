@@ -19,8 +19,8 @@ define(function(require) {
         return (
           <tr key={device.uuid}>
             <td>
-              <Router.Link to='device' params={{deviceId: device.uuid}}>
-              { device.uuid }
+              <Router.Link to='device' params={{uuid: device.uuid}}>
+                {device.deviceId}
               </Router.Link>
             </td>
           </tr>

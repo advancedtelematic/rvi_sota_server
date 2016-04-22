@@ -47,8 +47,11 @@ class Application @Inject() (ws: WSClient, val messagesApi: MessagesApi, val acc
     case "update_requests" :: _ => coreApiUri
     case "device_updates" :: _ => coreApiUri
     case "updates" :: _ => coreApiUri
-    case "devices" :: id :: part :: _
-      if Set("queued", "history", "sync")(part) => coreApiUri
+    case "devices" :: id :: "queued" :: _ => coreApiUri
+    case "devices" :: id :: "history" :: _ => coreApiUri
+    case "devices" :: id :: "sync" :: _ => coreApiUri
+    case "devices" :: id :: _ => resolverApiUri
+    case "devices" :: _ => coreApiUri
     case _ => resolverApiUri
   }
 

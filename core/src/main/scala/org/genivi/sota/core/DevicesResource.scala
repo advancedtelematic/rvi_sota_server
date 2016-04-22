@@ -42,36 +42,36 @@ class DevicesResource(db: Database, client: ConnectivityClient, resolverClient: 
 
   case object MissingDevice extends Throwable
 
-  def exists(device: Device)
+  def exists(ns: Namespace, uuid: Device.Id)
     (implicit ec: ExecutionContext): Future[Device] =
-    db.run(Devices.exists(device))
+    db.run(Devices.exists(ns, uuid))
       .flatMap(_
         .fold[Future[Device]]
           (Future.failed(MissingDevice))(Future.successful))
 
-  def deleteDevice(ns: Namespace, device: Device)
+  def deleteDevice(ns: Namespace, uuid: Device.Id)
   (implicit ec: ExecutionContext): Future[Unit] =
     for {
-      _ <- exists(device)
-      _ <- db.run(UpdateSpecs.deleteRequiredPackageByUuid(ns, device))
-      _ <- db.run(UpdateSpecs.deleteUpdateSpecByUuid(ns, device))
-      _ <- db.run(Devices.deleteById(device))
+      _ <- exists(ns: Namespace, uuid: Device.Id)
+      _ <- db.run(UpdateSpecs.deleteRequiredPackageByDevice(ns, uuid))
+      _ <- db.run(UpdateSpecs.deleteUpdateSpecByDevice(ns, uuid))
+      _ <- db.run(Devices.deleteById(ns, uuid))
     } yield ()
 
   def fetchDevice(ns: Namespace, uuid: Device.Id): Route  = {
-    completeOrRecoverWith(exists(Device(ns, uuid))) {
+    completeOrRecoverWith(exists(ns, uuid)) {
       case MissingDevice =>
         complete(StatusCodes.NotFound ->
           ErrorRepresentation(ErrorCodes.MissingDevice, "Device doesn't exist"))
     }
   }
 
-  def updateDevice(ns: Namespace, uuid: Device.Id): Route = {
-    complete(db.run(Devices.create(Device(ns, uuid))).map(_ => NoContent))
+  def updateDevice(device: Device): Route = {
+    complete(db.run(Devices.create(device)).map(_ => NoContent))
   }
 
-  def deleteDevice(ns: Namespace, uuid: Device.Id) = {
-    completeOrRecoverWith(deleteDevice(ns, Device(ns, uuid))) {
+  def deleteDeviceR(ns: Namespace, uuid: Device.Id): Route = {
+    completeOrRecoverWith(deleteDevice(ns, uuid)) {
       case MissingDevice =>
         complete(StatusCodes.NotFound ->
           ErrorRepresentation(ErrorCodes.MissingDevice, "Device doesn't exist"))
@@ -92,16 +92,16 @@ class DevicesResource(db: Database, client: ConnectivityClient, resolverClient: 
           get {
             fetchDevice(ns, toUUID(deviceUuid))
           } ~
-          put {
-            updateDevice(ns, toUUID(deviceUuid))
-          } ~
           delete {
-            deleteDevice(ns, toUUID(deviceUuid))
+            deleteDeviceR(ns, toUUID(deviceUuid))
           }
         }
       } ~
       (pathEnd & get) {
         search(ns)
+      } ~
+      (pathEnd & post & extractDevice(ns) ) { device =>
+        updateDevice(device)
       }
     }
 }

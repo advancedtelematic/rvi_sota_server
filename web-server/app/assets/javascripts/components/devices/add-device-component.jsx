@@ -23,8 +23,8 @@ define(function(require) {
       return (
         <form ref='form' onSubmit={this.handleSubmit}>
           <div className="form-group">
-            <label htmlFor="name">Device Name</label>
-            <input type="text" className="form-control" name="deviceId" ref="deviceId" placeholder="Device UUID"/>
+            <label>Device Identifier</label>
+            <input type="text" className="form-control" name="deviceId" ref="deviceId" placeholder="Device ID (e. g. VIN)"/>
           </div>
           <div className="form-group">
             <button type="submit" className="btn btn-primary">Add Device</button>

@@ -76,7 +76,7 @@ define(function(require) {
   var routes = (
     <Route handler={App} path="/">
       <Route name="devices" handler={DevicesPageComponent}/>
-      <Route name="device" path="devices/:deviceId" handler={DevicePageComponent}/>
+      <Route name="device" path="devices/:uuid" handler={DevicePageComponent}/>
       <Route name="packages">
         <Route name="package" path="/packages/:name/:version" handler={wrapComponent(ShowPackage, {Package: db.showPackage})}/>
         <Route name="new-campaign" path="/packages/:name/:version/new-campaign" handler={wrapComponent(CreateCampaign)}/>
@@ -87,7 +87,7 @@ define(function(require) {
         <DefaultRoute handler={FiltersPageComponent} />
       </Route>
       <Route name="updates">
-        <Route name="update" path="/updates/:deviceId" handler={wrapComponent(ShowUpdate, {Update: db.showUpdate})} />
+        <Route name="update" path="/updates/:uuid" handler={wrapComponent(ShowUpdate, {Update: db.showUpdate})} />
         <DefaultRoute handler={wrapComponent(ListOfUpdates, {Updates: db.updates})} />
       </Route>
       <Route name="components">

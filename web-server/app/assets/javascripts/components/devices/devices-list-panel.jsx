@@ -26,8 +26,8 @@ define(function(require) {
       var devices = _.map(this.props.Devices.deref(), function(device) {
         return (
           <li className='list-group-item' key={device}>
-            <Router.Link to='device' params={{device: device}}>
-            {device}
+            <Router.Link to='device' params={{uuid: device}}>
+              {device}
             </Router.Link>
           </li>
         );

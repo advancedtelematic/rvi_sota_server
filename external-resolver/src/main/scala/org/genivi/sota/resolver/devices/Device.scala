@@ -30,7 +30,7 @@ object Device {
 
   implicit val validDeviceId: Validate.Plain[String, ValidDeviceId] = Validate.fromPredicate(
     // TODO: define valid deviceIds
-    id => id.length <= 200 && id.forall(c => (c.isLetter || c.isDigit || c == '|' || c == '.')),
+    id => true,
     id => s"($id ist not valid)",
     ValidDeviceId()
   )
