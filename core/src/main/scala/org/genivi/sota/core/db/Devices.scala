@@ -107,4 +107,11 @@ object Devices {
       .result
       .head
   }
+
+  def findByDeviceId(ns: Namespace, deviceId: Device.DeviceId): DBIO[Device] = {
+    devices
+      .filter(d => d.namespace === ns && d.deviceId === deviceId)
+      .result
+      .head
+  }
 }

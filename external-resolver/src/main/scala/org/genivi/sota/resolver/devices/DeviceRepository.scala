@@ -201,6 +201,7 @@ object DeviceRepository {
   def deleteInstalledPackageByDevice(namespace: Namespace, deviceId: Device.DeviceId): DBIO[Int] =
     installedPackages.filter(i => i.namespace === namespace && i.deviceId === deviceId).delete
 
+  // TODO: namespaces?
   def packagesOnDeviceMap
     (namespace: Namespace)
     (implicit ec: ExecutionContext)
@@ -211,7 +212,6 @@ object DeviceRepository {
         .sortBy(_._2)
         .groupBy(_._2)
         .mapValues(_.map(_._3)))
-    // TODO: namespaces?
 
   def packagesOnDevice
     (namespace: Namespace, deviceId: Device.DeviceId)
@@ -295,20 +295,20 @@ object DeviceRepository {
                 .flatten)
     } yield cs
 
+  // TODO: namespaces?
   def devicesWithPackagesAndComponents
     (namespace: Namespace)
     (implicit ec: ExecutionContext)
       : DBIO[Seq[(Device, (Seq[PackageId], Seq[Component.PartNumber]))]] =
     for {
-      vs   <- DeviceRepository.list
+      ds   <- DeviceRepository.list
       ps   : Seq[Seq[PackageId]]
-           <- DBIO.sequence(vs.map(d => DeviceRepository.packagesOnDevice(namespace, d.id)))
+           <- DBIO.sequence(ds.map(d => packagesOnDevice(namespace, d.id)))
       cs   : Seq[Seq[Component.PartNumber]]
-           <- DBIO.sequence(vs.map(d => DeviceRepository.componentsOnDevice(namespace, d.id)))
-      vpcs : Seq[(Device, (Seq[PackageId], Seq[Component.PartNumber]))]
-           =  vs.zip(ps.zip(cs))
-    } yield vpcs
-    // TODO: namespaces?
+           <- DBIO.sequence(ds.map(d => componentsOnDevice(namespace, d.id)))
+      dpcs : Seq[(Device, (Seq[PackageId], Seq[Component.PartNumber]))]
+           =  ds.zip(ps.zip(cs))
+    } yield dpcs
 
   /*
    * Searching
@@ -332,8 +332,8 @@ object DeviceRepository {
     val comps = part.fold[FilterAST](True)(r => HasComponent(toRegex(r)))
 
     for {
-      vpcs <- devicesWithPackagesAndComponents(namespace)
-    } yield vpcs.filter(query(And(devices, And(pkgs, comps)))).map(_._1)
+      dpcs <- devicesWithPackagesAndComponents(namespace)
+    } yield dpcs.filter(query(And(devices, And(pkgs, comps)))).map(_._1)
 
   }
 
@@ -346,8 +346,8 @@ object DeviceRepository {
     for {
       _    <- PackageRepository.exists(namespace, pkgId)
       fs   <- PackageFilterRepository.listFiltersForPackage(namespace, pkgId)
-      vpcs <- devicesWithPackagesAndComponents(namespace)
+      dpcs <- devicesWithPackagesAndComponents(namespace)
     } yield ResolveFunctions.makeFakeDependencyMap(pkgId,
-              vpcs.filter(query(fs.map(_.expression).map(parseValidFilter).foldLeft[FilterAST](True)(And)))
+              dpcs.filter(query(fs.map(_.expression).map(parseValidFilter).foldLeft[FilterAST](True)(And)))
                   .map(_._1))
 }

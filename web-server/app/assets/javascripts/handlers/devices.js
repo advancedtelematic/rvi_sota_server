@@ -16,16 +16,21 @@ define(function(require) {
   }
 
   var createDevice = function(payload) {
-    var url = '/api/v1/devices';
+    var url = '/api/v1/devices/';
     var device = {
       uuid: generateUUID(),
       deviceId: payload.device.deviceId,
-      deviceType: "Other"
+      deviceType: 'Other'
     };
-    sendRequest.doPost(url, device)
-      .success(function(devices) {
-        SotaDispatcher.dispatch({actionType: 'search-devices-by-regex'});
-      });
+    // TODO: just a temporary solution; needs better abstraction
+    // TODO: change route to sth sensible; /create is just a safeguard so that routes are unambiguous
+    sendRequest.doPost(url + 'create', device) // send to core
+      .success(function() {
+        sendRequest.doPut(url + device.deviceId) // send to resolver
+          .success(function () {
+            SotaDispatcher.dispatch({actionType: 'search-devices-by-regex'});
+          })
+      })
   }
 
   var Handler = (function() {
@@ -45,7 +50,7 @@ define(function(require) {
           case 'search-devices-by-regex':
             var query = payload.regex ? '?regex=' + payload.regex : '';
 
-            sendRequest.doGet('/api/v1/devices' + query)
+            sendRequest.doGet('/api/v1/devices/search' + query)
               .success(function(devices) {
                 db.searchableDevices.reset(devices);
               });

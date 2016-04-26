@@ -4,17 +4,16 @@ import akka.http.scaladsl.util.FastFuture
 import akka.testkit.TestKit
 import eu.timepit.refined.api.Refined
 import org.genivi.sota.core.data.Package
-import org.genivi.sota.core.db.{Packages, UpdateSpecs, Vehicles}
+import org.genivi.sota.core.db.{Packages, UpdateSpecs, Devices}
 import org.genivi.sota.core.resolver.DefaultConnectivity
 import org.genivi.sota.core.transfer.{DefaultUpdateNotifier, InstalledPackagesUpdate}
 import org.genivi.sota.data.Namespace._
 import org.genivi.sota.data.Namespaces
-import org.genivi.sota.data.{PackageId, Vehicle, VehicleGenerators}
-import org.scalacheck.Gen
+import org.genivi.sota.data.{PackageId, Device, DeviceGenerators}
+import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.time.{Millis, Second, Span}
 import org.scalatest.{BeforeAndAfterAll, Matchers, PropSpec}
-
 import scala.concurrent.{Await, Future}
 import scala.util.Random
 import slick.jdbc.JdbcBackend._
@@ -30,7 +29,10 @@ class UpdateServiceSpec extends PropSpec
   with BeforeAndAfterAll
   with Namespaces {
 
+  import Arbitrary._
+  import Generators._
   import org.genivi.sota.core.resolver.Connectivity
+  import org.genivi.sota.data.DeviceGenerators._
 
   val packages = PackagesReader.read().take(1000)
 
@@ -44,8 +46,6 @@ class UpdateServiceSpec extends PropSpec
     import scala.concurrent.duration.DurationInt
     Await.ready( Future.sequence( packages.map( p => db.run( Packages.create(p) ) )), 50.seconds)
   }
-
-  import Generators._
 
   implicit val updateQueueLog = akka.event.Logging(system, "sota.core.updateQueue")
   implicit val connectivity = DefaultConnectivity
@@ -70,20 +70,20 @@ class UpdateServiceSpec extends PropSpec
   }
 
   property("decline if some of dependencies not found") {
-    def vinDepGen(missingPackages: Seq[PackageId]) : Gen[(Vehicle.Vin, Set[PackageId])] = for {
-      vin               <- VehicleGenerators.genVin
+    def deviceDepGen(missingPackages: Seq[PackageId]) : Gen[(Device.DeviceId, Set[PackageId])] = for {
+      device            <- DeviceGenerators.genDevice
       m                 <- Gen.choose(1, 10)
       availablePackages <- Gen.pick(m, packages).map( _.map(_.id) )
       n                 <- Gen.choose(1, missingPackages.length)
       deps              <- Gen.pick(n, missingPackages).map( xs => Random.shuffle(availablePackages ++ xs).toSet )
-    } yield vin -> deps
+    } yield device.deviceId -> deps
 
     val resolverGen : Gen[(Seq[PackageId], UpdateService.DependencyResolver)] = for {
       n                 <- Gen.choose(1, 10)
       missingPackages   <- Gen.listOfN(n, PackageIdGen).map( _.toSeq )
       m                 <- Gen.choose(1, 10)
-      vinsToDeps        <- Gen.listOfN(m, vinDepGen(missingPackages)).map( _.toMap )
-    } yield (missingPackages, (_: Package) => FastFuture.successful(vinsToDeps))
+      devicesToDeps     <- Gen.listOfN(m, deviceDepGen(missingPackages)).map( _.toMap )
+    } yield (missingPackages, (_: Package) => FastFuture.successful(devicesToDeps))
 
     forAll(updateRequestGen(defaultNs, AvailablePackageIdGen), resolverGen) { (request, resolverConf) =>
       val (missingPackages, resolver) = resolverConf
@@ -93,36 +93,39 @@ class UpdateServiceSpec extends PropSpec
     }
   }
 
-  def createVehicles(ns: Namespace, vins: Set[Vehicle.Vin]) : Future[Unit] = {
+  def createDevices(ns: Namespace, deviceIds: Set[Device.DeviceId]) : Future[Unit] = {
     import slick.driver.MySQLDriver.api._
-    db.run(DBIO.seq(vins.map(vin => Vehicles.create(Vehicle(ns, vin))).toArray: _*))
+    val devices = deviceIds.map { id =>
+      arbitrary[Device].sample.get.copy(namespace = ns, deviceId = id)
+    }
+    db.run(DBIO.seq(devices.map(d => Devices.create(d)).toArray: _*))
   }
 
-  property("upload spec per vin") {
+  property("upload spec per device") {
     import slick.driver.MySQLDriver.api._
     import scala.concurrent.duration.DurationInt
     forAll( updateRequestGen(defaultNs, AvailablePackageIdGen), dependenciesGen(packages) ) { (request, deps) =>
-      whenReady(createVehicles(request.namespace, deps.keySet)
+      whenReady(createDevices(request.namespace, deps.keySet)
         .flatMap(_ => service.queueUpdate(request, _ => Future.successful(deps)))) { specs =>
-        val updates = Await.result( db.run( UpdateSpecs.listUpdatesById( Refined.unsafeApply( request.id.toString ) ) ), 1.second)
+        // val updates = Await.result(db.run(UpdateSpecs.listUpdatesById(Refined.unsafeApply(request.id.toString))), 1.second)
         specs.size shouldBe deps.size
       }
     }
   }
 
-  property("queue an update for a single vehicle creates an update request") {
-    val newVehicle = VehicleGenerators.genVehicle.sample.get
+  property("queue an update for a single device creates an update request") {
+    val newDevice = DeviceGenerators.genDevice.sample.get
     val newPackage = PackageGen.sample.get
 
     val dbSetup = for {
-      vehicle <- Vehicles.create(newVehicle)
+      device <- Devices.create(newDevice)
       packageM <- Packages.create(newPackage)
-    } yield (vehicle, packageM)
+    } yield (device, packageM)
 
     val f = for {
-      (vehicle, packageM) <- db.run(dbSetup)
-      updateRequest <- service.queueVehicleUpdate(vehicle.namespace, vehicle.vin, packageM.id)
-      queuedPackages <- db.run(InstalledPackagesUpdate.findPendingPackageIdsFor(vehicle.namespace, vehicle.vin))
+      (device, packageM) <- db.run(dbSetup)
+      updateRequest <- service.queueDeviceUpdate(device.namespace, device.uuid, packageM.id)
+      queuedPackages <- db.run(InstalledPackagesUpdate.findPendingPackageIdsFor(device.namespace, device.uuid))
     } yield (updateRequest, queuedPackages)
 
     whenReady(f) { case (updateRequest, queuedPackages) =>

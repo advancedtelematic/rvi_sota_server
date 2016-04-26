@@ -21,7 +21,6 @@ import org.genivi.sota.data.Device
 import org.genivi.sota.data.Namespace._
 import org.genivi.sota.marshalling.CirceMarshallingSupport
 import org.genivi.sota.rest.Validation.refined
-import org.joda.time.DateTime
 import slick.driver.MySQLDriver.api.Database
 
 import io.circe.generic.auto._
@@ -32,20 +31,6 @@ object WebService {
 
   val extractUuid = refined[Uuid](Slash ~ Segment)
   def toUUID(uuid: Refined[String, Uuid]): UUID = UUID.fromString(uuid.get)
-
-  case class DeviceWithoutNs(uuid: Device.Id,
-                             deviceId: Device.DeviceId,
-                             deviceType: Device.DeviceType,
-                             lastSeen: Option[DateTime] = None)
-
-  def extractDevice(ns: Namespace): Directive1[Device] = entity(as[DeviceWithoutNs]).flatMap { device =>
-    provide(Device(namespace = ns,
-           uuid = device.uuid,
-           deviceId = device.deviceId,
-           deviceType = device.deviceType,
-           lastSeen = device.lastSeen))
-  }
-
 }
 
 class WebService(notifier: UpdateNotifier, resolver: ExternalResolverClient, db : Database)

@@ -48,9 +48,9 @@ class UpdateService(notifier: UpdateNotifier)
 
   implicit private val log = Logging(system, "updateservice")
 
-  def checkDevices( dependencies: DevicesToPackages ) : Future[Boolean] = FastFuture.successful( true )
+  def checkDevices( dependencies: DeviceIdsToPackages ) : Future[Boolean] = FastFuture.successful( true )
 
-  def mapIdsToPackages(ns: Namespace, devicesToDeps: DevicesToPackages )
+  def mapIdsToPackages(ns: Namespace, devicesToDeps: DeviceIdsToPackages )
                       (implicit db: Database, ec: ExecutionContext): Future[Map[PackageId, Package]] = {
     def mapPackagesToIds( packages: Seq[Package] ) : Map[PackageId, Package] = packages.map( x => x.id -> x).toMap
 
@@ -81,12 +81,12 @@ class UpdateService(notifier: UpdateNotifier)
     }
   }
 
-  def mkUploadSpecs(request: UpdateRequest, devicesToPackageIds: DevicesToPackages,
+  def mkUpdateSpecs(request: UpdateRequest, devicesToPackageIds: DevicesToPackages,
                     idsToPackages: Map[PackageId, Package]): Set[UpdateSpec] = {
     devicesToPackageIds.map {
-      case (deviceUuid, requiredPackageIds) =>
+      case (device, requiredPackageIds) =>
         val packages : Set[Package] = requiredPackageIds.map( idsToPackages.get ).map( _.get )
-        UpdateSpec(request.namespace, request, deviceUuid, UpdateStatus.Pending, packages)
+        UpdateSpec(request.namespace, request, device.uuid, UpdateStatus.Pending, packages)
     }.toSet
   }
 
@@ -98,25 +98,26 @@ class UpdateService(notifier: UpdateNotifier)
   }
 
   def queueUpdate(request: UpdateRequest, resolver : DependencyResolver )
-                 (implicit db: Database, ec: ExecutionContext): Future[Set[UpdateSpec]] = {
-    for {
-      pckg           <- loadPackage(request.namespace, request.packageId)
-      devicesToDeps     <- resolver(pckg)
-      packages       <- mapIdsToPackages(request.namespace, devicesToDeps)
-      updateSpecs    = mkUploadSpecs(request, devicesToDeps, packages)
-      _              <- persistRequest(request, updateSpecs)
-      _              <- Future.successful(notifier.notify(updateSpecs.toSeq))
-    } yield updateSpecs
-  }
+                 (implicit db: Database, ec: ExecutionContext): Future[Set[UpdateSpec]] = for {
+    pckg            <- loadPackage(request.namespace, request.packageId)
+    deviceIdsToDeps <- resolver(pckg)
+    deviceIds        = deviceIdsToDeps.keys
+    devices         <- db.run(DBIO.sequence(deviceIds.map(Devices.findByDeviceId(request.namespace, _))))
+    devicesToDeps    = deviceIds.zip(devices).map { case (id, d) => d -> deviceIdsToDeps(id) }
+    packages        <- mapIdsToPackages(request.namespace, deviceIdsToDeps)
+    updateSpecs      = mkUpdateSpecs(request, devicesToDeps.toMap, packages)
+    _               <- persistRequest(request, updateSpecs)
+    _               <- Future.successful(notifier.notify(updateSpecs.toSeq))
+  } yield updateSpecs
 
   def queueDeviceUpdate(ns: Namespace, uuid: Device.Id, packageId: PackageId)
-                        (implicit db: Database, ec: ExecutionContext): Future[UpdateRequest] = {
+                       (implicit db: Database, ec: ExecutionContext): Future[UpdateRequest] = {
     val newUpdateRequest = UpdateRequest.default(ns, packageId)
 
     for {
       p <- loadPackage(ns, packageId)
       updateRequest = newUpdateRequest.copy(signature = p.signature.getOrElse(newUpdateRequest.signature),
-        description = p.description)
+                                            description = p.description)
       spec = UpdateSpec(ns, updateRequest, uuid, UpdateStatus.Pending, Set.empty)
       dbSpec <- persistRequest(updateRequest, ListSet(spec))
     } yield updateRequest
@@ -127,6 +128,7 @@ class UpdateService(notifier: UpdateNotifier)
 }
 
 object UpdateService {
-  type DevicesToPackages = Map[Device.Id, Set[PackageId]]
-  type DependencyResolver = Package => Future[DevicesToPackages]
+  type DeviceIdsToPackages = Map[Device.DeviceId, Set[PackageId]]
+  type DevicesToPackages = Map[Device, Set[PackageId]]
+  type DependencyResolver = Package => Future[DeviceIdsToPackages]
 }

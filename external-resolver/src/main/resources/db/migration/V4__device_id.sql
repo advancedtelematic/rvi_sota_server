@@ -17,19 +17,19 @@ ALTER TABLE Firmware
 
 ALTER TABLE InstalledPackage
   DROP PRIMARY KEY
-, CHANGE vin device_id CHAR(36) NOT NULL -- regular UUID
+, CHANGE vin device_id VARCHAR(200) NOT NULL
 , ADD PRIMARY KEY (namespace, device_id, packageName, packageVersion)
 ;
 
 ALTER TABLE InstalledComponent
   DROP PRIMARY KEY
-, CHANGE vin device_id CHAR(36) NOT NULL -- regular UUID
+, CHANGE vin device_id CHAR(200) NOT NULL
 , ADD PRIMARY KEY (namespace, device_id, partNumber)
 ;
 
 ALTER TABLE Firmware
   DROP PRIMARY KEY
-, CHANGE vin device_id CHAR(36) NOT NULL -- regular UUID
+, CHANGE vin device_id CHAR(200) NOT NULL
 , ADD PRIMARY KEY (namespace, module, firmware_id, device_id)
 ;
 

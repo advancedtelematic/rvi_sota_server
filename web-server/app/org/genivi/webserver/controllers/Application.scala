@@ -47,11 +47,13 @@ class Application @Inject() (ws: WSClient, val messagesApi: MessagesApi, val acc
     case "update_requests" :: _ => coreApiUri
     case "device_updates" :: _ => coreApiUri
     case "updates" :: _ => coreApiUri
+    // TODO: more sensible routes which do not collide
+    case "devices" :: "create" :: _ => coreApiUri
+    case "devices" :: "search" :: _ => coreApiUri
     case "devices" :: id :: "queued" :: _ => coreApiUri
     case "devices" :: id :: "history" :: _ => coreApiUri
     case "devices" :: id :: "sync" :: _ => coreApiUri
-    case "devices" :: id :: _ => resolverApiUri
-    case "devices" :: _ => coreApiUri
+    case "devices" :: _ => resolverApiUri
     case _ => resolverApiUri
   }
 

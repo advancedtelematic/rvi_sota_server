@@ -14,6 +14,7 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string._
 import io.circe.generic.auto._
 import io.circe.syntax._
+import java.util.UUID
 import org.genivi.sota.core.common.NamespaceDirective._
 import org.genivi.sota.core.data._
 import org.genivi.sota.core.db.UpdateSpecs
@@ -22,6 +23,7 @@ import org.genivi.sota.data.Namespace._
 import org.genivi.sota.data.{PackageId, Device}
 import org.genivi.sota.marshalling.CirceMarshallingSupport
 import org.genivi.sota.rest.Validation._
+import org.joda.time.{DateTime, Interval}
 import slick.driver.MySQLDriver.api.Database
 
 class UpdateRequestsResource(db: Database, resolver: ExternalResolverClient, updateService: UpdateService)
@@ -34,6 +36,28 @@ class UpdateRequestsResource(db: Database, resolver: ExternalResolverClient, upd
   import eu.timepit.refined.string.uuidValidate
   import system.dispatcher
 
+  case class UpdateRequestWithoutNs(
+    id: UUID,
+    packageId: PackageId,
+    creationTime: DateTime,
+    periodOfValidity: Interval,
+    priority: Int,
+    signature: String,
+    description: Option[String],
+    requestConfirmation: Boolean)
+
+  def extractUpdateRequest(ns: Namespace): Directive1[UpdateRequest] = entity(as[UpdateRequestWithoutNs]).flatMap { request =>
+    provide(UpdateRequest(namespace = ns,
+                          id = request.id,
+                          packageId = request.packageId,
+                          creationTime = request.creationTime,
+                          periodOfValidity = request.periodOfValidity,
+                          priority = request.priority,
+                          signature = request.signature,
+                          description = request.description,
+                          requestConfirmation = request.requestConfirmation))
+  }
+
   implicit val _db = db
 
   def fetch(uuid: Refined[String, Uuid]) = {
@@ -45,7 +69,7 @@ class UpdateRequestsResource(db: Database, resolver: ExternalResolverClient, upd
   }
 
   def createUpdate(ns: Namespace) = {
-    entity(as[UpdateRequest]) { req =>
+    extractUpdateRequest(ns) { req =>
       complete(
         updateService.queueUpdate(
           req,

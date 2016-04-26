@@ -62,37 +62,37 @@ class DeviceDirectives(implicit system: ActorSystem,
       complete(db.run(DeviceRepository.search(ns, re, pn, pv, cp)))
     }
 
-  def getDevice(ns: Namespace, vin: Device.DeviceId): Route =
-    completeOrRecoverWith(db.run(DeviceRepository.exists(ns, vin))) {
+  def getDevice(ns: Namespace, deviceId: Device.DeviceId): Route =
+    completeOrRecoverWith(db.run(DeviceRepository.exists(ns, deviceId))) {
       Errors.onMissingDevice
     }
 
-  def addDevice(ns: Namespace, vin: Device.DeviceId): Route =
-    complete(db.run(DeviceRepository.add(Device(ns, vin))).map(_ => NoContent))
+  def addDevice(ns: Namespace, deviceId: Device.DeviceId): Route =
+    complete(db.run(DeviceRepository.add(Device(ns, deviceId))).map(_ => NoContent))
 
-  def deleteDevice(ns: Namespace, vin: Device.DeviceId): Route =
+  def deleteDevice(ns: Namespace, deviceId: Device.DeviceId): Route =
     handleExceptions(installedPackagesHandler) {
-      complete(db.run(DeviceRepository.deleteDevice(ns, vin)))
+      complete(db.run(DeviceRepository.deleteDevice(ns, deviceId)))
     }
 
-  def getPackages(ns: Namespace, vin: Device.DeviceId): Route =
-    completeOrRecoverWith(db.run(DeviceRepository.packagesOnDevice(ns, vin))) {
+  def getPackages(ns: Namespace, deviceId: Device.DeviceId): Route =
+    completeOrRecoverWith(db.run(DeviceRepository.packagesOnDevice(ns, deviceId))) {
       Errors.onMissingDevice
     }
 
-  def installPackage(ns: Namespace, vin: Device.DeviceId, pkgId: PackageId): Route =
-    completeOrRecoverWith(db.run(DeviceRepository.installPackage(ns, vin, pkgId))) {
+  def installPackage(ns: Namespace, deviceId: Device.DeviceId, pkgId: PackageId): Route =
+    completeOrRecoverWith(db.run(DeviceRepository.installPackage(ns, deviceId, pkgId))) {
       Errors.onMissingDevice orElse Errors.onMissingPackage
     }
 
-  def uninstallPackage(ns: Namespace, vin: Device.DeviceId, pkgId: PackageId): Route =
-    completeOrRecoverWith(db.run(DeviceRepository.uninstallPackage(ns, vin, pkgId))) {
+  def uninstallPackage(ns: Namespace, deviceId: Device.DeviceId, pkgId: PackageId): Route =
+    completeOrRecoverWith(db.run(DeviceRepository.uninstallPackage(ns, deviceId, pkgId))) {
       Errors.onMissingDevice orElse Errors.onMissingPackage
     }
 
-  def updateInstalledPackages(ns: Namespace, vin: Device.DeviceId): Route =
+  def updateInstalledPackages(ns: Namespace, deviceId: Device.DeviceId): Route =
     entity(as[Set[PackageId]]) { packageIds =>
-      onSuccess(db.run(DeviceRepository.updateInstalledPackages(ns, vin, packageIds))) {
+      onSuccess(db.run(DeviceRepository.updateInstalledPackages(ns, deviceId, packageIds))) {
         complete(StatusCodes.NoContent)
       }
     }
@@ -105,35 +105,35 @@ class DeviceDirectives(implicit system: ActorSystem,
    * @throws      Errors.MissingPackageException if package doesn't exist
    * @throws      Errors.MissingDevice if device doesn't exist
    */
-  def packageApi(vin: Device.DeviceId): Route = {
+  def packageApi(deviceId: Device.DeviceId): Route = {
     (pathPrefix("package") & extractNamespace) { ns =>
       (get & pathEnd) {
-        getPackages(ns, vin)
+        getPackages(ns, deviceId)
       } ~
       refinedPackageId { pkgId =>
         (put & pathEnd) {
-          installPackage(ns, vin, pkgId)
+          installPackage(ns, deviceId, pkgId)
         } ~
         (delete & pathEnd) {
-          uninstallPackage(ns, vin, pkgId)
+          uninstallPackage(ns, deviceId, pkgId)
         }
       }
     } ~
     (path("packages") & put & handleExceptions(installedPackagesHandler) & extractNamespace ) { ns =>
-      updateInstalledPackages(ns, vin)
+      updateInstalledPackages(ns, deviceId)
     }
   }
 
-  def getComponents(ns: Namespace, vin: Device.DeviceId): Route =
-    completeOrRecoverWith(db.run(DeviceRepository.componentsOnDevice(ns, vin))) {
+  def getComponents(ns: Namespace, deviceId: Device.DeviceId): Route =
+    completeOrRecoverWith(db.run(DeviceRepository.componentsOnDevice(ns, deviceId))) {
         Errors.onMissingDevice
       }
 
-  def installComponent(ns: Namespace, vin: Device.DeviceId, part: Component.PartNumber): Route =
-    complete(db.run(DeviceRepository.installComponent(ns, vin, part)))
+  def installComponent(ns: Namespace, deviceId: Device.DeviceId, part: Component.PartNumber): Route =
+    complete(db.run(DeviceRepository.installComponent(ns, deviceId, part)))
 
-  def uninstallComponent(ns: Namespace, vin: Device.DeviceId, part: Component.PartNumber): Route =
-    complete(db.run(DeviceRepository.uninstallComponent(ns, vin, part)))
+  def uninstallComponent(ns: Namespace, deviceId: Device.DeviceId, part: Component.PartNumber): Route =
+    complete(db.run(DeviceRepository.uninstallComponent(ns, deviceId, part)))
 
   /**
    * API route for component -> device associations.
@@ -143,17 +143,17 @@ class DeviceDirectives(implicit system: ActorSystem,
    * @throws      Errors.MissingComponent if component doesn't exist
    * @throws      Errors.MissingDevice if device doesn't exist
    */
-  def componentApi(vin: Device.DeviceId): Route =
+  def componentApi(deviceId: Device.DeviceId): Route =
     (pathPrefix("component") & extractNamespace) { ns =>
       (get & pathEnd) {
-        getComponents(ns, vin)
+        getComponents(ns, deviceId)
       } ~
       (refinedPartNumber & handleExceptions(installedComponentsHandler)) { part =>
         (put & pathEnd) {
-          installComponent(ns, vin, part)
+          installComponent(ns, deviceId, part)
         } ~
         (delete & pathEnd) {
-          uninstallComponent(ns, vin, part)
+          uninstallComponent(ns, deviceId, part)
         }
       }
     }
@@ -163,23 +163,23 @@ class DeviceDirectives(implicit system: ActorSystem,
       (get & pathEnd) {
         searchDevices(ns)
       } ~
-      extractDeviceId { vin =>
+      extractDeviceId { deviceId =>
         (get & pathEnd) {
-          getDevice(ns, vin)
+          getDevice(ns, deviceId)
         } ~
         (put & pathEnd) {
-          addDevice(ns, vin)
+          addDevice(ns, deviceId)
         } ~
         (delete & pathEnd) {
-          deleteDevice(ns, vin)
+          deleteDevice(ns, deviceId)
         } ~
-        packageApi(vin) ~
-        componentApi(vin)
+        packageApi(deviceId) ~
+        componentApi(deviceId)
       }
     }
 
-  def getFirmware(ns: Namespace, vin: Device.DeviceId): Route =
-    completeOrRecoverWith(db.run(DeviceRepository.firmwareOnDevice(ns, vin))) {
+  def getFirmware(ns: Namespace, deviceId: Device.DeviceId): Route =
+    completeOrRecoverWith(db.run(DeviceRepository.firmwareOnDevice(ns, deviceId))) {
       Errors.onMissingDevice
     }
 
@@ -192,8 +192,8 @@ class DeviceDirectives(implicit system: ActorSystem,
   def route: Route = {
     deviceApi ~
     pathPrefix("firmware") {
-      (get & pathEnd & extractNamespace & extractDeviceId) { (ns, vin) =>
-        getFirmware(ns, vin)
+      (get & pathEnd & extractNamespace & extractDeviceId) { (ns, deviceId) =>
+        getFirmware(ns, deviceId)
       }
     }
   }

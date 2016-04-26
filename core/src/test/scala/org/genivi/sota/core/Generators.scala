@@ -8,11 +8,10 @@ import akka.http.scaladsl.model.Uri
 import eu.timepit.refined.api.Refined
 import java.nio.file.{Files, Paths, StandardOpenOption}
 import java.security.MessageDigest
-import java.util.UUID
 import org.apache.commons.codec.binary.Hex
 import org.genivi.sota.core.data._
 import org.genivi.sota.data.Namespace._
-import org.genivi.sota.data.{Namespaces, PackageId, Vehicle, VehicleGenerators}
+import org.genivi.sota.data.{Namespaces, PackageId, Device, DeviceGenerators}
 import org.scalacheck.{Arbitrary, Gen}
 
 
@@ -49,6 +48,7 @@ trait Generators {
 
   def updateRequestGen(namespaceGen: Gen[Namespace], packageIdGen : Gen[PackageId]) : Gen[UpdateRequest] = for {
     ns           <- namespaceGen
+    id           <- Gen.uuid
     packageId    <- packageIdGen
     startAfter   <- Gen.choose(10, 100).map( DateTime.now + _.days)
     finishBefore <- Gen.choose(10, 100).map(x => startAfter + x.days)
@@ -56,18 +56,18 @@ trait Generators {
     sig          <- Gen.alphaStr
     desc         <- Gen.option(Arbitrary.arbitrary[String])
     reqConfirm   <- Arbitrary.arbitrary[Boolean]
-  } yield UpdateRequest(UUID.randomUUID(), ns, packageId, DateTime.now, startAfter to finishBefore,
+  } yield UpdateRequest(id, ns, packageId, DateTime.now, startAfter to finishBefore,
                         prio, sig, desc, reqConfirm)
 
-  def vinDepGen(packages: Seq[Package]) : Gen[(Vehicle.Vin, Set[PackageId])] = for {
-    vin               <- VehicleGenerators.genVin
+  def deviceDepGen(packages: Seq[Package]) : Gen[(Device.DeviceId, Set[PackageId])] = for {
+    device            <- DeviceGenerators.genDevice
     m                 <- Gen.choose(1, 10)
     packages          <- Gen.pick(m, packages).map( _.map(_.id) )
-  } yield vin -> packages.toSet
+  } yield device.deviceId -> packages.toSet
 
-  def dependenciesGen(packages: Seq[Package] ) : Gen[UpdateService.VinsToPackages] = for {
+  def dependenciesGen(packages: Seq[Package] ) : Gen[UpdateService.DeviceIdsToPackages] = for {
     n <- Gen.choose(1, 10)
-    r <- Gen.listOfN(n, vinDepGen(packages))
+    r <- Gen.listOfN(n, deviceDepGen(packages))
   } yield r.toMap
 
   def generatePackageData( template: Package ) : Package = {
@@ -97,13 +97,13 @@ trait Generators {
     template.copy( uri = Uri( path.toUri().toString() ), checkSum = Hex.encodeHexString( digest.digest() ))
   }
 
-  def genUpdateSpecFor(vehicle: Vehicle): Gen[(Package, UpdateSpec)] = for {
+  def genUpdateSpecFor(device: Device): Gen[(Package, UpdateSpec)] = for {
     smallSize <- Gen.chooseNum(1024, 1024 * 10)
     packageModel <- PackageGen.map(_.copy(size = smallSize.toLong))
     packageWithUri = Generators.generatePackageData(packageModel)
     updateRequest <- updateRequestGen(defaultNs, PackageIdGen).map(_.copy(packageId = packageWithUri.id))
   } yield {
-    val updateSpec = UpdateSpec(defaultNs, updateRequest, vehicle.vin,
+    val updateSpec = UpdateSpec(defaultNs, updateRequest, device.uuid,
       UpdateStatus.Pending, List(packageWithUri ).toSet)
 
     (packageWithUri, updateSpec)

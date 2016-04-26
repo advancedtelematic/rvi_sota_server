@@ -55,4 +55,9 @@ object Device {
     id => s"($id must be alphanumeric)",
     ValidDeviceId()
   )
+
+  implicit val DeviceIdOrdering: Ordering[DeviceId] = new Ordering[DeviceId] {
+    override def compare(d1: DeviceId, d2: DeviceId): Int = d1.get compare d2.get
+  }
+
 }

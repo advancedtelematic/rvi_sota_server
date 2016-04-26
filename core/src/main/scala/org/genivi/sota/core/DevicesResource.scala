@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.marshalling.Marshaller._
 import akka.http.scaladsl.model.StatusCodes.NoContent
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.{Directives, Route, StandardRoute}
+import akka.http.scaladsl.server.{Directive1, Directives, Route, StandardRoute}
 import akka.stream.ActorMaterializer
 import eu.timepit.refined._
 import eu.timepit.refined.string._
@@ -37,6 +37,18 @@ class DevicesResource(db: Database, client: ConnectivityClient, resolverClient: 
   import Directives._
   import WebService._
   import system.dispatcher
+
+  case class DeviceWithoutNs(
+    uuid: Device.Id,
+    deviceId: Device.DeviceId,
+    deviceType: Device.DeviceType)
+
+  def extractDevice(ns: Namespace): Directive1[Device] = entity(as[DeviceWithoutNs]).flatMap { device =>
+    provide(Device(namespace = ns,
+                   uuid = device.uuid,
+                   deviceId = device.deviceId,
+                   deviceType = device.deviceType))
+  }
 
   implicit val _db = db
 
@@ -97,10 +109,11 @@ class DevicesResource(db: Database, client: ConnectivityClient, resolverClient: 
           }
         }
       } ~
-      (pathEnd & get) {
+      // TODO: more sensible routes which do not collide with resolver
+      (path("search") & get) {
         search(ns)
       } ~
-      (pathEnd & post & extractDevice(ns) ) { device =>
+      (path("create") & post & extractDevice(ns)) { device =>
         updateDevice(device)
       }
     }
