@@ -73,6 +73,9 @@ object Command extends
 
   // scalastyle:off cyclomatic.complexity
   // scalastyle:off method.length
+  /**
+    * Command interpreter preparing a [[Semantics]] based on the command and the current state.
+    */
   def semCommand(cmd: Command)
                 (implicit ec: ExecutionContext): State[RawStore, Semantics] = cmd match {
 
@@ -248,7 +251,7 @@ object Command extends
     } yield EditFilter(fltOld, fltNu1)
 
   /**
-    * Pick an unsed filter for removal.
+    * Pick an unused filter for removal.
     * Note: [[semCommand]] can handle the case where the filter is in use, only we don't exercise such case.
     */
   private def genCommandRemoveFilter(s: RawStore): Gen[RemoveFilter] =
@@ -257,7 +260,7 @@ object Command extends
     } yield RemoveFilter(flt)
 
   /**
-    * Pick an unsed component for removal.
+    * Pick an unused component for removal.
     * Note: [[semCommand]] can handle the case where the component is in use, only we don't exercise such case.
     */
   private def genCommandRemoveComponent(s: RawStore): Gen[RemoveComponent] =
@@ -301,23 +304,23 @@ object Command extends
 
         // If there are vehicles and packages, then install some
         // packages on the vehicles with high probability.
-        (if (vehs > 0 && pkgs > 0) 100 else 0, genCommandInstallPackage(s)),
+        (if (vehs > 0 && pkgs > 0) 200 else 0, genCommandInstallPackage(s)),
 
         // If there are vehicles and components
-        (if (vehs > 0 && comps > 0) 100 else 0, genCommandInstallComponent(s)),
+        (if (vehs > 0 && comps > 0) 200 else 0, genCommandInstallComponent(s)),
 
-        (if (vpaks > 0) 10 else 0, genCommandUninstallPackage(s)),
+        (if (vpaks > 0) 5 else 0, genCommandUninstallPackage(s)),
 
-        (if (vcomp > 0) 10 else 0, genCommandUninstallComponent(s)),
+        (if (vcomp > 0) 5 else 0, genCommandUninstallComponent(s)),
 
         (if (filts > 0) 50 else 0, genCommandEditFilter(s)),
 
         (if (comps > 0) 50 else 0, genCommandEditComponent(s)),
 
         // If there are packages and filters, install some filter to some package.
-        (if (pkgs > 0 && filts > 0) 50 else 0, genCommandAddFilterToPackage(s)),
+        (if (pkgs > 0 && filts > 0) 200 else 0, genCommandAddFilterToPackage(s)),
 
-        (if (pfilt > 0) 50 else 0, genCommandRemoveFilterForPackage(s)),
+        (if (pfilt > 0) 10 else 0, genCommandRemoveFilterForPackage(s)),
 
         (if (uflts > 0) 50 else 0, genCommandRemoveFilter(s)),
 

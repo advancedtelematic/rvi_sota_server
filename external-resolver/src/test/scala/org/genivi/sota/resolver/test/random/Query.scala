@@ -145,9 +145,9 @@ object Query extends
       pfilt <- Store.numberOfPackagesWithSomeFilter
       qry  <- lift(Gen.frequency(
 
-        (10, Gen.const(ListVehicles)),
-        (10, Gen.const(ListComponents)),
-        ( 5, Gen.const(ListFilters)),
+        (5, Gen.const(ListVehicles)),
+        (5, Gen.const(ListComponents)),
+        (5, Gen.const(ListFilters)),
 
         (if (vehs > 0) 10 else 0, Gen.oneOf(
           Store.pickVehicle.runA(s).map(ListPackagesOnVehicle(_)),
@@ -162,7 +162,7 @@ object Query extends
           Store.pickPackageWithFilter.runA(s) map { case (pkg, flt) => ListFiltersFor(pkg)  }
         )),
 
-        (if (pkgs > 0) 50 else 0,
+        (if (pkgs > 0) 10 else 0,
           Store.pickPackage.runA(s).map(pkg => Resolve(pkg.id)))
       ))
     } yield qry
