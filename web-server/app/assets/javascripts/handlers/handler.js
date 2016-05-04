@@ -5,7 +5,7 @@ define(function(require) {
       errors = require('./errors'),
       UpdatesHandler = require('./updates'),
       filtersHandler = require('./filters'),
-      vehiclesHandler = require('./vehicles'),
+      devicesHandler = require('./devices'),
       packageFiltersHandler = require('./package-filters'),
       componentsHandler = require('./components'),
       firmwareHandler = require('./firmware'),

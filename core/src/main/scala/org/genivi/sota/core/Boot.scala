@@ -54,7 +54,7 @@ object Boot extends App with DatabaseConfig {
     Uri(config.getString("resolver.baseUri")),
     Uri(config.getString("resolver.resolveUri")),
     Uri(config.getString("resolver.packagesUri")),
-    Uri(config.getString("resolver.vehiclesUri"))
+    Uri(config.getString("resolver.devicesUri"))
   )
 
   val host = config.getString("server.host")
@@ -82,8 +82,8 @@ object Boot extends App with DatabaseConfig {
     } yield sotaServices
     case _ =>
       val notifier = DefaultUpdateNotifier
-      val vehicleService = new VehicleUpdatesResource(db, externalResolverClient)
-      val allRoutes = routes(notifier) ~ vehicleService.route
+      val deviceService = new DeviceUpdatesResource(db, externalResolverClient)
+      val allRoutes = routes(notifier) ~ deviceService.route
 
       Http()
         .bindAndHandle(allRoutes, host, port)

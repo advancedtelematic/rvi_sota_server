@@ -58,13 +58,13 @@ object SotaBuild extends Build {
   // the sub-projects
   lazy val common = Project(id = "sota-common", base = file("common"))
     .settings(basicSettings ++ compilerSettings)
-    .settings( libraryDependencies ++= Dependencies.Rest :+ Dependencies.AkkaHttpCirceJson :+ Dependencies.NscalaTime :+ Dependencies.Refined :+ Dependencies.CommonsCodec)
-    .dependsOn(commonData)
+    .settings(libraryDependencies ++= Dependencies.Circe ++ Dependencies.Rest :+ Dependencies.AkkaHttpCirceJson :+ Dependencies.NscalaTime :+ Dependencies.Refined :+ Dependencies.CommonsCodec)
     .settings(Publish.settings)
 
   lazy val commonData = Project(id = "sota-common-data", base = file("common-data"))
     .settings(basicSettings ++ compilerSettings)
     .settings(libraryDependencies ++= Dependencies.Circe :+ Dependencies.Cats :+ Dependencies.Refined :+ Dependencies.CommonsCodec :+ Dependencies.TypesafeConfig :+ Dependencies.NscalaTime)
+    .dependsOn(common)
     .settings(Publish.settings)
 
   lazy val commonTest = Project(id = "sota-common-test", base = file("common-test"))

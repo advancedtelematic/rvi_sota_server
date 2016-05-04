@@ -3,8 +3,8 @@ package org.genivi.sota.resolver.test.random
 import akka.http.scaladsl.model.{HttpRequest, StatusCode, StatusCodes}
 import cats.state.{State, StateT}
 import org.genivi.sota.data.Namespaces
-import org.genivi.sota.data.{Vehicle, VehicleGenerators}
 import org.genivi.sota.resolver.components.Component
+import org.genivi.sota.resolver.devices.Device
 import org.genivi.sota.resolver.filters.Filter
 import org.genivi.sota.resolver.packages.{Package, PackageFilter}
 import org.genivi.sota.resolver.test._
@@ -18,11 +18,11 @@ import Misc._
 
 sealed trait Command
 
-final case class AddVehicle(veh: Vehicle) extends Command
+final case class AddDevice(device: Device) extends Command
 final case class AddPackage(pkg: Package) extends Command
 
-final case class InstallPackage  (veh: Vehicle, pkg: Package) extends Command
-final case class UninstallPackage(veh: Vehicle, pkg: Package) extends Command
+final case class InstallPackage  (device: Device, pkg: Package) extends Command
+final case class UninstallPackage(device: Device, pkg: Package) extends Command
 
 final case class AddFilter (filt: Filter)               extends Command
 final case class EditFilter(old : Filter, neu: Filter)  extends Command {
@@ -39,12 +39,12 @@ final case class EditComponent  (old : Component, neu: Component)  extends Comma
   if (!(old.samePK(neu))) throw new IllegalArgumentException
 }
 final case class RemoveComponent(cmpn: Component)                  extends Command
-final case class InstallComponent  (veh: Vehicle, cmpn: Component) extends Command
-final case class UninstallComponent(veh: Vehicle, cmpn: Component) extends Command
+final case class InstallComponent  (device: Device, cmpn: Component) extends Command
+final case class UninstallComponent(device: Device, cmpn: Component) extends Command
 
 
 object Command extends
-    VehicleRequestsHttp with
+    DeviceRequestsHttp with
     PackageRequestsHttp with
     FilterRequestsHttp  with
     ComponentRequestsHttp with
@@ -76,11 +76,11 @@ object Command extends
   def semCommand(cmd: Command)
                 (implicit ec: ExecutionContext): State[RawStore, Semantics] = cmd match {
 
-    case AddVehicle(veh) =>
+    case AddDevice(device) =>
       for {
         s <- State.get
-        _ <- State.set(s.creating(veh))
-      } yield Semantics(addVehicle(veh.vin), StatusCodes.NoContent, Success)
+        _ <- State.set(s.creating(device))
+      } yield Semantics(addDevice(device.id), StatusCodes.NoContent, Success)
 
     case AddPackage(pkg) =>
       for {
@@ -88,18 +88,18 @@ object Command extends
         _ <- State.set(s.creating(pkg))
       } yield Semantics(addPackage(pkg), StatusCodes.OK, SuccessPackage(pkg))
 
-    case InstallPackage(veh, pkg) =>
+    case InstallPackage(device, pkg) =>
       for {
         s <- State.get
-        _ <- State.set(s.installing(veh, pkg))
-      } yield Semantics(installPackage(veh, pkg), StatusCodes.OK, Success)
+        _ <- State.set(s.installing(device, pkg))
+      } yield Semantics(installPackage(device, pkg), StatusCodes.OK, Success)
 
-    case UninstallPackage(veh, pkg) =>
+    case UninstallPackage(device, pkg) =>
       for {
         s <- State.get
-        _ <- State.set(s.uninstalling(veh, pkg))
+        _ <- State.set(s.uninstalling(device, pkg))
       } yield Semantics(
-        uninstallPackage(veh, pkg),
+        uninstallPackage(device, pkg),
         StatusCodes.OK, Success) // whether already uninstalled or not, OK is the reply
 
     case AddFilter(filt) =>
@@ -172,30 +172,30 @@ object Command extends
         else         { Semantics(req, StatusCodes.Conflict, Failure(ErrorCodes.DuplicateEntry)) }
       }
 
-    case InstallComponent(veh, cmpn) =>
+    case InstallComponent(device, cmpn) =>
       for {
         s <- State.get
-        _ <- State.set(s.installing(veh, cmpn))
-        isDuplicatePK = s.vehicles(veh)._2.contains(cmpn)
+        _ <- State.set(s.installing(device, cmpn))
+        isDuplicatePK = s.devices(device)._2.contains(cmpn)
       } yield {
-        val req = installComponent(veh, cmpn)
+        val req = installComponent(device, cmpn)
         if (isDuplicatePK) { Semantics(req, StatusCodes.Conflict, Failure(ErrorCodes.DuplicateEntry)) }
         else               { Semantics(req, StatusCodes.OK, Success) }
       }
 
-    case UninstallComponent(veh, cmpn) =>
+    case UninstallComponent(device, cmpn) =>
       for {
         s <- State.get
-        _ <- State.set(s.uninstalling(veh, cmpn))
+        _ <- State.set(s.uninstalling(device, cmpn))
       } yield Semantics(
-        uninstallComponent(veh, cmpn),
+        uninstallComponent(device, cmpn),
         StatusCodes.OK, Success) // whether already uninstalled or not, OK is the reply
 
   }
   // scalastyle:on
 
-  private def genCommandAddVehicle: Gen[AddVehicle] =
-    VehicleGenerators.genVehicle.map(AddVehicle(_))
+  private def genCommandAddDevice: Gen[AddDevice] =
+    DeviceGenerators.genDevice.map(AddDevice(_))
 
   private def genCommandAddPackage: Gen[AddPackage] =
     PackageGenerators.genPackage.map(AddPackage(_))
@@ -209,25 +209,25 @@ object Command extends
 
   private def genCommandInstallPackage(s: RawStore): Gen[InstallPackage] =
     for {
-      veh <- Store.pickVehicle.runA(s)
+      device <- Store.pickDevice.runA(s)
       pkg <- Store.pickPackage.runA(s)
-    } yield InstallPackage(veh, pkg)
+    } yield InstallPackage(device, pkg)
 
   private def genCommandUninstallPackage(s: RawStore): Gen[UninstallPackage] =
     for {
-      (veh, pkg) <- Store.pickVehicleWithPackage.runA(s)
-    } yield UninstallPackage(veh, pkg)
+      (device, pkg) <- Store.pickDeviceWithPackage.runA(s)
+    } yield UninstallPackage(device, pkg)
 
   private def genCommandInstallComponent(s: RawStore): Gen[InstallComponent] =
     for {
-      veh <- Store.pickVehicle.runA(s)
+      device <- Store.pickDevice.runA(s)
       cmp <- Store.pickComponent.runA(s)
-    } yield InstallComponent(veh, cmp)
+    } yield InstallComponent(device, cmp)
 
   private def genCommandUninstallComponent(s: RawStore): Gen[UninstallComponent] =
     for {
-      (veh, cmp) <- Store.pickVehicleWithComponent.runA(s)
-    } yield UninstallComponent(veh, cmp)
+      (device, cmp) <- Store.pickDeviceWithComponent.runA(s)
+    } yield UninstallComponent(device, cmp)
 
   private def genCommandAddFilterToPackage(s: RawStore): Gen[AddFilterToPackage] =
     for {
@@ -277,21 +277,21 @@ object Command extends
   def genCommand(implicit ec: ExecutionContext): StateT[Gen, RawStore, Command] =
     for {
       s     <- StateT.stateTMonadState[Gen, RawStore].get
-      vehs  <- Store.numberOfVehicles
+      devices  <- Store.numberOfDevices
       pkgs  <- Store.numberOfPackages
       filts <- Store.numberOfFilters
       uflts <- Store.numberOfUnusedFilters
       comps <- Store.numberOfComponents
       ucmps <- Store.numberOfUnusedComponents
-      vcomp <- Store.numberOfVehiclesWithSomeComponent
-      vpaks <- Store.numberOfVehiclesWithSomePackage
+      vcomp <- Store.numberOfDevicesWithSomeComponent
+      vpaks <- Store.numberOfDevicesWithSomePackage
       pfilt <- Store.numberOfPackagesWithSomeFilter
       cmd   <- lift(Gen.frequency(
 
-        // If there are few vehicles, packages or filters in the world,
+        // If there are few devices, packages or filters in the world,
         // then generate some with high probability.
 
-        (if (vehs <= 10) 100 else 1, genCommandAddVehicle),
+        (if (devices <= 10) 100 else 1, genCommandAddDevice),
 
         (if (pkgs <= 5)  100 else 1, genCommandAddPackage),
 
@@ -299,12 +299,12 @@ object Command extends
 
         (if (comps <= 3) 20 else 1, genCommandAddComponent(s)),
 
-        // If there are vehicles and packages, then install some
-        // packages on the vehicles with high probability.
-        (if (vehs > 0 && pkgs > 0) 100 else 0, genCommandInstallPackage(s)),
+        // If there are devices and packages, then install some
+        // packages on the devices with high probability.
+        (if (devices > 0 && pkgs > 0) 100 else 0, genCommandInstallPackage(s)),
 
-        // If there are vehicles and components
-        (if (vehs > 0 && comps > 0) 100 else 0, genCommandInstallComponent(s)),
+        // If there are devices and components
+        (if (devices > 0 && comps > 0) 100 else 0, genCommandInstallComponent(s)),
 
         (if (vpaks > 0) 10 else 0, genCommandUninstallPackage(s)),
 

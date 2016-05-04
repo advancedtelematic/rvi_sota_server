@@ -12,13 +12,13 @@ define(function(require) {
     },
     mixins: [togglePanel],
     componentWillUnmount: function(){
-      this.props.Packages.removeWatch("poll-package-queue-for-vin");
+      this.props.Packages.removeWatch("poll-package-queue-for-device");
     },
     componentWillMount: function(){
-      this.props.Packages.addWatch("poll-package-queue-for-vin", _.bind(this.forceUpdate, this, null));
+      this.props.Packages.addWatch("poll-package-queue-for-device", _.bind(this.forceUpdate, this, null));
     },
     refreshData: function() {
-      SotaDispatcher.dispatch({actionType: 'get-package-queue-for-vin', vin: this.props.Vin});
+      SotaDispatcher.dispatch({actionType: 'get-package-queue-for-device', device: this.props.Device});
     },
     label: "Queue",
     panel: function() {

@@ -21,7 +21,7 @@ import org.apache.commons.codec.binary.Hex
 import org.genivi.sota.core.Generators
 import org.genivi.sota.core.data.Package
 import org.genivi.sota.core.resolver.ConnectivityClient
-import org.genivi.sota.data.Vehicle
+import org.genivi.sota.data.Device
 import org.joda.time.DateTime
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
@@ -35,21 +35,21 @@ import scala.util.Success
 /**
  * Dummy actor to simulate SOTA Client in tests
  */
-class ClientActor(vin: Vehicle.Vin, probe: ActorRef, chunksToConsume: Int)
+class ClientActor(deviceId: Device.Id, probe: ActorRef, chunksToConsume: Int)
     extends Actor with ActorLogging with  Stash {
 
   val chunks = scala.collection.mutable.ListBuffer.empty[PackageChunk]
 
   def consumeChunks(uploader: ActorRef) : Receive = {
     case StartDownloadMessage(id, _, _) =>
-      uploader ! ChunksReceived(vin, id, List.empty)
+      uploader ! ChunksReceived(deviceId, id, List.empty)
 
     case PackageChunk(_, _, index) if index > chunksToConsume =>
       // do nothing, uploader will time out.
 
     case x @ PackageChunk(pid, data, index) =>
       chunks += x
-      uploader ! ChunksReceived(vin, pid, chunks.toList.map( _.index ) )
+      uploader ! ChunksReceived(deviceId, pid, chunks.toList.map( _.index ) )
 
     case Finish =>
       probe ! ClientActor.Report(chunks.toList)
@@ -75,8 +75,8 @@ object ClientActor {
   final case class SetUploader( ref: ActorRef )
   final case class Report( chunks: List[PackageChunk] )
 
-  def props( vin: Vehicle.Vin, probe: ActorRef, chunksToConsume: Int = Int.MaxValue ) : Props =
-    Props( new ClientActor( vin, probe, chunksToConsume ) )
+  def props( deviceId: Device.Id, probe: ActorRef, chunksToConsume: Int = Int.MaxValue ) : Props =
+    Props( new ClientActor( deviceId, probe, chunksToConsume ) )
 
 }
 
@@ -118,21 +118,21 @@ class PackageTransferSpec extends PropSpec with Matchers with PropertyChecks wit
 
   val services = ClientServices("", "", "", "", "")
 
-  import org.genivi.sota.data.VehicleGenerators.genVehicle
+  import org.genivi.sota.data.DeviceGenerators.genDevice
 
   ignore("all chunks transferred") {
     val testDataGen = for {
-      vehicle <- genVehicle
+      device <- genDevice
       p <- Gen.oneOf(packages)
       updateId <- Gen.uuid
       signature <- Gen.alphaStr
-    } yield (vehicle, p, updateId, signature)
+    } yield (device, p, updateId, signature)
 
     forAll(testDataGen) { testData =>
-      val (vehicle, p, updateId, signature) = testData
+      val (device, p, updateId, signature) = testData
       val pckg = Generators.generatePackageData(p)
       val probe = TestProbe()
-      val clientActor = system.actorOf( ClientActor.props(vehicle.vin, probe.ref), "sota-client" )
+      val clientActor = system.actorOf( ClientActor.props(device.uuid, probe.ref), "sota-client" )
       val rviClient = new AccRviClient( clientActor )
       val underTest = system.actorOf(PackageTransferActor.props(rviClient)(updateId, signature, pckg, services))
       clientActor ! ClientActor.SetUploader( underTest )
@@ -146,19 +146,19 @@ class PackageTransferSpec extends PropSpec with Matchers with PropertyChecks wit
   ignore("transfer aborts after x attempts to deliver a chunk") {
     val chunkSize = system.settings.config.getBytes("rvi.transfer.chunkSize").intValue()
     val testDataGen = for {
-      vehicle   <- genVehicle
+      device   <- genDevice
       p         <- Gen.oneOf( packages.filter( _.size > chunkSize ) )
       updateId  <- Gen.uuid
       signature <- Gen.alphaStr
       chunks    <- Gen.choose(0,
                               (BigDecimal(p.size) / BigDecimal(chunkSize) setScale(0, RoundingMode.CEILING)).toInt - 1)
-    } yield (vehicle, p, updateId, signature, chunks)
+    } yield (device, p, updateId, signature, chunks)
 
     forAll( testDataGen ) { testData =>
-      val (vehicle, p, updateId, signature, chunksTransferred) = testData
+      val (device, p, updateId, signature, chunksTransferred) = testData
       val pckg = Generators.generatePackageData(p)
       val probe = TestProbe()
-      val clientActor = system.actorOf( ClientActor.props(vehicle.vin, probe.ref, chunksTransferred), "sota-client" )
+      val clientActor = system.actorOf( ClientActor.props(device.uuid, probe.ref, chunksTransferred), "sota-client" )
       val rviClient = new AccRviClient( clientActor )
       val proxy = system.actorOf(
         Props(new Actor {

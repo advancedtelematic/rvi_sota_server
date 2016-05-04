@@ -42,7 +42,7 @@ class PackageResourceWordSpec extends WordSpec
     Uri(config.getString("resolver.baseUri")),
     Uri(config.getString("resolver.resolveUri")),
     Uri(config.getString("resolver.packagesUri")),
-    Uri(config.getString("resolver.vehiclesUri"))
+    Uri(config.getString("resolver.devicesUri"))
   )
   val db = Database.forConfig(databaseName)
   lazy val service = new PackagesResource(externalResolverClient, db)

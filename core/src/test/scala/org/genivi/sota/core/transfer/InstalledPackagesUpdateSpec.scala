@@ -2,21 +2,21 @@ package org.genivi.sota.core.transfer
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import org.genivi.sota.core.db._
-import org.genivi.sota.core.rvi.UpdateReport
-import org.genivi.sota.core.rvi.OperationResult
-import org.genivi.sota.data.VehicleGenerators
-import org.genivi.sota.core.{DatabaseSpec, FakeExternalResolver, Generators, UpdateResourcesDatabaseSpec}
 import org.genivi.sota.core.data.UpdateStatus
+import org.genivi.sota.core.db._
+import org.genivi.sota.core.rvi.OperationResult
+import org.genivi.sota.core.rvi.UpdateReport
+import org.genivi.sota.core.{DatabaseSpec, FakeExternalResolver, Generators, UpdateResourcesDatabaseSpec}
+import org.genivi.sota.data.DeviceGenerators
+import org.genivi.sota.db.SlickExtensions
+import org.genivi.sota.marshalling.CirceMarshallingSupport._
+import org.joda.time.DateTime
 import org.scalacheck.Gen
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
-import org.genivi.sota.db.SlickExtensions
 import org.scalatest.time.{Millis, Seconds, Span}
-import org.genivi.sota.marshalling.CirceMarshallingSupport._
-import org.joda.time.DateTime
-
 import scala.concurrent.ExecutionContext
+
 
 class InstalledPackagesUpdateSpec extends FunSuite
   with ShouldMatchers
@@ -39,9 +39,9 @@ class InstalledPackagesUpdateSpec extends FunSuite
 
   test("forwards request to resolver client") {
     val resolverClient = new FakeExternalResolver
-    val vin = VehicleGenerators.genVin.sample.get
+    val device = DeviceGenerators.genDevice.sample.get
     val packageIds = Gen.listOf(PackageIdGen).sample.get
-    val f = update(vin, packageIds, resolverClient)
+    val f = update(device.uuid, packageIds, resolverClient)
 
     whenReady(f) { _ =>
       forAll(packageIds) { id =>
@@ -52,12 +52,12 @@ class InstalledPackagesUpdateSpec extends FunSuite
 
   test("marks reported packages as installed") {
     val f = for {
-      (_, vehicle, updateSpec) <- createUpdateSpec()
+      (_, device, updateSpec) <- createUpdateSpec()
       result = OperationResult("opid", 1, "some result")
       report = UpdateReport(updateSpec.request.id, List(result))
-      _ <- reportInstall(vehicle.vin, report)
-      updatedSpec <- db.run(findUpdateSpecFor(vehicle.vin, updateSpec.request.id))
-      history <- db.run(InstallHistories.list(vehicle.namespace, vehicle.vin))
+      _ <- reportInstall(device.uuid, report)
+      updatedSpec <- db.run(findUpdateSpecFor(device.uuid, updateSpec.request.id))
+      history <- db.run(InstallHistories.list(device.namespace, device.uuid))
     } yield (updatedSpec.status, history)
 
     whenReady(f) { case (newStatus, history) =>
@@ -70,9 +70,9 @@ class InstalledPackagesUpdateSpec extends FunSuite
     val secondCreationTime = DateTime.now.plusHours(1)
 
     val f = for {
-      (_, vehicle, updateRequest0) <- createUpdateSpec()
-      (_, updateRequest1) <- db.run(createUpdateSpecFor(vehicle, secondCreationTime))
-      result <- db.run(findPendingPackageIdsFor(defaultNamespace, vehicle.vin))
+      (_, device, updateRequest0) <- createUpdateSpec()
+      (_, updateRequest1) <- db.run(createUpdateSpecFor(device, secondCreationTime))
+      result <- db.run(findPendingPackageIdsFor(defaultNamespace, device.uuid))
     } yield (result, updateRequest0, updateRequest1)
 
     whenReady(f) { case (result, updateRequest0, updateRequest1)  =>

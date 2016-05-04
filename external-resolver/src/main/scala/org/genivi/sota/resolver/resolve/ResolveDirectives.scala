@@ -14,7 +14,7 @@ import org.genivi.sota.marshalling.CirceMarshallingSupport._
 import org.genivi.sota.resolver.common.Errors
 import org.genivi.sota.resolver.common.NamespaceDirective._
 import org.genivi.sota.resolver.common.RefinementDirectives.refinedPackageId
-import org.genivi.sota.resolver.vehicles.VehicleRepository
+import org.genivi.sota.resolver.devices.DeviceRepository
 import scala.concurrent.ExecutionContext
 import slick.jdbc.JdbcBackend.Database
 import Directives._
@@ -28,7 +28,7 @@ class ResolveDirectives(implicit system: ActorSystem,
                         ec: ExecutionContext) {
 
   def resolvePackage(ns: Namespace, id: PackageId): Route =
-    completeOrRecoverWith(db.run(VehicleRepository.resolve(ns, id))) {
+    completeOrRecoverWith(db.run(DeviceRepository.resolve(ns, id))) {
       Errors.onMissingPackage
     }
 

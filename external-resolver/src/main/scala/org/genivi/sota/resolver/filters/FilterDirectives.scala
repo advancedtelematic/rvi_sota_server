@@ -33,6 +33,16 @@ class FilterDirectives(implicit system: ActorSystem,
                        mat: ActorMaterializer,
                        ec: ExecutionContext) {
 
+  case class FilterWithoutNs(
+    name: Filter.Name,
+    expression: Filter.Expression)
+
+  def extractFilter(ns: Namespace): Directive1[Filter] = entity(as[FilterWithoutNs]).flatMap { filter =>
+    Directives.provide(Filter(namespace = ns,
+                              name = filter.name,
+                              expression = filter.expression))
+  }
+
   def searchFilter(ns: Namespace): Route =
     parameter('regex.as[String Refined Regex].?) { re =>
       val query = re.fold(FilterRepository.list)(re => FilterRepository.searchByRegex(ns, re))
@@ -45,9 +55,8 @@ class FilterDirectives(implicit system: ActorSystem,
     }
 
   def createFilter(ns: Namespace): Route =
-    entity(as[Filter]) { filter =>
-      // TODO: treat differing namespace names accordingly
-      complete(db.run(FilterRepository.add(filter.copy(namespace = ns))))
+    extractFilter(ns) { filter =>
+      complete(db.run(FilterRepository.add(filter)))
     }
 
   def updateFilter(ns: Namespace, fname: String Refined Filter.ValidName): Route =
@@ -62,8 +71,8 @@ class FilterDirectives(implicit system: ActorSystem,
    * API route for validating filters.
    * @return      Route object containing routes for verifying that a filter is valid
    */
-  def validateFilter: Route =
-    entity(as[Filter]) { filter =>
+  def validateFilter(ns: Namespace): Route =
+    extractFilter(ns) { filter =>
       complete("OK")
     }
 
@@ -75,25 +84,27 @@ class FilterDirectives(implicit system: ActorSystem,
    */
   def route: Route =
     handleExceptions(ExceptionHandler(Errors.onMissingFilter orElse Errors.onMissingPackage)) {
-      (pathPrefix("filters") & extractNamespace) { ns =>
-        (get & pathEnd) {
-          searchFilter(ns)
+      extractNamespace(system) { ns =>
+        pathPrefix("filters") {
+          (get & pathEnd) {
+            searchFilter(ns)
+          } ~
+          (get & refined[Filter.ValidName](Slash ~ Segment) & path("package")) { fname =>
+            getPackages(ns, fname)
+          } ~
+          (post & pathEnd) {
+            createFilter(ns)
+          } ~
+          (put & refined[Filter.ValidName](Slash ~ Segment) & pathEnd) { fname =>
+            updateFilter(ns, fname)
+          } ~
+          (delete & refined[Filter.ValidName](Slash ~ Segment) & pathEnd) { fname =>
+            deleteFilter(ns, fname)
+          }
         } ~
-        (get & refined[Filter.ValidName](Slash ~ Segment) & path("package")) { fname =>
-          getPackages(ns, fname)
-        } ~
-        (post & pathEnd) {
-          createFilter(ns)
-        } ~
-        (put & refined[Filter.ValidName](Slash ~ Segment) & pathEnd) { fname =>
-          updateFilter(ns, fname)
-        } ~
-        (delete & refined[Filter.ValidName](Slash ~ Segment) & pathEnd) { fname =>
-          deleteFilter(ns, fname)
+        (post & path("validate" / "filter")) {
+          validateFilter(ns)
         }
-      } ~
-      (post & path("validate" / "filter")) {
-        validateFilter
       }
     }
 

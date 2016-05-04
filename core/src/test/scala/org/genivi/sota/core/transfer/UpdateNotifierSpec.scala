@@ -11,7 +11,7 @@ import org.genivi.sota.core.jsonrpc.HttpTransport
 import org.genivi.sota.core.rvi.{SotaServices, RviConnectivity, RviUpdateNotifier}
 import org.genivi.sota.data.Namespace._
 import org.genivi.sota.data.Namespaces
-import org.genivi.sota.data.Vehicle
+import org.genivi.sota.data.Device
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.time.{Millis, Seconds, Span}
@@ -21,20 +21,20 @@ import slick.jdbc.JdbcBackend.Database
 
 
 object UpdateNotifierSpec {
-  import org.genivi.sota.core.Generators.{dependenciesGen, updateRequestGen, vinDepGen}
+  import org.genivi.sota.core.Generators.{dependenciesGen, updateRequestGen, deviceDepGen}
 
   val packages = scala.util.Random.shuffle( PackagesReader.read().take(100) )
 
-  def updateSpecGen(namespaceGen: Gen[Namespace], vinGen : Gen[Vehicle.Vin]) : Gen[UpdateSpec] = for {
+  def updateSpecGen(namespaceGen: Gen[Namespace], deviceGen : Gen[Device.Id]) : Gen[UpdateSpec] = for {
     ns            <- namespaceGen
     updateRequest <- updateRequestGen(ns, Gen.oneOf(packages).map( _.id) )
-    vin           <- vinGen
+    device        <- deviceGen
     m             <- Gen.choose(1, 10)
     packages      <- Gen.pick(m, packages).map( _.toSet )
-  } yield UpdateSpec(ns, updateRequest, vin, UpdateStatus.Pending, packages )
+  } yield UpdateSpec(ns, updateRequest, device, UpdateStatus.Pending, packages )
 
-  def updateSpecsGen(namespaceGen: Gen[Namespace], vinGen : Gen[Vehicle.Vin] ) : Gen[Seq[UpdateSpec]] =
-    Gen.containerOf[Seq, UpdateSpec](updateSpecGen(namespaceGen, vinGen))
+  def updateSpecsGen(namespaceGen: Gen[Namespace], deviceGen : Gen[Device.Id] ) : Gen[Seq[UpdateSpec]] =
+    Gen.containerOf[Seq, UpdateSpec](updateSpecGen(namespaceGen, deviceGen))
 }
 
 /**
@@ -61,7 +61,7 @@ class UpdateNotifierSpec extends PropSpec
 
   property("notify about available updates", RequiresRvi) {
     val serviceUri = Uri.from(scheme="http", host=getLocalHostAddr, port=8088)
-    forAll(updateSpecsGen(defaultNs, Gen.const(Refined.unsafeApply("V1234567890123456")))) { specs =>
+    forAll(updateSpecsGen(defaultNs, Gen.uuid.sample.get)) { specs =>
       val futureRes = for {
         sotaServices    <- SotaServices.register(serviceUri.withPath(Uri.Path / "rvi"))
         notifier         = new RviUpdateNotifier(sotaServices)

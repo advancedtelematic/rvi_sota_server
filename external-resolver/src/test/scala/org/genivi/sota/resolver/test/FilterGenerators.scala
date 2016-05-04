@@ -61,7 +61,7 @@ trait FilterGenerators {
     } yield cs.mkString
 
   // These filters will be random and quite big, most likely never
-  // letting any vehicles through.
+  // letting any devices through.
   val genFilterViaAST: Gen[Filter] =
     for {
       name <- genFilterName

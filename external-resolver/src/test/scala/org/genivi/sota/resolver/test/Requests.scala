@@ -12,16 +12,17 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import eu.timepit.refined.api.Refined
 import io.circe.generic.auto._
-import org.genivi.sota.data.{Namespaces, PackageId, Vehicle}
+import org.genivi.sota.data.{Namespaces, PackageId}
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
 import org.genivi.sota.resolver.components.Component
-import org.genivi.sota.resolver.resolve.ResolveFunctions
+import org.genivi.sota.resolver.devices.Device
 import org.genivi.sota.resolver.filters.Filter
 import org.genivi.sota.resolver.packages.{Package, PackageFilter}
+import org.genivi.sota.resolver.resolve.ResolveFunctions
 import org.scalatest.Matchers
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+
 
 /**
  * Generic test resource object
@@ -35,88 +36,88 @@ object Resource {
 }
 
 /**
- * Testing Trait for building Vehicle requests
+ * Testing Trait for building Device requests
  */
-trait VehicleRequestsHttp {
+trait DeviceRequestsHttp {
 
-  def addVehicle(vin: Vehicle.Vin): HttpRequest =
-    Put(Resource.uri("vehicles", vin.get))
+  def addDevice(deviceId: Device.DeviceId): HttpRequest =
+    Put(Resource.uri("devices", deviceId.get))
 
-  def installPackage(veh: Vehicle, pkg: Package): HttpRequest =
-    installPackage(veh.vin, pkg.id.name.get, pkg.id.version.get)
+  def installPackage(device: Device, pkg: Package): HttpRequest =
+    installPackage(device.id, pkg.id.name.get, pkg.id.version.get)
 
-  def installPackage(vin: Vehicle.Vin, pname: String, pversion: String): HttpRequest =
-    Put(Resource.uri("vehicles", vin.get, "package", pname, pversion))
+  def installPackage(deviceId: Device.DeviceId, pname: String, pversion: String): HttpRequest =
+    Put(Resource.uri("devices", deviceId.get, "package", pname, pversion))
 
-  def uninstallPackage(veh: Vehicle, pkg: Package): HttpRequest =
-    uninstallPackage(veh.vin, pkg.id.name.get, pkg.id.version.get)
+  def uninstallPackage(device: Device, pkg: Package): HttpRequest =
+    uninstallPackage(device.id, pkg.id.name.get, pkg.id.version.get)
 
-  def uninstallPackage(vin: Vehicle.Vin, pname: String, pversion: String): HttpRequest =
-    Delete(Resource.uri("vehicles", vin.get, "package", pname, pversion))
+  def uninstallPackage(deviceId: Device.DeviceId, pname: String, pversion: String): HttpRequest =
+    Delete(Resource.uri("devices", deviceId.get, "package", pname, pversion))
 
-  def listVehicles: HttpRequest =
-    Get(Resource.uri("vehicles"))
+  def listDevices: HttpRequest =
+    Get(Resource.uri("devices"))
 
-  def listVehiclesHaving(cmp: Component): HttpRequest =
-    listVehiclesHaving(cmp.partNumber.get)
+  def listDevicesHaving(cmp: Component): HttpRequest =
+    listDevicesHaving(cmp.partNumber.get)
 
-  def listVehiclesHaving(partNumber: String): HttpRequest =
-    Get(Resource.uri("vehicles").withQuery(Query("component" -> partNumber)))
+  def listDevicesHaving(partNumber: String): HttpRequest =
+    Get(Resource.uri("devices").withQuery(Query("component" -> partNumber)))
 
-  def listPackagesOnVehicle(veh: Vehicle): HttpRequest =
-    Get(Resource.uri("vehicles", veh.vin.get, "package"))
+  def listPackagesOnDevice(device: Device): HttpRequest =
+    Get(Resource.uri("devices", device.id.get, "package"))
 
-  def listComponentsOnVehicle(veh: Vehicle): HttpRequest =
-    listComponentsOnVehicle(veh.vin.get)
+  def listComponentsOnDevice(device: Device): HttpRequest =
+    listComponentsOnDevice(device.id.get)
 
-  def listComponentsOnVehicle(vin: String): HttpRequest =
-    Get(Resource.uri("vehicles", vin, "component"))
+  def listComponentsOnDevice(deviceId: String): HttpRequest =
+    Get(Resource.uri("devices", deviceId, "component"))
 
-  private def path(vin: Vehicle.Vin, part: Component.PartNumber): Uri =
-    Resource.uri("vehicles", vin.get, "component", part.get)
+  private def path(deviceId: Device.DeviceId, part: Component.PartNumber): Uri =
+    Resource.uri("devices", deviceId.get, "component", part.get)
 
-  def installComponent(veh: Vehicle, cmpn: Component): HttpRequest =
-    installComponent(veh.vin, cmpn.partNumber)
+  def installComponent(device: Device, cmpn: Component): HttpRequest =
+    installComponent(device.id, cmpn.partNumber)
 
-  def installComponent(vin: Vehicle.Vin, part: Component.PartNumber): HttpRequest =
-    Put(path(vin, part))
+  def installComponent(deviceId: Device.DeviceId, part: Component.PartNumber): HttpRequest =
+    Put(path(deviceId, part))
 
-  def uninstallComponent(veh: Vehicle, cmpn: Component): HttpRequest =
-    uninstallComponent(veh.vin, cmpn.partNumber)
+  def uninstallComponent(device: Device, cmpn: Component): HttpRequest =
+    uninstallComponent(device.id, cmpn.partNumber)
 
-  def uninstallComponent(vin: Vehicle.Vin, part: Component.PartNumber): HttpRequest =
-    Delete(path(vin, part))
+  def uninstallComponent(deviceId: Device.DeviceId, part: Component.PartNumber): HttpRequest =
+    Delete(path(deviceId, part))
 
 }
 
-trait VehicleRequests extends
-    VehicleRequestsHttp with
+trait DeviceRequests extends
+    DeviceRequestsHttp with
     PackageRequestsHttp with
     Matchers { self: ScalatestRouteTest =>
 
-  def addVehicleOK(vin: Vehicle.Vin)(implicit route: Route): Unit = {
+  def addDeviceOK(deviceId: Device.DeviceId)(implicit route: Route): Unit = {
 
     implicit val routeTimeout: RouteTestTimeout = RouteTestTimeout(5.second)
 
-    addVehicle(vin) ~> route ~> check {
+    addDevice(deviceId) ~> route ~> check {
       status shouldBe StatusCodes.NoContent
     }
   }
 
-  def installPackageOK(vin: Vehicle.Vin, pname: String, pversion: String)(implicit route: Route): Unit =
-    installPackage(vin, pname, pversion) ~> route ~> check {
+  def installPackageOK(deviceId: Device.DeviceId, pname: String, pversion: String)(implicit route: Route): Unit =
+    installPackage(deviceId, pname, pversion) ~> route ~> check {
       status shouldBe StatusCodes.OK
     }
 
-  def installComponentOK(vin: Vehicle.Vin, part: Component.PartNumber)
+  def installComponentOK(deviceId: Device.DeviceId, part: Component.PartNumber)
                         (implicit route: Route): Unit =
-    installComponent(vin, part) ~> route ~> check {
+    installComponent(deviceId, part) ~> route ~> check {
       status shouldBe StatusCodes.OK
     }
 
-  def uninstallComponentOK(vin: Vehicle.Vin, part: Component.PartNumber)
+  def uninstallComponentOK(deviceId: Device.DeviceId, part: Component.PartNumber)
                           (implicit route: Route): Unit =
-    uninstallComponent(vin, part) ~> route ~> check {
+    uninstallComponent(deviceId, part) ~> route ~> check {
       status shouldBe StatusCodes.OK
     }
 
@@ -320,13 +321,13 @@ trait ResolveRequests extends
   Matchers with
   Namespaces { self: ScalatestRouteTest =>
 
-  def resolveOK(pname: String, pversion: String, vins: Seq[Vehicle.Vin])(implicit route: Route): Unit = {
+  def resolveOK(pname: String, pversion: String, deviceIds: Seq[Device.DeviceId])(implicit route: Route): Unit = {
 
     resolve(pname, pversion) ~> route ~> check {
       status shouldBe StatusCodes.OK
-      responseAs[Map[Vehicle.Vin, List[PackageId]]] shouldBe
+      responseAs[Map[Device.DeviceId, List[PackageId]]] shouldBe
         ResolveFunctions.makeFakeDependencyMap(PackageId(Refined.unsafeApply(pname), Refined.unsafeApply(pversion)),
-          vins.map(Vehicle(defaultNs, _)))
+          deviceIds.map(Device(defaultNs, _)))
     }
   }
 

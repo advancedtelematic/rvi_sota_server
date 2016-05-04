@@ -11,7 +11,7 @@ import java.io.File
 import org.genivi.sota.core.data.Package
 import org.genivi.sota.core.resolver.{ExternalResolverClient, ExternalResolverRequestFailed}
 import org.genivi.sota.data.Namespace._
-import org.genivi.sota.data.{PackageId, Vehicle}
+import org.genivi.sota.data.{PackageId, Device}
 import org.genivi.sota.marshalling.CirceMarshallingSupport
 import org.genivi.sota.rest.ErrorRepresentation
 import org.scalatest.prop.PropertyChecks
@@ -39,9 +39,9 @@ class PackageUploadSpec extends PropSpec with PropertyChecks with Matchers with 
     val resolver = new ExternalResolverClient {
       override def putPackage(namespace: Namespace, packageId: PackageId, description: Option[String], vendor: Option[String]): Future[Unit] = resolverResult
 
-      override def resolve(namespace: Namespace, packageId: PackageId): Future[Map[Vehicle, Set[PackageId]]] = ???
+      override def resolve(namespace: Namespace, packageId: PackageId): Future[Map[(Namespace, Device.DeviceId), Set[PackageId]]] = ???
 
-      override def setInstalledPackages( vin: Vehicle.Vin, json: io.circe.Json) : Future[Unit] = ???
+      override def setInstalledPackages(uuid: Device.Id, json: io.circe.Json) : Future[Unit] = ???
     }
 
     val resource = new PackagesResource(resolver, db)

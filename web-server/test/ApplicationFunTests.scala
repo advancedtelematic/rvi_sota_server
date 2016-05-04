@@ -21,7 +21,7 @@ class ApplicationFunTests extends PlaySpec with OneServerPerSuite with AllBrowse
   override lazy val browsers = Vector(FirefoxInfo(firefoxProfile), ChromeInfo)
   val coreDb = Database.forConfig("core.database").createSession()
   val resolverDb = Database.forConfig("resolver.database").createSession()
-  val testVinName = "TESTVIN0123456789"
+  val testDeviceName = "TESTVIN0123456789"
   val testFilterName = "TestFilter"
   val testFilterExpression = "vin_matches '.*'"
   val testDeleteFilterName = "TestDeleteFilter"
@@ -44,8 +44,8 @@ class ApplicationFunTests extends PlaySpec with OneServerPerSuite with AllBrowse
       resolverDb.createStatement().executeQuery("delete from PackageFilter where filterName ='" + testFilterName + "'")
       resolverDb.createStatement().executeQuery("delete from Filter where name ='" + testFilterName + "'")
       resolverDb.createStatement().executeQuery("delete from Filter where name ='" + testDeleteFilterName + "'")
-      resolverDb.createStatement().executeQuery("delete from Vehicle where vin = '" + testVinName + "'")
-      coreDb.createStatement().executeQuery("delete from RequiredPackage where vin = '" + testVinName + "'")
+      resolverDb.createStatement().executeQuery("delete from Device where id = '" + testDeviceName + "'")
+      coreDb.createStatement().executeQuery("delete from RequiredPackage where deviceId = '" + testDeviceName + "'")
       coreDb.createStatement().executeQuery("delete from RequiredPackage where package_name = '" + testPackageName
         + "'")
 
@@ -62,7 +62,7 @@ class ApplicationFunTests extends PlaySpec with OneServerPerSuite with AllBrowse
         }
       }
       coreDb.createStatement().executeQuery("delete from UpdateRequest where package_name = '" + testPackageName + "'")
-      coreDb.createStatement().executeQuery("delete from Vehicle where vin = '" + testVinName + "'")
+      coreDb.createStatement().executeQuery("delete from Device where id = '" + testDeviceName + "'")
       coreDb.createStatement().executeQuery("delete from Package where name = '" + testPackageName + "'")
     } catch {
       //Teamcity handles clearing the database for us. Thus, ignoring this exception is generally
@@ -90,19 +90,19 @@ class ApplicationFunTests extends PlaySpec with OneServerPerSuite with AllBrowse
     val webPort = app.configuration.getInt("test.webserver.port").getOrElse(port)
     "All browsers" must {
 
-      "allow users to add and search for vins " + browser.name taggedAs BrowserTests in {
+      "allow users to add and search for deviceIds " + browser.name taggedAs BrowserTests in {
         go to s"http://$webHost:$webPort/login"
         emailField("email").value = userName
         pwdField("password").value = password
         submit()
         eventually {
-          click on linkText("Vehicles")
+          click on linkText("Devices")
           click on cssSelector("button")
-          textField("vin").value = testVinName
+          textField("deviceId").value = testDeviceName
           submit()
           eventually {
-            textField("regex").value = testVinName
-            findElementWithText(testVinName, "td") mustBe true
+            textField("regex").value = testDeviceName
+            findElementWithText(testDeviceName, "td") mustBe true
           }
         }
       }

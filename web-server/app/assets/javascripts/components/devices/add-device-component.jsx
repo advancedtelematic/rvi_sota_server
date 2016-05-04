@@ -5,7 +5,7 @@ define(function(require) {
       db = require('../../stores/db'),
       SotaDispatcher = require('sota-dispatcher');
 
-  var AddVehicleComponent = React.createClass({
+  var AddDeviceComponent = React.createClass({
     mixins: [
       toggleForm
     ],
@@ -14,25 +14,25 @@ define(function(require) {
 
       payload = serializeForm(this.refs.form);
       SotaDispatcher.dispatch({
-        actionType: 'create-vehicle',
-        vehicle: payload
+        actionType: 'create-device',
+        device: payload
       });
     },
-    buttonLabel: "NEW VIN",
+    buttonLabel: "NEW DEVICE",
     form: function() {
       return (
         <form ref='form' onSubmit={this.handleSubmit}>
           <div className="form-group">
-            <label htmlFor="name">Vehicle Name</label>
-            <input type="text" className="form-control" name="vin" ref="vin" placeholder="VIN"/>
+            <label>Device Identifier</label>
+            <input type="text" className="form-control" name="deviceId" ref="deviceId" placeholder="Device ID (e. g. VIN)"/>
           </div>
           <div className="form-group">
-            <button type="submit" className="btn btn-primary">Add Vehicle</button>
+            <button type="submit" className="btn btn-primary">Add Device</button>
           </div>
         </form>
       );
     }
   });
 
-  return AddVehicleComponent;
+  return AddDeviceComponent;
 });

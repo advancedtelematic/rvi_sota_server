@@ -4,18 +4,22 @@
  */
 package org.genivi.sota.marshalling
 
-import java.util.UUID
-
 import akka.http.scaladsl.model.Uri
 import cats.data.Xor
-import eu.timepit.refined.refineV
 import eu.timepit.refined.api.{Refined, Validate}
+import eu.timepit.refined.refineV
 import io.circe.{Decoder, DecodingFailure, Encoder, Json}
-import org.joda.time.{DateTime, Interval}
+import java.util.UUID
 import org.joda.time.format.{DateTimeFormatter, ISODateTimeFormat}
-
+import org.joda.time.{DateTime, Interval}
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
+
+
+trait CirceEnum extends Enumeration {
+  implicit val encode: Encoder[Value] = Encoder[String].contramap(_.toString)
+  implicit val decode: Decoder[Value] = Decoder[String].map(this.withName)
+}
 
 /**
   * Some datatypes we use don't have predefined JSON encoders and
@@ -88,7 +92,6 @@ trait CirceInstances {
 
   implicit def mapEncoder[K, V](implicit keyEncoder: Encoder[K], valueEncoder: Encoder[V]): Encoder[Map[K, V]] =
     Encoder[Seq[(K, V)]].contramap((m: Map[K, V]) => m.toSeq)
-
 
 }
 

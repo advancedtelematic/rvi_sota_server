@@ -26,19 +26,19 @@ define(function(require) {
     form: function() {
 	  return (
 	    <div>
-          <form ref='form' onSubmit={this.handleSubmit} encType="multipart/form-data">
-            <div className="form-group">
-              <label htmlFor="name">Filter Name</label>
-		      <input type="text" className="form-control" name="name" ref="name" placeholder="Filter Name"/>
-  		    </div>
-            <div className="form-group">
-              <label htmlFor="expression">Filter Expression</label>
-                <textarea type="text" className="form-control" id="expression" ref="expression" name="expression" placeholder='vin_matches "678$"' />
-		    </div>
+        <form ref='form' onSubmit={this.handleSubmit} encType="multipart/form-data">
+          <div className="form-group">
+            <label htmlFor="name">Filter Name</label>
+            <input type="text" className="form-control" name="name" ref="name" placeholder="Filter Name"/>
+          </div>
+          <div className="form-group">
+            <label htmlFor="expression">Filter Expression</label>
+              <textarea type="text" className="form-control" id="expression" ref="expression" name="expression" placeholder='vin_matches "678$"' />
+          </div>
 	        <div className="form-group">
               <button type="submit" className="btn btn-primary">Add Filter</button>
-		    </div>
-          </form>
+          </div>
+        </form>
 	    </div>
         );}
     });

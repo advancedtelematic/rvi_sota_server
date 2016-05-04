@@ -11,5 +11,5 @@ import eu.timepit.refined.string.Uri
 
 object Namespace {
   // TODO schema for namespace; URI seems reasonable enough
-  type Namespace = Refined[String, Uri]
+  type Namespace = String Refined Uri
 }

@@ -44,13 +44,13 @@ define(function(require) {
                 SotaDispatcher.dispatch({actionType: 'get-components'});
               }, this));
             break;
-          case 'get-vins-for-component':
-            sendRequest.doGet('/api/v1/vehicles?component=' + payload.partNumber )
-              .success(function(vehicles) {
-                var formattedVehicles = _.map(vehicles, function(vin) {
-                  return {vin: vin};
+          case 'get-devices-for-component':
+            sendRequest.doGet('/api/v1/devices?component=' + payload.partNumber )
+              .success(function(devices) {
+                var formattedDevices = _.map(devices, function(device) {
+                  return device.uuid;
                 });
-                db.vinsForComponent.reset(formattedVehicles);
+                db.devicesForComponent.reset(formattedDevices);
               });
           break;
         }

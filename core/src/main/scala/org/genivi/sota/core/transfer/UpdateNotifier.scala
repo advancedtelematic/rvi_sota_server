@@ -11,7 +11,7 @@ import org.genivi.sota.core.data.UpdateSpec
 import org.genivi.sota.core.data.{Package, UpdateSpec}
 import org.genivi.sota.core.resolver.Connectivity
 import org.genivi.sota.core.rvi.ServerServices
-import org.genivi.sota.data.Vehicle
+import org.genivi.sota.data.Device
 import org.joda.time.DateTime
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -60,7 +60,7 @@ object UpdateNotification {
 trait UpdateNotifier {
 
   /**
-   * Notify all the vehicles that an update is ready
+   * Notify all the devices that an update is ready
    * @param updateSpecs A set of updates
    */
   def notify(updateSpecs: Seq[UpdateSpec])
@@ -68,21 +68,21 @@ trait UpdateNotifier {
              ec: ExecutionContext,
              log: LoggingAdapter): Iterable[Future[Int]] = {
     log.debug(s"Sending update notifications: $updateSpecs" )
-    updateSpecs.map { spec => notifyVehicle(spec.vin, spec) }
+    updateSpecs.map { spec => notifyDevice(spec.deviceUuid, spec) }
   }
 
   /**
-   * Notify a single vehicle that it has updates
-   * @param vin The VIN of the vehicle to notify
-   * @param updates The updates that apply to the vehicle
+   * Notify a single device that it has updates
+   * @param uuid The VIN of the device to notify
+   * @param updates The updates that apply to the device
    */
-  def notifyVehicle(vin: Vehicle.Vin, update: UpdateSpec)
+  def notifyDevice(uuid: Device.Id, update: UpdateSpec)
                    (implicit connectivity: Connectivity, ec: ExecutionContext): Future[Int]
 }
 
 object DefaultUpdateNotifier extends UpdateNotifier {
 
-  override def notifyVehicle(vin: Vehicle.Vin, update: UpdateSpec)
+  override def notifyDevice(uuid: Device.Id, update: UpdateSpec)
                             (implicit connectivity: Connectivity, ec: ExecutionContext) = {
     // TODO: missing default implementation
     Future.successful(0)

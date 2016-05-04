@@ -1,51 +1,50 @@
 package org.genivi.sota.core
 
-import akka.http.scaladsl.unmarshalling.Unmarshaller._
-import java.util.UUID
-
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes, Uri}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import io.circe.{Encoder, Json}
-import org.genivi.sota.core.rvi.{InstallReport, OperationResult, UpdateReport}
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{FunSuite, Inspectors, ShouldMatchers}
-import org.genivi.sota.data.VehicleGenerators._
-import org.genivi.sota.data.PackageIdGenerators._
-import org.scalacheck.Gen
-import org.scalatest.time.{Millis, Seconds, Span}
-import org.genivi.sota.core.data.{Package, UpdateRequest, UpdateStatus}
-import org.genivi.sota.core.db.{InstallHistories, Packages, Vehicles}
-import org.genivi.sota.core.transfer.InstalledPackagesUpdate
-import org.genivi.sota.marshalling.CirceMarshallingSupport._
+import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import io.circe.generic.auto._
+import io.circe.{Encoder, Json}
+import java.util.UUID
 import org.genivi.sota.core.data.response.PendingUpdateResponse
+import org.genivi.sota.core.data.{Package, UpdateRequest, UpdateStatus}
+import org.genivi.sota.core.db.{InstallHistories, Packages, Devices}
 import org.genivi.sota.core.resolver.{Connectivity, ConnectivityClient, DefaultConnectivity}
+import org.genivi.sota.core.rvi.{InstallReport, OperationResult, UpdateReport}
+import org.genivi.sota.core.transfer.InstalledPackagesUpdate
+import org.genivi.sota.data.PackageIdGenerators._
+import org.genivi.sota.data.DeviceGenerators._
+import org.genivi.sota.marshalling.CirceMarshallingSupport._
 import org.joda.time.DateTime
-
+import org.scalacheck.Gen
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time.{Millis, Seconds, Span}
+import org.scalatest.{FunSuite, Inspectors, ShouldMatchers}
 import scala.concurrent.Future
 
-class VehicleUpdatesResourceSpec extends FunSuite
+
+class DeviceUpdatesResourceSpec extends FunSuite
   with ShouldMatchers
   with ScalatestRouteTest
   with ScalaFutures
   with DatabaseSpec
   with Inspectors
   with UpdateResourcesDatabaseSpec
-  with VehicleDatabaseSpec {
+  with DeviceDatabaseSpec {
 
   val fakeResolver = new FakeExternalResolver()
 
   implicit val connectivity = new FakeConnectivity()
 
-  lazy val service = new VehicleUpdatesResource(db, fakeResolver)
+  lazy val service = new DeviceUpdatesResource(db, fakeResolver)
 
-  val vehicle = genVehicle.sample.get
+  val device = genDevice.sample.get
 
-  val baseUri = Uri.Empty.withPath(Path("/api/v1/vehicle_updates"))
+  val baseUri = Uri.Empty.withPath(Path("/api/v1/device_updates"))
 
-  val vehicleUri = baseUri.withPath(baseUri.path / vehicle.vin.get)
+  val deviceUri = baseUri.withPath(baseUri.path / device.uuid.toString)
 
   implicit val patience = PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
 
@@ -53,10 +52,10 @@ class VehicleUpdatesResourceSpec extends FunSuite
 
   test("install updates are forwarded to external resolver") {
     val fakeResolverClient = new FakeExternalResolver()
-    val vehiclesResource = new VehicleUpdatesResource(db, fakeResolverClient)
+    val devicesResource = new DeviceUpdatesResource(db, fakeResolverClient)
     val packageIds = Gen.listOf(genPackageId).sample.get
 
-    Put(vehicleUri, packageIds) ~> vehiclesResource.route ~> check {
+    Put(deviceUri, packageIds) ~> devicesResource.route ~> check {
       status shouldBe StatusCodes.NoContent
 
       packageIds.foreach { p =>
@@ -66,8 +65,8 @@ class VehicleUpdatesResourceSpec extends FunSuite
   }
 
   test("GET to download file returns the file contents") {
-    whenReady(createUpdateSpec()) { case (packageModel, vehicle, updateSpec) =>
-      val url = baseUri.withPath(baseUri.path / vehicle.vin.get / updateSpec.request.id.toString / "download")
+    whenReady(createUpdateSpec()) { case (packageModel, device, updateSpec) =>
+      val url = baseUri.withPath(baseUri.path / device.uuid.toString / updateSpec.request.id.toString / "download")
 
       Get(url) ~> service.route ~> check {
         status shouldBe StatusCodes.OK
@@ -78,8 +77,8 @@ class VehicleUpdatesResourceSpec extends FunSuite
   }
 
   test("GET returns 404 if there is no package with the given id") {
-    val uuid = UUID.randomUUID()
-    val url = vehicleUri.withPath(vehicleUri.path / uuid.toString / "download")
+    val uuid = Gen.uuid.sample.get
+    val url = deviceUri.withPath(deviceUri.path / uuid.toString / "download")
 
     Get(url) ~> service.route ~> check {
       status shouldBe StatusCodes.NotFound
@@ -87,9 +86,9 @@ class VehicleUpdatesResourceSpec extends FunSuite
     }
   }
 
-  test("GET update requests for a vehicle returns a list of PendingUpdateResponse") {
-    whenReady(createUpdateSpec()) { case (_, vehicle, updateSpec) =>
-      val uri = baseUri.withPath(baseUri.path / vehicle.vin.get)
+  test("GET update requests for a device returns a list of PendingUpdateResponse") {
+    whenReady(createUpdateSpec()) { case (_, device, updateSpec) =>
+      val uri = baseUri.withPath(baseUri.path / device.uuid.toString)
 
       Get(uri) ~> service.route ~> check {
         status shouldBe StatusCodes.OK
@@ -101,9 +100,9 @@ class VehicleUpdatesResourceSpec extends FunSuite
     }
   }
 
-  test("sets vehicle last seen when vehicle asks for updates") {
-    whenReady(createVehicle()) { vehicle =>
-      val uri = baseUri.withPath(baseUri.path / vehicle.vin.get)
+  test("sets device last seen when device asks for updates") {
+    whenReady(createDevice()) { device =>
+      val uri = baseUri.withPath(baseUri.path / device.uuid.toString)
 
       val now = DateTime.now.minusSeconds(10)
 
@@ -111,32 +110,32 @@ class VehicleUpdatesResourceSpec extends FunSuite
         status shouldBe StatusCodes.OK
         responseAs[List[UUID]] should be(empty)
 
-        val vehicleF = db.run(Vehicles.list().map(_.find(_.vin == vehicle.vin)))
+        val deviceF = db.run(Devices.list().map(_.find(_.uuid == device.uuid)))
 
-        whenReady(vehicleF) {
-          case Some(v) =>
-            v.lastSeen shouldBe defined
-            v.lastSeen.get.isAfter(now) shouldBe true
+        whenReady(deviceF) {
+          case Some(d) =>
+            d.lastSeen shouldBe defined
+            d.lastSeen.get.isAfter(now) shouldBe true
           case _ =>
-            fail("Vehicle should be in database")
+            fail("Device should be in database")
         }
       }
     }
   }
 
   test("POST an update report updates an UpdateSpec status") {
-    whenReady(createUpdateSpec()) { case (_, vehicle, updateSpec) =>
-      val url = baseUri.withPath(baseUri.path / vehicle.vin.get / updateSpec.request.id.toString)
+    whenReady(createUpdateSpec()) { case (_, device, updateSpec) =>
+      val url = baseUri.withPath(baseUri.path / device.uuid.toString / updateSpec.request.id.toString)
       val result = OperationResult("opid", 1, "some result")
       val updateReport = UpdateReport(updateSpec.request.id, List(result))
-      val installReport = InstallReport(vehicle.vin, updateReport)
+      val installReport = InstallReport(device.uuid, updateReport)
 
       Post(url, installReport) ~> service.route ~> check {
         status shouldBe StatusCodes.NoContent
 
         val dbIO = for {
-          updateSpec <- InstalledPackagesUpdate.findUpdateSpecFor(vehicle.vin, updateSpec.request.id)
-          histories <- InstallHistories.list(vehicle.namespace, vehicle.vin)
+          updateSpec <- InstalledPackagesUpdate.findUpdateSpecFor(device.uuid, updateSpec.request.id)
+          histories <- InstallHistories.list(device.namespace, device.uuid)
         } yield (updateSpec, histories.last)
 
         whenReady(db.run(dbIO)) { case (updatedSpec, lastHistory) =>
@@ -148,14 +147,14 @@ class VehicleUpdatesResourceSpec extends FunSuite
   }
 
   test("Returns 404 if package does not exist") {
-    val f = db.run(Vehicles.create(vehicle))
+    val f = db.run(Devices.create(device))
 
-    whenReady(f) { vehicle =>
+    whenReady(f) { device =>
       val fakeUpdateRequestUuid = UUID.randomUUID()
-      val url = baseUri.withPath(baseUri.path / vehicle.vin.get / fakeUpdateRequestUuid.toString)
+      val url = baseUri.withPath(baseUri.path / device.uuid.toString / fakeUpdateRequestUuid.toString)
       val result = OperationResult(UUID.randomUUID().toString, 1, "some result")
       val updateReport = UpdateReport(fakeUpdateRequestUuid, List(result))
-      val installReport = InstallReport(vehicle.vin, updateReport)
+      val installReport = InstallReport(device.uuid, updateReport)
 
       Post(url, installReport) ~> service.route ~> check {
         status shouldBe StatusCodes.NotFound
@@ -165,7 +164,7 @@ class VehicleUpdatesResourceSpec extends FunSuite
   }
 
   test("GET to download a file returns 3xx if the package URL is an s3 URI") {
-    val service = new VehicleUpdatesResource(db, fakeResolver) {
+    val service = new DeviceUpdatesResource(db, fakeResolver) {
       override lazy val packageRetrievalOp: (Package) => Future[HttpResponse] = {
         _ => Future.successful {
           HttpResponse(StatusCodes.Found, Location("https://some-fake-place") :: Nil)
@@ -174,12 +173,12 @@ class VehicleUpdatesResourceSpec extends FunSuite
     }
 
     val f = for {
-      (packageModel, vehicle, updateSpec) <- createUpdateSpec()
+      (packageModel, device, updateSpec) <- createUpdateSpec()
       _ <- db.run(Packages.create(packageModel.copy(uri = "https://amazonaws.com/file.rpm")))
-    } yield (packageModel, vehicle, updateSpec)
+    } yield (packageModel, device, updateSpec)
 
-    whenReady(f) { case (packageModel, vehicle, updateSpec) =>
-      val url = baseUri.withPath(baseUri.path / vehicle.vin.get / updateSpec.request.id.toString / "download")
+    whenReady(f) { case (packageModel, device, updateSpec) =>
+      val url = baseUri.withPath(baseUri.path / device.uuid.toString / updateSpec.request.id.toString / "download")
       Get(url) ~> service.route ~> check {
         status shouldBe StatusCodes.Found
         header("Location").map(_.value()) should contain("https://some-fake-place")
@@ -188,12 +187,12 @@ class VehicleUpdatesResourceSpec extends FunSuite
   }
 
 
-  test("POST on queues a package for update to a specific vehile") {
+  test("POST on queues a package for update to a specific device") {
     val f = createUpdateSpec()
 
-    whenReady(f) { case (packageModel, vehicle, updateSpec) =>
+    whenReady(f) { case (packageModel, device, updateSpec) =>
       val now = DateTime.now
-      val url = baseUri.withPath(baseUri.path / vehicle.vin.get)
+      val url = baseUri.withPath(baseUri.path / device.uuid.toString)
 
       Post(url, packageModel.id) ~> service.route ~> check {
         status shouldBe StatusCodes.OK
@@ -205,11 +204,11 @@ class VehicleUpdatesResourceSpec extends FunSuite
   }
 
   test("POST on /:vin/sync results in an rvi sync") {
-    val url = vehicleUri.withPath(vehicleUri.path / "sync")
+    val url = deviceUri.withPath(deviceUri.path / "sync")
     Post(url) ~> service.route ~> check {
       status shouldBe StatusCodes.NoContent
 
-      val service = s"genivi.org/vin/${vehicle.vin.get}/sota/getpackages"
+      val service = s"genivi.org/vin/${device.uuid.toString}/sota/getpackages"
 
       connectivity.sentMessages should contain(service -> Json.Null)
     }

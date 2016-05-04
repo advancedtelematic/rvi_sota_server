@@ -6,10 +6,11 @@ package org.genivi.sota.resolver.filters
 
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.{Regex, regexValidate}
-import org.genivi.sota.data.{PackageId, Vehicle}
+import org.genivi.sota.data.PackageId
 import scala.util.parsing.combinator.syntactical.StandardTokenParsers
 import scala.util.parsing.combinator.{PackratParsers, ImplicitConversions}
 import org.genivi.sota.resolver.components.Component
+import org.genivi.sota.resolver.devices.Device
 import org.genivi.sota.resolver.packages.Package
 
 
@@ -90,9 +91,9 @@ object FilterAST extends StandardTokenParsers with PackratParsers with ImplicitC
     }
 
   // scalastyle:off cyclomatic.complexity
-  def query(f: FilterAST): Function1[(Vehicle, (Seq[PackageId], Seq[Component.PartNumber])), Boolean] =
-  { case a@((v: Vehicle, (ps: Seq[PackageId], cs: Seq[Component.PartNumber]))) => f match {
-      case VinMatches(re)       => re.get.r.findAllIn(v.vin.get).nonEmpty
+  def query(f: FilterAST): Function1[(Device, (Seq[PackageId], Seq[Component.PartNumber])), Boolean] =
+  { case a@((d: Device, (ps: Seq[PackageId], cs: Seq[Component.PartNumber]))) => f match {
+      case VinMatches(re)       => re.get.r.findAllIn(d.id.get).nonEmpty
       case HasPackage(re1, re2) => ps.exists(p => re1.get.r.findAllIn(p.name   .get).nonEmpty &&
                                                   re2.get.r.findAllIn(p.version.get).nonEmpty)
       case HasComponent(re)     => cs.exists(part => re.get.r.findAllIn(part.get).nonEmpty)

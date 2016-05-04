@@ -14,9 +14,9 @@ define(function(require) {
 
         var partNumber = React.findDOMNode(this.refs.partNumber).value.trim();
         SotaDispatcher.dispatch({
-            actionType: 'add-component-to-vin',
+            actionType: 'add-component-to-device',
             partNumber: partNumber,
-            vin: this.props.Vin
+            device: this.props.Device
         });
       },
       buttonLabel: "Add Installed Component",

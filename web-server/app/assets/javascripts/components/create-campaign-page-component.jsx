@@ -2,7 +2,7 @@ define(function(require) {
 
   var _ = require('underscore'),
       React = require('react'),
-      AffectedVins = require('./vehicles/affected-vins'),
+      AffectedDevices = require('./devices/affected-devices'),
       showModel = require('../mixins/show-model'),
       db = require('stores/db'),
       CreateUpdate = require('components/create-update');
@@ -18,7 +18,7 @@ define(function(require) {
           <h1>
             Packages &gt; {params.name}-{params.version} &gt; New Update
           </h1>
-          <AffectedVins AffectedVins={db.affectedVins} />
+          <AffectedDevices AffectedDevices={db.affectedDevices} />
           <CreateUpdate packageName={params.name} packageVersion={params.version}/>
         </div>
       );

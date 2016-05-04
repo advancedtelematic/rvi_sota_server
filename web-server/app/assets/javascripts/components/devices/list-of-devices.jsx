@@ -6,21 +6,21 @@ define(function(require) {
       Fluxbone = require('../../mixins/fluxbone'),
       SotaDispatcher = require('sota-dispatcher');
 
-  var ListOfVehicles = React.createClass({
+  var ListOfDevices = React.createClass({
     componentWillUnmount: function(){
-      this.props.Vehicles.removeWatch("poll-vehicles");
+      this.props.Devices.removeWatch("poll-devices");
     },
     componentWillMount: function(){
-      SotaDispatcher.dispatch({actionType: 'search-vehicles-by-regex', regex: "."});
-      this.props.Vehicles.addWatch("poll-vehicles", _.bind(this.forceUpdate, this, null));
+      SotaDispatcher.dispatch({actionType: 'search-devices-by-regex', regex: "."});
+      this.props.Devices.addWatch("poll-devices", _.bind(this.forceUpdate, this, null));
     },
     render: function() {
-      var vehicles = _.map(this.props.Vehicles.deref(), function(vehicle) {
+      var devices = _.map(this.props.Devices.deref(), function(device) {
         return (
-          <tr key={vehicle.vin}>
+          <tr key={device.uuid}>
             <td>
-              <Router.Link to='vehicle' params={{vin: vehicle.vin}}>
-              { vehicle.vin }
+              <Router.Link to='device' params={{uuid: device.uuid}}>
+                {device.deviceId}
               </Router.Link>
             </td>
           </tr>
@@ -31,17 +31,17 @@ define(function(require) {
           <thead>
             <tr>
               <td>
-                VIN
+                Device
               </td>
             </tr>
           </thead>
           <tbody>
-            { vehicles }
+            { devices }
           </tbody>
         </table>
       );
     }
   });
 
-  return ListOfVehicles;
+  return ListOfDevices;
 });

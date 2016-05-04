@@ -6,20 +6,20 @@ define(function(require) {
       togglePanel = require('../../mixins/toggle-panel'),
       SotaDispatcher = require('sota-dispatcher');
 
-  var AffectedVins = React.createClass({
+  var AffectedDevices = React.createClass({
     contextTypes: {
       router: React.PropTypes.func
     },
     mixins: [togglePanel],
     componentWillUnmount: function(){
-      this.props.AffectedVins.removeWatch("poll-affected-vins");
+      this.props.AffectedDevices.removeWatch("poll-affected-devices");
       _.each([db.packagesForFilter, db.filtersForPackage], function(atom) {
         atom.removeWatch('poll-package-filters');
       });
     },
     componentWillMount: function(){
       this.refreshData();
-      this.props.AffectedVins.addWatch("poll-affected-vins", _.bind(this.forceUpdate, this, null));
+      this.props.AffectedDevices.addWatch("poll-affected-devices", _.bind(this.forceUpdate, this, null));
       _.each([db.packagesForFilter, db.filtersForPackage], function(atom) {
         atom.addWatch('poll-package-filters', _.bind(this.refreshData, this, null));
       }, this);
@@ -27,29 +27,29 @@ define(function(require) {
     refreshData: function() {
       var params = this.context.router.getCurrentParams();
       SotaDispatcher.dispatch({
-        actionType: 'fetch-affected-vins',
+        actionType: 'fetch-affected-devices',
         name: params.name,
         version: params.version
       });
     },
-    label: "Affected Vins",
+    label: "Affected Devices",
     panel: function() {
-      var vehicles = _.map(this.props.AffectedVins.deref(), function(vin) {
+      var devices = _.map(this.props.AffectedDevices.deref(), function(device) {
         return (
-          <li className="list-group-item" key={vin[0]}>
-            { vin[0] }
+          <li className="list-group-item" key={device[0]}>
+            { device[0] }
           </li>
         );
       });
       return (
         <div>
           <ul className={'list-group ' + (this.state.collapsed ? 'hide' : '')}>
-            { vehicles }
+            { devices }
           </ul>
         </div>
       );
     }
   });
 
-  return AffectedVins;
+  return AffectedDevices;
 });

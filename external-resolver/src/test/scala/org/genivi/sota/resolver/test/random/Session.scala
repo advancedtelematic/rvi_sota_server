@@ -180,7 +180,7 @@ object SessionCoverage {
     classOf[AddFilter],
     classOf[AddFilterToPackage],
     classOf[AddPackage],
-    classOf[AddVehicle],
+    classOf[AddDevice],
     classOf[EditComponent],
     classOf[EditFilter],
     classOf[InstallComponent],
@@ -192,9 +192,9 @@ object SessionCoverage {
     classOf[UninstallPackage],
 
     // queries
-    ListVehicles.getClass,
-    classOf[ListPackagesOnVehicle],
-    classOf[ListVehiclesFor],
+    ListDevices.getClass,
+    classOf[ListPackagesOnDevice],
+    classOf[ListDevicesFor],
     classOf[ListPackagesFor],
     ListFilters.getClass,
     classOf[ListFiltersFor],
