@@ -16,7 +16,7 @@ import io.circe.generic.auto._
 import io.circe.syntax._
 import org.genivi.sota.core.common.NamespaceDirective._
 import org.genivi.sota.core.data._
-import org.genivi.sota.core.db.{InstallHistories, OperationResults, UpdateSpecs, Vehicles}
+import org.genivi.sota.core.db.{InstallHistories, UpdateSpecs}
 import org.genivi.sota.core.resolver.{ConnectivityClient, ExternalResolverClient}
 import org.genivi.sota.data.Namespace._
 import org.genivi.sota.data.Vehicle
@@ -46,20 +46,22 @@ class VehiclesResource(db: Database, client: ConnectivityClient, resolverClient:
   case object MissingVehicle extends Throwable
 
   private def exists(vehicle: Vehicle)
-                    (implicit ec: ExecutionContext): Future[Vehicle] =
-    db.run(Vehicles.exists(vehicle))
-      .flatMap(_
-        .fold[Future[Vehicle]]
-          (Future.failed(MissingVehicle))(Future.successful))
+                    (implicit ec: ExecutionContext): Future[Vehicle] = ???
+    // TODO
+    // db.run(Vehicles.exists(vehicle))
+    //   .flatMap(_
+    //     .fold[Future[Vehicle]]
+    //       (Future.failed(MissingVehicle))(Future.successful))
 
   private def deleteVehicle(ns: Namespace, vehicle: Vehicle)
-                           (implicit ec: ExecutionContext): Future[Unit] =
-    for {
-      _ <- exists(vehicle)
-      _ <- db.run(UpdateSpecs.deleteRequiredPackageByVin(ns, vehicle))
-      _ <- db.run(UpdateSpecs.deleteUpdateSpecByVin(ns, vehicle))
-      _ <- db.run(Vehicles.deleteById(vehicle))
-    } yield ()
+                           (implicit ec: ExecutionContext): Future[Unit] = ???
+    // TODO
+    // for {
+    //   _ <- exists(vehicle)
+    //   _ <- db.run(UpdateSpecs.deleteRequiredPackageByVin(ns, vehicle))
+    //   _ <- db.run(UpdateSpecs.deleteUpdateSpecByVin(ns, vehicle))
+    //   _ <- db.run(Vehicles.deleteById(vehicle))
+    // } yield ()
 
   /**
     * An ota client GET the [[Vehicle]] for the given VIN.
@@ -75,9 +77,10 @@ class VehiclesResource(db: Database, client: ConnectivityClient, resolverClient:
   /**
     * An ota client PUT a new [[Vehicle]], adding a row in [[VehicleTable]]. Resolver is not contacted.
     */
-  def updateVehicle(ns: Namespace, vin: Vehicle.Vin): Route = {
-    complete(db.run(Vehicles.create(Vehicle(ns, vin))).map(_ => NoContent))
-  }
+  def updateVehicle(ns: Namespace, vin: Vehicle.Vin): Route = ???//{
+    // TODO
+  //   complete(db.run(Vehicles.create(Vehicle(ns, vin))).map(_ => NoContent))
+  // }
 
   /**
     * An ota client DELETE a [[Vehicle]], deleting beforehand its rows in
