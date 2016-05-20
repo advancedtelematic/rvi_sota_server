@@ -17,10 +17,10 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Regex
 import io.circe.generic.auto._
 import org.genivi.sota.data.{Device, DeviceT}
+import org.genivi.sota.device_registry.IDeviceRegistry
 import org.genivi.sota.device_registry.common.Errors
 import org.genivi.sota.marshalling.CirceMarshallingSupport
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 import CirceMarshallingSupport._
 import Device._
@@ -29,28 +29,9 @@ import StatusCodes._
 import Uri._
 
 
-trait IDeviceRegistryClient {
-
-  def searchDevice(re: String Refined Regex)
-                  (implicit ec: ExecutionContext): Future[Seq[Device]]
-  def createDevice(device: DeviceT)
-                  (implicit ec: ExecutionContext): Future[Id]
-  def fetchDevice(id: Id)
-                 (implicit ec: ExecutionContext): Future[Device]
-  def fetchDeviceByDeviceId(id: DeviceId)
-                           (implicit ec: ExecutionContext): Future[Device]
-  def updateDevice(id: Id, device: DeviceT)
-                  (implicit ec: ExecutionContext): Future[Unit]
-  def deleteDevice(id: Id)
-                  (implicit ec: ExecutionContext): Future[Unit]
-  def pingDevice(id: Id)
-                (implicit ec: ExecutionContext): Future[Unit]
-
-}
-
 class DeviceRegistryClient(baseUri: Uri, devicesUri: Uri)
                           (implicit system: ActorSystem, mat: ActorMaterializer)
-    extends IDeviceRegistryClient {
+    extends IDeviceRegistry {
 
   private[this] val log = Logging(system, "org.genivi.sota.deviceRegistryClient")
 
