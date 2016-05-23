@@ -103,15 +103,15 @@ class FilterQuerySpec extends ResourceWordSpec with Namespaces {
   val part3: Refined[String, Component.ValidPartNumber] = Refined.unsafeApply("part3")
   val part4: Refined[String, Component.ValidPartNumber] = Refined.unsafeApply("part4")
 
-  val vins: Seq[(Vehicle, (Seq[PackageId], Seq[Component.PartNumber]))] =
-    List( (vin1, (List(pkg1), List(part1)))
-        , (vin2, (List(pkg2), List(part2)))
-        , (vin3, (List(pkg3), List(part3)))
-        , (vin4, (List(pkg4), List(part4)))
-        , (vin5, (List(),     List()))
+  val vins: Seq[(Vehicle.Vin, (Seq[PackageId], Seq[Component.PartNumber]))] =
+    List( (vin1.vin, (List(pkg1), List(part1)))
+        , (vin2.vin, (List(pkg2), List(part2)))
+        , (vin3.vin, (List(pkg3), List(part3)))
+        , (vin4.vin, (List(pkg4), List(part4)))
+        , (vin5.vin, (List(),     List()))
         )
 
-  def run(f: FilterAST): Seq[Vehicle] =
+  def run(f: FilterAST): Seq[Vehicle.Vin] =
     vins.filter(query(f)).map(_._1)
 
 

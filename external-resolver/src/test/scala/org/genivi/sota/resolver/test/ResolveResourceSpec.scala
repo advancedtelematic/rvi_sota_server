@@ -192,9 +192,12 @@ class ResolveResourcePropSpec extends ResourcePropSpec {
                     // queries.
 
                     // XXX: Deal with installed packages and components properly.
-                    allVehicles.map(v => (v, (List[PackageId](), List[Component.PartNumber]()))).filter(query
-                      (fs.map(_.expression).map(parseValidFilter)
-                         .foldLeft[FilterAST](True)(And))).map(_._1))
+                    allVehicles
+                      .map(v => (v.vin, (List[PackageId](), List[Component.PartNumber]())))
+                      .filter {
+                        query(fs.map(_.expression).map(parseValidFilter)
+                          .foldLeft[FilterAST](True)(And))
+                      }.map(_._1))
               }
             }
           }
