@@ -30,7 +30,7 @@ class ResolveResourceWordSpec extends ResourceWordSpec {
         refineV[Vehicle.ValidVin]("10RES0LVEV1N12345").right.get,
         refineV[Vehicle.ValidVin]("11RES0LVEV1N12345").right.get): List[Vehicle.Vin]
 
-      vins map addVehicleOK
+      vins foreach addVehicleOK
 
       // Add a package.
       addPackageOK("resolvePkg", "0.0.1", None, None)

@@ -64,6 +64,19 @@ class VehicleDirectives(implicit system: ActorSystem,
       complete(db.run(VehicleRepository.search(ns, re, pn, pv, cp)))
     }
 
+  def getVehicle(ns: Namespace, vin: Vehicle.Vin): Route =
+    completeOrRecoverWith(db.run(VehicleRepository.exists(ns, vin))) {
+      Errors.onMissingVehicle
+    }
+
+  def addVehicle(ns: Namespace, vin: Vehicle.Vin): Route =
+    complete(db.run(VehicleRepository.add(Vehicle(ns, vin))).map(_ => NoContent))
+
+  def deleteVehicle(ns: Namespace, vin: Vehicle.Vin): Route =
+    handleExceptions(installedPackagesHandler) {
+      complete(db.run(VehicleRepository.deleteVin(ns, vin)))
+    }
+
   def getPackages(ns: Namespace, vin: Vehicle.Vin): Route =
     completeOrRecoverWith(db.run(VehicleRepository.packagesOnVin(ns, vin))) {
       Errors.onMissingVehicle
@@ -81,12 +94,12 @@ class VehicleDirectives(implicit system: ActorSystem,
 
   def updateInstalledSoftware(ns: Namespace, vin: Vehicle.Vin): Route =
     entity(as[InstalledSoftware]) { installedSoftware =>
-      onSuccess(db.run(for {
-        _ <- VehicleRepository.updateInstalledPackages(ns, vin, installedSoftware.packages)
-        _ <- VehicleRepository.updateInstalledFirmware(ns, vin, installedSoftware.firmware)
-      } yield ())) {
-        complete(StatusCodes.NoContent)
-      }
+      val dbIO = DBIO.seq(
+        VehicleRepository.updateInstalledPackages(ns, vin, installedSoftware.packages),
+        VehicleRepository.updateInstalledFirmware(ns, vin, installedSoftware.firmware)
+      )
+
+      complete { db.run(dbIO).map(_ => StatusCodes.NoContent) }
     }
 
   /**
@@ -156,15 +169,24 @@ class VehicleDirectives(implicit system: ActorSystem,
         searchVehicles(ns)
       } ~
       extractVin { vin =>
+        (get & pathEnd) {
+          getVehicle(ns, vin)
+        } ~
+        (put & pathEnd) {
+          addVehicle(ns, vin)
+        } ~
+        (delete & pathEnd) {
+          deleteVehicle(ns, vin)
+        } ~
         packageApi(vin) ~
         componentApi(vin)
       }
     }
 
-  def getFirmware(ns: Namespace, vin: Vehicle.Vin): Route = ???
-    // completeOrRecoverWith(db.run(VehicleRepository.firmwareOnVin(ns, vin))) {
-    //   Errors.onMissingVehicle
-    // }
+  def getFirmware(ns: Namespace, vin: Vehicle.Vin): Route =
+    completeOrRecoverWith(db.run(VehicleRepository.firmwareOnVin(ns, vin))) {
+      Errors.onMissingVehicle
+    }
 
   /**
    * Base API route for vehicles.
