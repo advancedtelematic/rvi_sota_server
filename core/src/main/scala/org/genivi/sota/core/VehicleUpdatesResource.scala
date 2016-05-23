@@ -19,7 +19,7 @@ import org.genivi.sota.core.transfer.{DefaultUpdateNotifier, PackageDownloadProc
 import org.genivi.sota.data.{PackageId, Vehicle}
 import slick.driver.MySQLDriver.api.Database
 import io.circe.generic.auto._
-import org.genivi.sota.core.db.{OperationResults, Vehicles, UpdateSpecs}
+import org.genivi.sota.core.db.{OperationResults, UpdateSpecs}
 import org.genivi.sota.core.common.NamespaceDirective._
 import org.genivi.sota.data.Namespace._
 import org.genivi.sota.core.data.client.ResponseConversions
@@ -48,11 +48,11 @@ class VehicleUpdatesResource(db : Database, resolverClient: ExternalResolverClie
 
   protected lazy val updateService = new UpdateService(DefaultUpdateNotifier)
 
-  def logVehicleSeen(vin: Vehicle.Vin): Directive0 = {
-    extractRequestContext flatMap { _ =>
-      onComplete(db.run(Vehicles.updateLastSeen(vin)))
-    } flatMap (_ => pass)
-  }
+  def logVehicleSeen(vin: Vehicle.Vin): Directive0 = ???//{
+  //   extractRequestContext flatMap { _ =>
+  //     onComplete(db.run(Vehicles.updateLastSeen(vin)))
+  //   } flatMap (_ => pass)
+  // }
 
   /**
     * An ota client PUT a list of packages to record they're installed on a vehicle, overwriting any previous such list.
