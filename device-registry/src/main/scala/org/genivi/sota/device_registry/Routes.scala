@@ -12,6 +12,7 @@ import eu.timepit.refined._
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Regex
 import io.circe.generic.auto._
+import org.genivi.sota.data.{Device, DeviceT}
 import org.genivi.sota.data.Namespace._
 import org.genivi.sota.device_registry.common.Errors
 import org.genivi.sota.device_registry.common.NamespaceDirective._
@@ -21,15 +22,6 @@ import org.genivi.sota.rest.Validation._
 import org.joda.time._
 import scala.concurrent.ExecutionContext
 import slick.jdbc.JdbcBackend.Database
-
-
-/*
- * Device transfer object
- */
-final case class DeviceT(
-  deviceId: Option[Device.DeviceId] = None,
-  deviceType: Device.DeviceType = Device.DeviceType.Other
-)
 
 
 /**
@@ -61,10 +53,9 @@ class Routes(implicit system: ActorSystem,
           completeOrRecoverWith(db.run(Devices.findByDeviceId(ns, DeviceId(deviceId)))) {
             onMissingDevice
           }
+        case (None, None)               => complete(db.run(Devices.list))
         case (Some(re), Some(deviceId)) =>
           complete((BadRequest, "Both 'regex' and 'deviceId' parameters cannot be used together!"))
-        case (None, None)               =>
-          complete((BadRequest, "Either 'regex' or 'deviceId' parameter is missing!"))
       }
     }
 

@@ -1,0 +1,12 @@
+
+[error] Failed tests:
+[error]         org.genivi.sota.core.transfer.UpdateNotifierSpec
+[error]         org.genivi.sota.core.VehicleResourceSpec
+[error]         org.genivi.sota.core.storage.S3PackageStoreSpec
+[error] Error during tests:
+[error]         org.genivi.sota.core.PackageUploadSpec
+[error]         org.genivi.sota.core.transfer.PackageUpdateSpec
+[error]         org.genivi.sota.core.PackagesResourceSpec
+[error]         org.genivi.sota.core.PackageResourceWordSpec
+[error]         org.genivi.sota.core.VehicleUpdatesResourceSpec
+[error] (sota-core/test:test) sbt.TestsFailedException: Tests unsuccessful

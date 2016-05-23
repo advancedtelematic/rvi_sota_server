@@ -14,24 +14,28 @@ import akka.http.scaladsl.server._
 import akka.stream.ActorMaterializer
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Uuid
-import org.genivi.sota.core.rvi.InstallReport
-import org.genivi.sota.core.transfer.{DefaultUpdateNotifier, PackageDownloadProcess, VehicleUpdates}
-import org.genivi.sota.data.{PackageId, Vehicle}
-import slick.driver.MySQLDriver.api.Database
 import io.circe.generic.auto._
-import org.genivi.sota.core.db.{OperationResults, Vehicles, UpdateSpecs}
+import org.genivi.sota.core.db.{OperationResults, UpdateSpecs}
 import org.genivi.sota.core.common.NamespaceDirective._
-import org.genivi.sota.data.Namespace._
-import org.genivi.sota.core.data.client.ResponseConversions
-import org.genivi.sota.core.resolver.{Connectivity, DefaultConnectivity, ExternalResolverClient}
-import org.genivi.sota.core.storage.PackageStorage
-import org.joda.time.DateTime
-import org.genivi.sota.core.data.{UpdateRequest, UpdateSpec}
 import org.genivi.sota.core.data.client.PendingUpdateRequest
-
+import org.genivi.sota.core.data.client.ResponseConversions
+import org.genivi.sota.core.data.{UpdateRequest, UpdateSpec}
+import org.genivi.sota.core.resolver.{Connectivity, DefaultConnectivity, ExternalResolverClient}
+import org.genivi.sota.core.rvi.InstallReport
+import org.genivi.sota.core.storage.PackageStorage
+import org.genivi.sota.core.transfer.{DefaultUpdateNotifier, PackageDownloadProcess, VehicleUpdates}
+import org.genivi.sota.data.Namespace._
+import org.genivi.sota.data.Device
+import org.genivi.sota.data.{PackageId, Vehicle}
+import org.genivi.sota.device_registry.IDeviceRegistry
+import org.genivi.sota.rest.Validation.refined
+import org.joda.time.DateTime
 import scala.language.implicitConversions
+import slick.driver.MySQLDriver.api.Database
 
-class VehicleUpdatesResource(db : Database, resolverClient: ExternalResolverClient)
+class VehicleUpdatesResource(db: Database,
+                             resolverClient: ExternalResolverClient,
+                             deviceRegistry: IDeviceRegistry)
                             (implicit system: ActorSystem, mat: ActorMaterializer,
                              connectivity: Connectivity = DefaultConnectivity) extends Directives {
 
@@ -47,12 +51,6 @@ class VehicleUpdatesResource(db : Database, resolverClient: ExternalResolverClie
   lazy val packageDownloadProcess = new PackageDownloadProcess(db, packageRetrievalOp)
 
   protected lazy val updateService = new UpdateService(DefaultUpdateNotifier)
-
-  def logVehicleSeen(vin: Vehicle.Vin): Directive0 = {
-    extractRequestContext flatMap { _ =>
-      onComplete(db.run(Vehicles.updateLastSeen(vin)))
-    } flatMap (_ => pass)
-  }
 
   /**
     * An ota client PUT a list of packages to record they're installed on a vehicle, overwriting any previous such list.
@@ -78,15 +76,16 @@ class VehicleUpdatesResource(db : Database, resolverClient: ExternalResolverClie
   def pendingPackages(vin: Vehicle.Vin): Route = {
     import org.genivi.sota.core.data.client.PendingUpdateRequest._
     import ResponseConversions._
+    import Device._
 
-    logVehicleSeen(vin) {
-      val vehiclePackages =
-        VehicleUpdates
-          .findPendingPackageIdsFor(vin)
-          .map(_.toResponse)
+    deviceRegistry.fetchDeviceByDeviceId(DeviceId(vin.get)).map(d => deviceRegistry.pingDevice(d.id))
 
-      complete(db.run(vehiclePackages))
-    }
+    val vehiclePackages =
+      VehicleUpdates
+        .findPendingPackageIdsFor(vin)
+        .map(_.toResponse)
+
+    complete(db.run(vehiclePackages))
   }
 
   /**
