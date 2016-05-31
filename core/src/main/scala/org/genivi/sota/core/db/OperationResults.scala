@@ -84,6 +84,8 @@ object OperationResults {
    * @param result A new operation result to add
    */
   def persist(result: OperationResult)
-             (implicit ec: ExecutionContext): DBIO[OperationResult] = (all += result).map(_ => result)
+             (implicit ec: ExecutionContext): DBIO[OperationResult] = {
+    all.insertOrUpdate(result).map(_ => result)
+  }
 
 }
