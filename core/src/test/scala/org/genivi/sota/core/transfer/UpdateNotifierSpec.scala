@@ -6,21 +6,17 @@ import akka.testkit.TestKit
 import eu.timepit.refined.api.Refined
 import org.genivi.sota.core.PackagesReader
 import org.genivi.sota.core.RequiresRvi
-import org.genivi.sota.core.data.{UpdateRequest, UpdateSpec, UpdateStatus}
-import org.genivi.sota.core.jsonrpc.HttpTransport
+import org.genivi.sota.core.data.{UpdateSpec, UpdateStatus}
 import org.genivi.sota.core.rvi.{RviConnectivity, RviUpdateNotifier, SotaServices}
-import org.genivi.sota.data.Namespace._
-import org.genivi.sota.data.Namespaces
-import org.genivi.sota.data.Vehicle
+import org.genivi.sota.datatype.Namespace._
+import org.genivi.sota.data.{Namespaces, Vehicle}
 import org.joda.time.DateTime
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.time.{Millis, Seconds, Span}
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, Matchers, PropSpec}
+import org.scalatest.time.{Seconds, Span}
+import org.scalatest.{BeforeAndAfterAll, Matchers, PropSpec}
 
 import scala.concurrent.Future
-import slick.jdbc.JdbcBackend.Database
-
 
 object UpdateNotifierSpec {
   import org.genivi.sota.core.Generators.{dependenciesGen, updateRequestGen, vinDepGen}

@@ -20,7 +20,7 @@ import org.genivi.sota.core.db.{Packages, UpdateSpecs}
 import org.genivi.sota.core.resolver.{ExternalResolverClient, ExternalResolverRequestFailed}
 import org.genivi.sota.core.storage.PackageStorage
 import org.genivi.sota.core.storage.PackageStorage.PackageStorageOp
-import org.genivi.sota.data.Namespace._
+import org.genivi.sota.datatype.Namespace._
 import org.genivi.sota.data.PackageId
 import org.genivi.sota.datatype.NamespaceDirective
 import org.genivi.sota.marshalling.RefinedMarshallingSupport._

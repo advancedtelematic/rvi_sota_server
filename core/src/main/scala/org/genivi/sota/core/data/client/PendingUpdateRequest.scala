@@ -7,7 +7,7 @@ package org.genivi.sota.core.data.client
 import java.util.UUID
 
 import org.genivi.sota.core.data.UpdateRequest
-import org.genivi.sota.data.Namespace.Namespace
+import org.genivi.sota.datatype.Namespace.Namespace
 import org.genivi.sota.data.PackageId
 import org.joda.time.{DateTime, Interval}
 import scala.language.implicitConversions

@@ -9,7 +9,7 @@ import akka.http.scaladsl.server.{Directive1, Directives, Route}
 import akka.stream.ActorMaterializer
 import io.circe.generic.auto._
 import org.genivi.sota.data.PackageId
-import org.genivi.sota.data.Namespace._
+import org.genivi.sota.datatype.Namespace._
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
 import org.genivi.sota.resolver.common.Errors
 import org.genivi.sota.resolver.common.RefinementDirectives._

@@ -13,7 +13,7 @@ import akka.http.scaladsl.marshalling.Marshaller._
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.ActorMaterializer
-import org.genivi.sota.data.Namespace._
+import org.genivi.sota.datatype.Namespace._
 import org.genivi.sota.data.{PackageId, Vehicle}
 import org.genivi.sota.marshalling.CirceMarshallingSupport
 

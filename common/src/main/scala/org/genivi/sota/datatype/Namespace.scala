@@ -3,7 +3,7 @@
  * License: MPL-2.0
  */
 
-package org.genivi.sota.data
+package org.genivi.sota.datatype
 
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Uri

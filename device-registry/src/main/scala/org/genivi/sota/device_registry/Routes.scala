@@ -12,7 +12,8 @@ import eu.timepit.refined._
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Regex
 import io.circe.generic.auto._
-import org.genivi.sota.data.Namespace._
+import org.genivi.sota.data.{Device, DeviceT}
+import org.genivi.sota.datatype.Namespace._
 import org.genivi.sota.device_registry.common.Errors
 import org.genivi.sota.device_registry.common.NamespaceDirective._
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
@@ -20,16 +21,7 @@ import org.genivi.sota.marshalling.RefinedMarshallingSupport._
 import org.genivi.sota.rest.Validation._
 import org.joda.time._
 import scala.concurrent.ExecutionContext
-import slick.jdbc.JdbcBackend.Database
-
-
-/*
- * Device transfer object
- */
-final case class DeviceT(
-  deviceId: Option[Device.DeviceId] = None,
-  deviceType: Device.DeviceType = Device.DeviceType.Other
-)
+import slick.driver.MySQLDriver.api._
 
 
 /**
@@ -53,18 +45,24 @@ class Routes(implicit system: ActorSystem,
 
   def searchDevice(ns: Namespace): Route =
     parameters(('regex.as[String Refined Regex].?,
-                'deviceId.as[String].?)) { (re: Option[String Refined Regex],
+                'deviceName.as[String].?,
+                'deviceId.as[String].?)) { (regex: Option[String Refined Regex],
+                                            deviceName: Option[String],
                                             deviceId: Option[String]) =>
-      (re, deviceId) match {
-        case (Some(re), None)           => complete(db.run(Devices.search(ns, re)))
-        case (None, Some(deviceId))     =>
-          completeOrRecoverWith(db.run(Devices.findByDeviceId(ns, DeviceId(deviceId)))) {
+      (regex, deviceName, deviceId) match {
+        case (Some(re), None, None) =>
+          complete(db.run(Devices.search(ns, re)))
+        case (None, Some(name), None) =>
+          completeOrRecoverWith(db.run(Devices.findByDeviceName(ns, DeviceName(name)))) {
             onMissingDevice
           }
-        case (Some(re), Some(deviceId)) =>
-          complete((BadRequest, "Both 'regex' and 'deviceId' parameters cannot be used together!"))
-        case (None, None)               =>
-          complete((BadRequest, "Either 'regex' or 'deviceId' parameter is missing!"))
+        case (None, None, Some(id)) =>
+          completeOrRecoverWith(db.run(Devices.findByDeviceId(ns, DeviceId(id)))) {
+            onMissingDevice
+          }
+        case (None, None, None) => complete(db.run(Devices.list))
+        case _ =>
+          complete((BadRequest, "'regex', 'deviceName' and 'deviceId' parameters cannot be used together!"))
       }
     }
 
@@ -87,7 +85,7 @@ class Routes(implicit system: ActorSystem,
       onMissingDevice
     }
 
-  def pingDevice(ns: Namespace, id: Id): Route =
+  def updateLastSeen(ns: Namespace, id: Id): Route =
     completeOrRecoverWith(db.run(Devices.updateLastSeen(ns, id))) {
       onMissingDevice
     }
@@ -98,7 +96,7 @@ class Routes(implicit system: ActorSystem,
       (get & pathEnd) {
         searchDevice(ns)
       } ~
-      (post & entity(as[DeviceT]) & pathEnd) { (device: DeviceT) =>
+      (post & entity(as[DeviceT]) & pathEndOrSingleSlash) { (device: DeviceT) =>
         createDevice(ns, device)
       } ~
       extractId { (id: Id) =>
@@ -112,7 +110,7 @@ class Routes(implicit system: ActorSystem,
           deleteDevice(ns, id)
         } ~
         (post & path("ping")) {
-          pingDevice(ns, id)
+          updateLastSeen(ns, id)
         }
       }
     }

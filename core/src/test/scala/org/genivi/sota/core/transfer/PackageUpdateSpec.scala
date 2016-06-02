@@ -14,11 +14,11 @@ import eu.timepit.refined.refineV
 import org.genivi.sota.core._
 import org.genivi.sota.core.Generators.updateRequestGen
 import org.genivi.sota.core.data.{Package, UpdateRequest, UpdateSpec}
-import org.genivi.sota.core.db.{Packages, Vehicles}
+import org.genivi.sota.core.db.{Packages}
 import org.genivi.sota.core.jsonrpc.HttpTransport
 import org.genivi.sota.core.resolver.DefaultExternalResolverClient
 import org.genivi.sota.core.rvi._
-import org.genivi.sota.data.Namespace._
+import org.genivi.sota.datatype.Namespace._
 import org.genivi.sota.data.{Namespaces, PackageId, Vehicle}
 import org.joda.time.DateTime
 import org.scalacheck.Gen
@@ -214,7 +214,8 @@ class PackageUpdateSpec extends PropSpec
       generatedData.values.map( _.keySet ).fold(Set.empty[Vehicle.Vin])( _ union _)
 
     for {
-      _     <- db.run( DBIO.seq( vins.map( vin => Vehicles.create(Vehicle(defaultNs, vin))).toArray: _* ) )
+      // TODO
+      // _     <- db.run( DBIO.seq( vins.map( vin => Vehicles.create(Vehicle(defaultNs, vin))).toArray: _* ) )
       specs <- Future.sequence( generatedData.map {
                                  case (request, deps) =>
                                    updateService.queueUpdate(request, _ => FastFuture.successful(deps))

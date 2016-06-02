@@ -4,23 +4,23 @@
   */
 package org.genivi.sota.core
 
+import akka.http.scaladsl.util.FastFuture
 import com.typesafe.config.{Config, ConfigFactory}
+import org.genivi.sota.common.IDeviceRegistry
 import org.genivi.sota.core.data.{Package, UpdateRequest, UpdateSpec}
-import org.genivi.sota.core.db.{Packages, UpdateRequests, UpdateSpecs, Vehicles}
-import org.genivi.sota.data.Namespace.Namespace
-
+import org.genivi.sota.core.db.{Packages, UpdateRequests, UpdateSpecs}
+import org.genivi.sota.data.{Device, DeviceT}
 import scala.concurrent.ExecutionContext
 import slick.driver.MySQLDriver.api._
 import org.genivi.sota.data.{Vehicle, VehicleGenerators}
 import org.genivi.sota.datatype.NamespaceDirective
-
 import scala.concurrent.Future
-
+import slick.driver.MySQLDriver.api._
 
 object NamespaceSpec {
   import eu.timepit.refined.auto._
   import eu.timepit.refined.string._
-  import org.genivi.sota.data.Namespace._
+  import org.genivi.sota.datatype.Namespace._
 
   lazy val defaultNamespace: Namespace = {
     val config = ConfigFactory.load()
@@ -52,7 +52,6 @@ trait UpdateResourcesDatabaseSpec {
     val vehicle = VehicleGenerators.genVehicle.sample.get
 
     for {
-      _ <- Vehicles.create(vehicle)
       (packageModel, updateSpec) <- createUpdateSpecFor(vehicle)
     } yield (packageModel, vehicle, updateSpec)
   }
@@ -65,8 +64,13 @@ trait UpdateResourcesDatabaseSpec {
 trait VehicleDatabaseSpec {
   self: DatabaseSpec =>
 
-  def createVehicle()(implicit ec: ExecutionContext): Future[Vehicle] = {
+  import Device._
+
+  def createVehicle(deviceRegistry: IDeviceRegistry)(implicit ec: ExecutionContext): Future[Vehicle] = {
     val vehicle = VehicleGenerators.genVehicle.sample.get
-    db.run(Vehicles.create(vehicle))
+    deviceRegistry.createDevice(DeviceT(DeviceName(vehicle.vin.get),
+                                        Some(DeviceId(vehicle.vin.get)),
+                                        DeviceType.Vehicle))
+    FastFuture.successful(vehicle)
   }
 }

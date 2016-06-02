@@ -5,7 +5,7 @@
 package org.genivi.sota.resolver.test
 
 import eu.timepit.refined.api.Refined
-import org.genivi.sota.data.Namespace.Namespace
+import org.genivi.sota.datatype.Namespace.Namespace
 import org.genivi.sota.data.Vehicle
 import org.genivi.sota.resolver.data.Firmware
 

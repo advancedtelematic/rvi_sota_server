@@ -7,7 +7,7 @@ package org.genivi.sota.core.db
 import java.util.UUID
 
 import org.genivi.sota.core.data.UpdateRequest
-import org.genivi.sota.data.Namespace._
+import org.genivi.sota.datatype.Namespace._
 import org.genivi.sota.data.PackageId
 import org.joda.time.DateTime
 import slick.driver.MySQLDriver.api._

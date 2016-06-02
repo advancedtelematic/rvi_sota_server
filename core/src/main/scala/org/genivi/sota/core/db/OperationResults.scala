@@ -9,7 +9,7 @@ import eu.timepit.refined.string.Uuid
 import java.util.UUID
 
 import org.genivi.sota.core.data.OperationResult
-import org.genivi.sota.data.Namespace._
+import org.genivi.sota.datatype.Namespace._
 import org.genivi.sota.data.Vehicle
 
 import scala.concurrent.ExecutionContext

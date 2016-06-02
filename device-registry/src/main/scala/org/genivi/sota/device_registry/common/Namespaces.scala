@@ -9,7 +9,7 @@ import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.directives.BasicDirectives
 import eu.timepit.refined._
 import eu.timepit.refined.string._
-import org.genivi.sota.data.Namespace._
+import org.genivi.sota.datatype.Namespace._
 
 
 trait NamespaceDirective extends BasicDirectives {
