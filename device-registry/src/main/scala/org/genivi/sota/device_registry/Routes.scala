@@ -15,7 +15,6 @@ import io.circe.generic.auto._
 import org.genivi.sota.data.{Device, DeviceT}
 import org.genivi.sota.datatype.Namespace._
 import org.genivi.sota.device_registry.common.Errors
-import org.genivi.sota.device_registry.common.NamespaceDirective._
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
 import org.genivi.sota.marshalling.RefinedMarshallingSupport._
 import org.genivi.sota.rest.Validation._
@@ -29,7 +28,8 @@ import slick.driver.MySQLDriver.api._
  *
  * @see {@linktourl http://pdxostc.github.io/rvi_sota_server/dev/api.html}
  */
-class Routes(implicit system: ActorSystem,
+class Routes(namespaceExtractor: Directive1[Namespace])
+            (implicit system: ActorSystem,
              db: Database,
              mat: ActorMaterializer,
              ec: ExecutionContext) {
@@ -42,28 +42,24 @@ class Routes(implicit system: ActorSystem,
   val extractId: Directive1[Id] = refined[ValidId](Slash ~ Segment).map(Id(_))
   val extractDeviceId: Directive1[DeviceId] = parameter('deviceId.as[String]).map(DeviceId(_))
 
-
-  def searchDevice(ns: Namespace): Route =
+  def searchDevice: Route =
     parameters(('regex.as[String Refined Regex].?,
-                'deviceName.as[String].?,
-                'deviceId.as[String].?)) { (regex: Option[String Refined Regex],
-                                            deviceName: Option[String],
-                                            deviceId: Option[String]) =>
-      (regex, deviceName, deviceId) match {
-        case (Some(re), None, None) =>
-          complete(db.run(Devices.search(ns, re)))
-        case (None, Some(name), None) =>
-          completeOrRecoverWith(db.run(Devices.findByDeviceName(ns, DeviceName(name)))) {
-            onMissingDevice
-          }
-        case (None, None, Some(id)) =>
-          completeOrRecoverWith(db.run(Devices.findByDeviceId(ns, DeviceId(id)))) {
-            onMissingDevice
-          }
-        case (None, None, None) => complete(db.run(Devices.list))
-        case _ =>
-          complete((BadRequest, "'regex', 'deviceName' and 'deviceId' parameters cannot be used together!"))
-      }
+      'namespace.as[Namespace],
+      'deviceName.as[String].?,
+      'deviceId.as[String].?)) {
+      case (Some(re), ns, None, None) =>
+        complete(db.run(Devices.search(ns, re)))
+      case (None, ns, Some(name), None) =>
+        completeOrRecoverWith(db.run(Devices.findByDeviceName(ns, DeviceName(name)))) {
+          onMissingDevice
+        }
+      case (None, ns, None, Some(id)) =>
+        completeOrRecoverWith(db.run(Devices.findByDeviceId(ns, DeviceId(id)))) {
+          onMissingDevice
+        }
+      case (None, ns, None, None) => complete(db.run(Devices.list))
+      case _ =>
+        complete((BadRequest, "'regex', 'deviceName' and 'deviceId' parameters cannot be used together!"))
     }
 
   def createDevice(ns: Namespace, device: DeviceT): Route =
@@ -92,27 +88,29 @@ class Routes(implicit system: ActorSystem,
 
 
   def api: Route =
-    (pathPrefix("devices") & extractNamespace) { (ns: Namespace) =>
+    pathPrefix("devices") {
       (get & pathEnd) {
-        searchDevice(ns)
+        searchDevice
       } ~
-      (post & entity(as[DeviceT]) & pathEndOrSingleSlash) { (device: DeviceT) =>
-        createDevice(ns, device)
-      } ~
-      extractId { (id: Id) =>
-        (get & pathEnd) {
-          fetchDevice(ns, id)
-        } ~
-        (put & entity(as[DeviceT]) & pathEnd) { (device: DeviceT) =>
-          updateDevice(ns, id, device)
-        } ~
-        (delete & pathEnd) {
-          deleteDevice(ns, id)
-        } ~
-        (post & path("ping")) {
-          updateLastSeen(ns, id)
+        namespaceExtractor { (ns: Namespace) =>
+          (post & entity(as[DeviceT]) & pathEndOrSingleSlash) { (device: DeviceT) =>
+            createDevice(ns, device)
+          } ~
+            extractId { (id: Id) =>
+              (get & pathEnd) {
+                fetchDevice(ns, id)
+              } ~
+                (put & entity(as[DeviceT]) & pathEnd) { (device: DeviceT) =>
+                  updateDevice(ns, id, device)
+                } ~
+                (delete & pathEnd) {
+                  deleteDevice(ns, id)
+                } ~
+                (post & path("ping")) {
+                  updateLastSeen(ns, id)
+                }
+            }
         }
-      }
     }
 
 

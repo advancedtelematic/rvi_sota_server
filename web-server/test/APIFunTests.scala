@@ -180,7 +180,7 @@ class APIFunTests extends PlaySpec with OneServerPerSuite {
   }
 
   "test searching vins" taggedAs APITests in {
-    val response = makeRequest("devices?regex=" + testVin, GET)
+    val response = makeRequest(s"devices?namespace=$testNamespace&regex=" + testVin, GET)
     response.status mustBe OK
     val jsonResponse = decode[List[Device]](response.body)
     jsonResponse.toOption match {

@@ -21,11 +21,15 @@ import org.genivi.sota.datatype.Namespace._
 import org.genivi.sota.data.Vehicle
 import org.genivi.sota.marshalling.CirceMarshallingSupport
 import org.genivi.sota.rest.Validation._
+import org.genivi.sota.marshalling.RefinedMarshallingSupport._
+import akka.http.scaladsl.marshalling.ToResponseMarshaller
 
-import scala.util.{Success, Failure}
+import scala.util.{Failure, Success}
 import scala.languageFeature.implicitConversions
 import scala.languageFeature.postfixOps
 import slick.driver.MySQLDriver.api.Database
+
+import scala.concurrent.Future
 
 class VehiclesResource(db: Database, client: ConnectivityClient,
                        resolverClient: ExternalResolverClient,
@@ -42,52 +46,37 @@ class VehiclesResource(db: Database, client: ConnectivityClient,
 
   case object MissingVehicle extends Throwable
 
+  type RefinedRegx = Refined[String, Regex]
+
   /**
     * An ota client GET a Seq of [[Vehicle]] from regex/status search.
     */
   def search(ns: Namespace): Route = {
-    parameters(('status.?(false), 'regex.?)) { (includeStatus: Boolean, regex: Option[String]) =>
-      if (includeStatus) {
-        val devicesAndVinsWithStatus = for {
-          devices <- regex match {
-            case Some(re) => deviceRegistry.searchDevice(refineV[Regex](re).right.get) // TODO error handling
-            case None => deviceRegistry.searchDevice(Refined.unsafeApply(".*")) // TODO .list / pagination
-          }
-          vinsWithStatus <- db.run(VehicleSearch.vinsWithStatus(ns))
-        } yield (devices, vinsWithStatus)
+    parameters(('status.?(false), 'regex.as[RefinedRegx].?)) {
+      (includeStatus: Boolean, reqRegex: Option[RefinedRegx]) =>
+        val regex = reqRegex.getOrElse(Refined.unsafeApply(".*"))
+        val devices = deviceRegistry.searchDevice(ns, regex)
 
-        val devicesWithStatus = devicesAndVinsWithStatus.map { case (devices, vinsWithStatus) => for {
-          d <- devices
-          status = vinsWithStatus.filter(_.vin.get == d.deviceId)
-                     .headOption
-                     .map(_.status)
-                     .getOrElse(VehicleStatus.NotSeen)
-        } yield (VehicleUpdateStatus(refineV[Vehicle.ValidVin](d.deviceId.get.underlying).right.get, status, None)) }
+        if (includeStatus) {
+          completeWith(VehicleSearch.fetchDeviceStatus(devices))
+        } else {
+          completeWith(devices)
+        }
+    }
+  }
 
-        onComplete(devicesWithStatus) {
-          case Success(ds) => complete(ds.asJson)
-          case Failure(ex) =>
-            complete((StatusCodes.InternalServerError, "error: cannot lookup update status for devices"))
-        }
-      } else {
-        // redirect to device registry
-        val devices = regex match {
-          case Some(re) => deviceRegistry.searchDevice(refineV[Regex](re).right.get) // TODO error handling
-          case None => deviceRegistry.searchDevice(Refined.unsafeApply(".*")) // TODO .list / pagination
-        }
-
-        onComplete(devices) {
-          case Success(ds) => complete(ds.asJson)
-          case Failure(ex) => complete((StatusCodes.InternalServerError, "error: cannot lookup devices"))
-        }
+  protected def completeWith[T](searchResult: Future[Seq[T]])(implicit ev: ToResponseMarshaller[Seq[T]]): Route = {
+    onComplete(searchResult) {
+      case Success(ds) => complete(ds)
+      case Failure(ex) => extractLog { log =>
+        log.error(ex, "cannot lookup update status for devices")
+        complete((StatusCodes.InternalServerError, s"cannot lookup update status for devices: ${ex.getMessage}"))
       }
     }
   }
 
   val route =
     (pathPrefix("vehicles") & namespaceExtractor) { ns =>
-      (pathEnd & get) {
-        search(ns)
-      }
+      (pathEnd & get) { search(ns) }
     }
 }

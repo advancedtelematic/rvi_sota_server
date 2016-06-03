@@ -7,15 +7,18 @@ package org.genivi.sota.common
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Regex
 import org.genivi.sota.data.{Device, DeviceT}
-import scala.concurrent.{ExecutionContext, Future}
 
+import scala.concurrent.{ExecutionContext, Future}
 import Device._
+import org.genivi.sota.datatype.Namespace.Namespace
+import org.joda.time.DateTime
 
 
 trait IDeviceRegistry {
 
+  // TODO: Needs namespace
   def searchDevice
-    (re: String Refined Regex)
+    (ns: Namespace, re: String Refined Regex)
     (implicit ec: ExecutionContext): Future[Seq[Device]]
 
   def createDevice
@@ -39,7 +42,7 @@ trait IDeviceRegistry {
     (implicit ec: ExecutionContext): Future[Unit]
 
   def updateLastSeen
-    (id: Id)
+    (id: Id, seenAt: DateTime = DateTime.now)
     (implicit ec: ExecutionContext): Future[Unit]
 
 }

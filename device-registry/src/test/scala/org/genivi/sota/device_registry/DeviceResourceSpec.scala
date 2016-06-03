@@ -8,7 +8,6 @@ import akka.http.scaladsl.model.StatusCodes
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Regex
 import io.circe.generic.auto._
-import org.genivi.sota.datatype.Namespaces
 import org.genivi.sota.data.{Device, DeviceT}
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
 import org.joda.time.DateTime
@@ -235,7 +234,7 @@ class DeviceResourceSpec extends ResourcePropSpec {
     }
   }
 
-  property("POST request with same deviceId fails with conflict.") {
+  property("XXX POST request with same deviceId fails with conflict.") {
     forAll { (device1: DeviceT, device2: DeviceT) =>
 
       val id: Id = createDeviceOk(device1.copy(deviceName = DeviceName(device1.deviceName.underlying + "#1")))

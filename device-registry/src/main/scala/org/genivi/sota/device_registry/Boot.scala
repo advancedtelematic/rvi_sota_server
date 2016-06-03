@@ -9,7 +9,9 @@ import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.stream.ActorMaterializer
-import org.genivi.sota.rest.Handlers.{rejectionHandler, exceptionHandler}
+import org.genivi.sota.datatype.NamespaceDirective
+import org.genivi.sota.rest.Handlers.{exceptionHandler, rejectionHandler}
+
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 import slick.driver.MySQLDriver.api._
@@ -26,7 +28,7 @@ class Routing
   val route: Route = pathPrefix("api" / "v1") {
     handleRejections(rejectionHandler) {
       handleExceptions(exceptionHandler) {
-        new Routes().route
+        new Routes(NamespaceDirective.defaultNamespaceExtractor).route
       }
     }
   }
@@ -60,7 +62,7 @@ object Boot extends App {
   val port          = system.settings.config.getInt("server.port")
   val bindingFuture = Http().bindAndHandle(route.route, host, port)
 
-  log.info(s"Server online at http://${host}:${port}/")
+  log.info(s"Server online at http://$host:$port/")
 
   sys.addShutdownHook {
     Try(db.close())

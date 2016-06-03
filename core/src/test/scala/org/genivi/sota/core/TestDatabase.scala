@@ -67,10 +67,15 @@ trait VehicleDatabaseSpec {
   import Device._
 
   def createVehicle(deviceRegistry: IDeviceRegistry)(implicit ec: ExecutionContext): Future[Vehicle] = {
+    createDevice(deviceRegistry).map(_._2)
+  }
+
+  def createDevice(deviceRegistry: IDeviceRegistry)(implicit ec: ExecutionContext): Future[(Id, Vehicle)] = {
     val vehicle = VehicleGenerators.genVehicle.sample.get
-    deviceRegistry.createDevice(DeviceT(DeviceName(vehicle.vin.get),
-                                        Some(DeviceId(vehicle.vin.get)),
-                                        DeviceType.Vehicle))
-    FastFuture.successful(vehicle)
+    val f = deviceRegistry.createDevice(DeviceT(DeviceName(vehicle.vin.get),
+      Some(DeviceId(vehicle.vin.get)),
+      DeviceType.Vehicle))
+
+    f.map(id => (id,vehicle))
   }
 }

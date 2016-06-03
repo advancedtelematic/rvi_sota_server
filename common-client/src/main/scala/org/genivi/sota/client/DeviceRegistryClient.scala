@@ -2,13 +2,12 @@
  * Copyright: Copyright (C) 2015, Jaguar Land Rover
  * License: MPL-2.0
  */
-package org.genivi.sota.common.client
+package org.genivi.sota.client
 
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling._
-import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.ActorMaterializer
@@ -20,30 +19,33 @@ import org.genivi.sota.common.IDeviceRegistry
 import org.genivi.sota.data.{Device, DeviceT}
 import org.genivi.sota.device_registry.common.Errors
 import org.genivi.sota.marshalling.CirceMarshallingSupport
-import scala.concurrent.{ExecutionContext, Future}
 
+import scala.concurrent.{ExecutionContext, Future}
 import CirceMarshallingSupport._
 import Device._
-import HttpMethods._
-import StatusCodes._
-import Uri._
-
+import akka.http.scaladsl.model.Uri.Query
+import akka.http.scaladsl.model.{HttpMethods, HttpRequest, HttpResponse, MessageEntity, StatusCodes, Uri}
+import org.genivi.sota.datatype.Namespace.Namespace
+import org.joda.time.DateTime
 
 class DeviceRegistryClient(baseUri: Uri, devicesUri: Uri)
                           (implicit system: ActorSystem, mat: ActorMaterializer)
     extends IDeviceRegistry {
 
+  import StatusCodes._
+  import HttpMethods._
+
   private[this] val log = Logging(system, "org.genivi.sota.deviceRegistryClient")
 
-  def searchDevice(re: String Refined Regex)
+  override def searchDevice(ns: Namespace, re: String Refined Regex)
                   (implicit ec: ExecutionContext): Future[Seq[Device]] =
     Http().singleRequest(HttpRequest(uri = baseUri.withPath(devicesUri.path)
-      .withQuery(Query("regex" -> re.get))))
+      .withQuery(Query("regex" -> re.get, "namespace" -> ns.get))))
       .flatMap { response: HttpResponse =>
         Unmarshal(response.entity).to[Seq[Device]]
       }.recover { case _ => Seq.empty[Device] }
 
-  def createDevice(device: DeviceT)
+  override def createDevice(device: DeviceT)
                   (implicit ec: ExecutionContext): Future[Id] =
     Marshal(device).to[MessageEntity].flatMap { entity =>
       Http().singleRequest(HttpRequest(method = POST,
@@ -57,7 +59,7 @@ class DeviceRegistryClient(baseUri: Uri, devicesUri: Uri)
         }}
     }
 
-  def fetchDevice(id: Id)
+  override def fetchDevice(id: Id)
                  (implicit ec: ExecutionContext): Future[Device] =
     Http().singleRequest(HttpRequest(uri = baseUri.withPath(devicesUri.path / implicitly[Show[Id]].show(id))))
       .flatMap { response: HttpResponse => response.status match {
@@ -66,7 +68,7 @@ class DeviceRegistryClient(baseUri: Uri, devicesUri: Uri)
         case err => FastFuture.failed(new Exception(err.toString))
       }}
 
-  def fetchDeviceByDeviceId(id: DeviceId)
+  override def fetchDeviceByDeviceId(id: DeviceId)
                            (implicit ec: ExecutionContext): Future[Device] =
     Http().singleRequest(HttpRequest(uri = baseUri.withPath(devicesUri.path)
       .withQuery(Query("deviceId" -> implicitly[Show[DeviceId]].show(id)))))
@@ -76,7 +78,7 @@ class DeviceRegistryClient(baseUri: Uri, devicesUri: Uri)
         case err => FastFuture.failed(new Exception(err.toString))
       }}
 
-  def updateDevice(id: Id, device: DeviceT)
+  override def updateDevice(id: Id, device: DeviceT)
                   (implicit ec: ExecutionContext): Future[Unit] =
     Marshal(device).to[MessageEntity].flatMap { entity =>
       Http().singleRequest(HttpRequest(method = PUT,
@@ -90,7 +92,7 @@ class DeviceRegistryClient(baseUri: Uri, devicesUri: Uri)
       }}
     }
 
-  def deleteDevice(id: Id)
+  override def deleteDevice(id: Id)
                   (implicit ec: ExecutionContext): Future[Unit] =
     Http().singleRequest(
       HttpRequest(method = DELETE, uri = baseUri.withPath(devicesUri.path / implicitly[Show[Id]].show(id)))
@@ -100,7 +102,7 @@ class DeviceRegistryClient(baseUri: Uri, devicesUri: Uri)
       case err => FastFuture.failed(new Exception(err.toString))
     }}
 
-  def updateLastSeen(id: Id)
+  override def updateLastSeen(id: Id, seenAt: DateTime = DateTime.now)
                     (implicit ec: ExecutionContext): Future[Unit] =
     Http().singleRequest(HttpRequest(method = POST,
                                      uri = baseUri.withPath(devicesUri.path / implicitly[Show[Id]].show(id) / "ping")))

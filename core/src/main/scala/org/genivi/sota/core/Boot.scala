@@ -11,7 +11,7 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
-import org.genivi.sota.common.client.DeviceRegistryClient
+import org.genivi.sota.client.DeviceRegistryClient
 import org.genivi.sota.core.db._
 import org.genivi.sota.core.resolver.{Connectivity, DefaultConnectivity, DefaultExternalResolverClient}
 import org.genivi.sota.core.rvi._
