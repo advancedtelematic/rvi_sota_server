@@ -4,7 +4,7 @@
  */
 package org.genivi.sota.device_registry.common
 
-object Errors {
+object DeviceRegistryErrors {
   import akka.http.scaladsl.model.StatusCodes
   import akka.http.scaladsl.server.Directives.complete
   import akka.http.scaladsl.server.ExceptionHandler.PF
@@ -20,14 +20,11 @@ object Errors {
   case object MissingDevice extends Throwable with NoStackTrace
   case object ConflictingDeviceId extends Throwable with NoStackTrace
 
-  val onMissingDevice: PF = {
-    case Errors.MissingDevice =>
+  val errorHandler: PF = {
+    case DeviceRegistryErrors.MissingDevice =>
       complete(StatusCodes.NotFound -> ErrorRepresentation(Codes.MissingDevice, "Device doesn't exist"))
-  }
 
-  val onConflictingDeviceId: PF = {
-    case Errors.ConflictingDeviceId =>
+    case DeviceRegistryErrors.ConflictingDeviceId =>
       complete(StatusCodes.Conflict -> ErrorRepresentation(Codes.ConflictingDeviceId, "deviceId is already in use"))
   }
-
 }

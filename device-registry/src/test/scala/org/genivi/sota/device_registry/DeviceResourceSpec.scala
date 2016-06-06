@@ -71,7 +71,7 @@ class DeviceResourceSpec extends ResourcePropSpec {
     forAll { (deviceId: DeviceId, devicePre: DeviceT) =>
 
       val id: Id = createDeviceOk(devicePre.copy(deviceId = Some(deviceId)))
-      fetchDeviceByDeviceId(deviceId) ~> route ~> check {
+      fetchDeviceByDeviceId(defaultNs, deviceId) ~> route ~> check {
         status shouldBe OK
         val devicePost1: Device = responseAs[Device]
         fetchDevice(id) ~> route ~> check {
@@ -125,7 +125,7 @@ class DeviceResourceSpec extends ResourcePropSpec {
                                  regex.get.r.findFirstIn(d.deviceId.get.underlying).isDefined }
         .map(_._1)
 
-      searchDevice(regex.get) ~> route ~> check {
+      searchDevice(defaultNs, regex.get) ~> route ~> check {
         val matchingDevices: Seq[Device] = responseAs[Seq[Device]]
         matchingDevices.map(_.id).toSet shouldBe expectedIds.toSet
       }
@@ -144,10 +144,10 @@ class DeviceResourceSpec extends ResourcePropSpec {
 
         deviceId match {
           case Some(deviceId) =>
-            fetchDeviceByDeviceId(deviceId) ~> route ~> check {
+            fetchDeviceByDeviceId(defaultNs, deviceId) ~> route ~> check {
               status match {
                 case OK => updateStatus shouldBe Conflict
-                case NotFound => {
+                case NotFound =>
                   updateStatus shouldBe OK
 
                   fetchDevice(id) ~> route ~> check {
@@ -158,7 +158,6 @@ class DeviceResourceSpec extends ResourcePropSpec {
                     devicePost.deviceType shouldBe devicePre2.deviceType
                     devicePost.lastSeen shouldBe None
                   }
-                }
                 case _ => assert(false, "unexpected status code: " + status)
               }
             }
@@ -234,7 +233,7 @@ class DeviceResourceSpec extends ResourcePropSpec {
     }
   }
 
-  property("XXX POST request with same deviceId fails with conflict.") {
+  property("POST request with same deviceId fails with conflict.") {
     forAll { (device1: DeviceT, device2: DeviceT) =>
 
       val id: Id = createDeviceOk(device1.copy(deviceName = DeviceName(device1.deviceName.underlying + "#1")))
@@ -250,5 +249,4 @@ class DeviceResourceSpec extends ResourcePropSpec {
       deleteDeviceOk(id)
     }
   }
-
 }

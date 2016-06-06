@@ -4,14 +4,17 @@
  */
 package org.genivi.sota.device_registry.test
 
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{Directive1, Directives, Route}
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import eu.timepit.refined.api.Refined
 import org.genivi.sota.core.DatabaseSpec
+import org.genivi.sota.datatype.Namespace.Namespace
 import org.genivi.sota.device_registry.Routing
 import org.scalatest.Matchers
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{BeforeAndAfterAll, Suite, WordSpec, PropSpec, Matchers}
+import org.scalatest.{BeforeAndAfterAll, Matchers, PropSpec, Suite, WordSpec}
+
 import scala.concurrent.duration._
 
 
@@ -27,8 +30,12 @@ trait ResourceSpec extends
   implicit val routeTimeout: RouteTestTimeout =
     RouteTestTimeout(10.second)
 
+  lazy val defaultNs: Namespace = Refined.unsafeApply("default")
+
+  lazy val namespaceExtractor = Directives.provide(defaultNs)
+
   // Route
-  lazy implicit val route: Route = new Routing().route
+  lazy implicit val route: Route = new Routing(namespaceExtractor).route
 
 }
 
