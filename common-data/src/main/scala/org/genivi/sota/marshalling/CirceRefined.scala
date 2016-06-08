@@ -4,7 +4,6 @@
  */
 package org.genivi.sota.marshalling
 
-import com.sun.xml.internal.ws.encoding.soap.DeserializationException
 import eu.timepit.refined.api.{Refined, Validate}
 import eu.timepit.refined.refineV
 import io.circe.{Decoder, Encoder}
