@@ -9,9 +9,10 @@ import akka.http.scaladsl.model.Uri.{Path, Query}
 import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.Show
 import io.circe.generic.auto._
-import org.genivi.sota.data.Namespaces
-import org.genivi.sota.device_registry.{Device, DeviceT}
+import org.genivi.sota.data.{Device, DeviceT}
+import org.genivi.sota.datatype.Namespace.Namespace
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
+
 import scala.concurrent.ExecutionContext
 
 
@@ -39,12 +40,12 @@ trait DeviceRequests {
                  (implicit s: Show[Id]): HttpRequest =
     Get(Resource.uri(api, s.show(id)))
 
-  def searchDevice(regex: String): HttpRequest =
-    Get(Resource.uri(api).withQuery(Query("regex" -> regex)))
+  def searchDevice(namespace: Namespace, regex: String): HttpRequest =
+    Get(Resource.uri(api).withQuery(Query("namespace" -> namespace.get, "regex" -> regex)))
 
-  def fetchDeviceByDeviceId(deviceId: Device.DeviceId)
+  def fetchDeviceByDeviceId(namespace: Namespace, deviceId: Device.DeviceId)
                            (implicit s: Show[Device.DeviceId]): HttpRequest =
-    Get(Resource.uri(api).withQuery(Query("deviceId" -> s.show(deviceId))))
+    Get(Resource.uri(api).withQuery(Query("namespace" -> namespace.get, "deviceId" -> s.show(deviceId))))
 
   def updateDevice(id: Id, device: DeviceT)
                   (implicit s: Show[Id], ec: ExecutionContext): HttpRequest =
@@ -58,8 +59,8 @@ trait DeviceRequests {
                   (implicit s: Show[Id]): HttpRequest =
     Delete(Resource.uri(api, s.show(id)))
 
-  def pingDevice(id: Id)
-                (implicit s: Show[Id]): HttpRequest =
+  def updateLastSeen(id: Id)
+                    (implicit s: Show[Id]): HttpRequest =
     Post(Resource.uri(api, s.show(id), "ping"))
 
 }

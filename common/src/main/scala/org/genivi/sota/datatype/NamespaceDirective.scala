@@ -9,7 +9,7 @@ import akka.http.scaladsl.server.directives.BasicDirectives
 import com.typesafe.config.{Config, ConfigFactory}
 import eu.timepit.refined._
 import eu.timepit.refined.string._
-import org.genivi.sota.data.Namespace._
+import org.genivi.sota.datatype.Namespace._
 
 import scala.util.Try
 

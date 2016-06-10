@@ -4,7 +4,7 @@
  */
 package org.genivi.sota.resolver.filters
 
-import org.genivi.sota.data.Namespace._
+import org.genivi.sota.datatype.Namespace._
 import eu.timepit.refined.api.{Validate, Refined}
 import org.genivi.sota.resolver.packages.Package
 import org.genivi.sota.resolver.components.Component

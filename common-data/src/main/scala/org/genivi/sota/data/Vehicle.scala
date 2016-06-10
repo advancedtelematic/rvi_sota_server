@@ -4,7 +4,7 @@
  */
 package org.genivi.sota.data
 
-import org.genivi.sota.data.Namespace._
+import org.genivi.sota.datatype.Namespace._
 import eu.timepit.refined.api.{Refined, Validate}
 import org.joda.time.DateTime
 

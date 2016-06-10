@@ -10,7 +10,7 @@ import java.util.UUID
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import io.circe.Json
 import io.circe.syntax._
-import org.genivi.sota.data.Namespace._
+import org.genivi.sota.datatype.Namespace._
 import org.genivi.sota.data.{PackageId, Vehicle}
 import org.genivi.sota.core.data._
 import org.genivi.sota.core.db.UpdateSpecs

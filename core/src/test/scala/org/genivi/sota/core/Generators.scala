@@ -11,7 +11,7 @@ import java.security.MessageDigest
 import java.util.UUID
 import org.apache.commons.codec.binary.Hex
 import org.genivi.sota.core.data._
-import org.genivi.sota.data.Namespace._
+import org.genivi.sota.datatype.Namespace._
 import org.genivi.sota.data.{Namespaces, PackageId, Vehicle, VehicleGenerators}
 import org.scalacheck.{Arbitrary, Gen}
 

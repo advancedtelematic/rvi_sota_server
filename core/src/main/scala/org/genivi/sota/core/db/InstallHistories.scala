@@ -5,7 +5,7 @@
 package org.genivi.sota.core.db
 
 import org.genivi.sota.core.data.InstallHistory
-import org.genivi.sota.data.Namespace._
+import org.genivi.sota.datatype.Namespace._
 import org.genivi.sota.data.{PackageId, Vehicle}
 import org.joda.time.DateTime
 import slick.driver.MySQLDriver.api._

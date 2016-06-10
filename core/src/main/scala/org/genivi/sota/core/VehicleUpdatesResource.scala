@@ -4,38 +4,41 @@
  */
 package org.genivi.sota.core
 
-import java.util.UUID
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshalling.Marshaller._
-import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.server._
 import akka.stream.ActorMaterializer
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Uuid
-import org.genivi.sota.core.rvi.InstallReport
-import org.genivi.sota.core.transfer.{DefaultUpdateNotifier, PackageDownloadProcess, VehicleUpdates}
-import org.genivi.sota.data.{PackageId, Vehicle}
-import slick.driver.MySQLDriver.api.Database
 import io.circe.generic.auto._
-import org.genivi.sota.core.db.{OperationResults, UpdateSpecs, Vehicles}
-import org.genivi.sota.data.Namespace._
+
+import java.util.UUID
+import org.genivi.sota.common.IDeviceRegistry
 import org.genivi.sota.core.data.client.ResponseConversions
+import org.genivi.sota.core.db.{OperationResults, UpdateSpecs}
 import org.genivi.sota.core.resolver.{Connectivity, DefaultConnectivity, ExternalResolverClient}
+import org.genivi.sota.core.rvi.InstallReport
 import org.genivi.sota.core.storage.PackageStorage
+import org.genivi.sota.core.transfer.{DefaultUpdateNotifier, PackageDownloadProcess, VehicleUpdates}
+import org.genivi.sota.data.Device
+import org.genivi.sota.datatype.Namespace._
+import org.genivi.sota.data.{PackageId, Vehicle}
 import org.joda.time.DateTime
 import org.genivi.sota.core.data.{UpdateRequest, UpdateSpec}
 import org.genivi.sota.core.data.client.PendingUpdateRequest
 import org.genivi.sota.core.data.UpdateStatus
-
 import scala.language.implicitConversions
+import slick.driver.MySQLDriver.api.Database
 
 class VehicleUpdatesResource(db : Database, resolverClient: ExternalResolverClient,
+                             deviceRegistry: IDeviceRegistry,
                              namespaceExtractor: Directive1[Namespace])
                             (implicit system: ActorSystem, mat: ActorMaterializer,
-                             connectivity: Connectivity = DefaultConnectivity) extends Directives {
+                             connectivity: Connectivity = DefaultConnectivity) {
 
+  import Directives._
   import WebService._
   import org.genivi.sota.marshalling.CirceMarshallingSupport._
 
@@ -51,7 +54,11 @@ class VehicleUpdatesResource(db : Database, resolverClient: ExternalResolverClie
 
   def logVehicleSeen(vin: Vehicle.Vin): Directive0 = {
     extractRequestContext flatMap { _ =>
-      onComplete(db.run(Vehicles.updateLastSeen(vin)))
+      onComplete {
+        deviceRegistry.fetchDeviceByDeviceId(Device.DeviceId(vin.get)).map {
+          device => deviceRegistry.updateLastSeen(device.id)
+        }
+      }
     } flatMap (_ => pass)
   }
 

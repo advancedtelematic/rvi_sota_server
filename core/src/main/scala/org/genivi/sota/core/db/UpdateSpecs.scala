@@ -10,7 +10,8 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Uuid
 import org.genivi.sota.core.data._
 import org.genivi.sota.core.db.UpdateRequests.UpdateRequestTable
-import org.genivi.sota.data.Namespace._
+import org.genivi.sota.datatype.Namespace._
+import org.genivi.sota.data.Vehicle.Vin
 import org.genivi.sota.data.{PackageId, Vehicle}
 import org.genivi.sota.db.SlickExtensions
 import org.joda.time.DateTime

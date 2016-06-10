@@ -6,7 +6,7 @@ package org.genivi.sota.core.data
 
 import io.circe._
 import java.util.UUID
-import org.genivi.sota.data.Namespace._
+import org.genivi.sota.datatype.Namespace._
 import org.genivi.sota.data.{PackageId, Vehicle}
 import org.joda.time.{DateTime, Interval, Period}
 import org.genivi.sota.core.db.InstallHistories.InstallHistoryTable

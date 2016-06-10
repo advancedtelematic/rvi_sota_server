@@ -4,7 +4,7 @@
  */
 package org.genivi.sota.core.db
 
-import org.genivi.sota.data.Namespace._
+import org.genivi.sota.datatype.Namespace._
 import org.genivi.sota.data.Vehicle
 import org.genivi.sota.db.Operators.regex
 import org.joda.time.DateTime

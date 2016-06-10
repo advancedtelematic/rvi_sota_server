@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.Uri
 import eu.timepit.refined.refineV
 import eu.timepit.refined.api.Refined
 import org.genivi.sota.core.data.Package
-import org.genivi.sota.data.Namespace._
+import org.genivi.sota.datatype.Namespace._
 import org.genivi.sota.data.PackageId
 
 

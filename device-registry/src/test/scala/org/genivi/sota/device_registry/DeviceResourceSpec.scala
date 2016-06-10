@@ -8,8 +8,7 @@ import akka.http.scaladsl.model.StatusCodes
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Regex
 import io.circe.generic.auto._
-import org.genivi.sota.data.Namespaces
-import org.genivi.sota.device_registry.{Device, DeviceT}
+import org.genivi.sota.data.{Device, DeviceT}
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
 import org.joda.time.DateTime
 import org.scalacheck._
@@ -20,6 +19,7 @@ import org.scalacheck._
  */
 class DeviceResourceSpec extends ResourcePropSpec {
 
+  import Arbitrary._
   import Device._
   import DeviceGenerators._
   import StatusCodes._
@@ -47,7 +47,7 @@ class DeviceResourceSpec extends ResourcePropSpec {
       fetchDevice(id)          ~> route ~> check { status shouldBe NotFound }
       updateDevice(id, device) ~> route ~> check { status shouldBe NotFound }
       deleteDevice(id)         ~> route ~> check { status shouldBe NotFound }
-      pingDevice(id)           ~> route ~> check { status shouldBe NotFound }
+      updateLastSeen(id)       ~> route ~> check { status shouldBe NotFound }
     }
   }
 
@@ -71,7 +71,7 @@ class DeviceResourceSpec extends ResourcePropSpec {
     forAll { (deviceId: DeviceId, devicePre: DeviceT) =>
 
       val id: Id = createDeviceOk(devicePre.copy(deviceId = Some(deviceId)))
-      fetchDeviceByDeviceId(deviceId) ~> route ~> check {
+      fetchDeviceByDeviceId(defaultNs, deviceId) ~> route ~> check {
         status shouldBe OK
         val devicePost1: Device = responseAs[Device]
         fetchDevice(id) ~> route ~> check {
@@ -99,14 +99,19 @@ class DeviceResourceSpec extends ResourcePropSpec {
       s.take(pos) ++ substr ++ s.drop(pos)
     }
 
-    forAll { (devices: Seq[DeviceT], regex: String Refined Regex) =>
+    val numDevices = 10
+
+    forAll(genConflictFreeDeviceTs(numDevices),
+           arbitrary[String Refined Regex]) { case (devices: Seq[DeviceT],
+                                                    regex: (String Refined Regex)) =>
+
       val n: Int = Random.nextInt(devices.length + 1)
       val regexInstances: Seq[String] = Range(0, n).map(_ => genStrFromRegex(regex))
       val preparedDevices: Seq[DeviceT] =
-        devices.take(n).zip(regexInstances).map { case (d, re) =>
-          d.copy(deviceId = d.deviceId match {
-            case Some(DeviceId(id)) => Some(DeviceId(injectSubstr(id, re)))
-            case None => Some(DeviceId(re))
+        Range(0, n).map { i =>
+          devices(i).copy(deviceId = devices(i).deviceId match {
+            case Some(DeviceId(id)) => Some(DeviceId(i.toString + injectSubstr(id, regexInstances(i))))
+            case None => None
           })
         }
       val  unpreparedDevices: Seq[DeviceT] = devices.drop(n)
@@ -120,7 +125,7 @@ class DeviceResourceSpec extends ResourcePropSpec {
                                  regex.get.r.findFirstIn(d.deviceId.get.underlying).isDefined }
         .map(_._1)
 
-      searchDevice(regex.get) ~> route ~> check {
+      searchDevice(defaultNs, regex.get) ~> route ~> check {
         val matchingDevices: Seq[Device] = responseAs[Seq[Device]]
         matchingDevices.map(_.id).toSet shouldBe expectedIds.toSet
       }
@@ -139,10 +144,10 @@ class DeviceResourceSpec extends ResourcePropSpec {
 
         deviceId match {
           case Some(deviceId) =>
-            fetchDeviceByDeviceId(deviceId) ~> route ~> check {
+            fetchDeviceByDeviceId(defaultNs, deviceId) ~> route ~> check {
               status match {
                 case OK => updateStatus shouldBe Conflict
-                case NotFound => {
+                case NotFound =>
                   updateStatus shouldBe OK
 
                   fetchDevice(id) ~> route ~> check {
@@ -153,7 +158,6 @@ class DeviceResourceSpec extends ResourcePropSpec {
                     devicePost.deviceType shouldBe devicePre2.deviceType
                     devicePost.lastSeen shouldBe None
                   }
-                }
                 case _ => assert(false, "unexpected status code: " + status)
               }
             }
@@ -200,7 +204,7 @@ class DeviceResourceSpec extends ResourcePropSpec {
 
       val id: Id = createDeviceOk(devicePre)
 
-      pingDevice(id) ~> route ~> check {
+      updateLastSeen(id) ~> route ~> check {
         status shouldBe OK
       }
 
@@ -216,20 +220,33 @@ class DeviceResourceSpec extends ResourcePropSpec {
     }
   }
 
-  property("POST request with same deviceId fails with conflict.") {
+  property("POST request with same deviceName fails with conflict.") {
     forAll { (device1: DeviceT, device2: DeviceT) =>
 
       val id: Id = createDeviceOk(device1)
 
-      createDevice(device2.copy(deviceId = device1.deviceId)) ~> route ~> check {
-        device1.deviceId match {
-          case Some(deviceId) => status shouldBe Conflict
-          case _ => deleteDeviceOk(responseAs[Id])
-        }
+      createDevice(device2.copy(deviceName = device1.deviceName)) ~> route ~> check {
+        status shouldBe Conflict
       }
 
       deleteDeviceOk(id)
     }
   }
 
+  property("POST request with same deviceId fails with conflict.") {
+    forAll { (device1: DeviceT, device2: DeviceT) =>
+
+      val id: Id = createDeviceOk(device1.copy(deviceName = DeviceName(device1.deviceName.underlying + "#1")))
+
+      createDevice(device2.copy(deviceName = DeviceName(device2.deviceName.underlying + "#2"),
+                                deviceId = device1.deviceId)) ~> route ~> check {
+        device1.deviceId match {
+          case Some(deviceId) => status shouldBe Conflict
+          case None => deleteDeviceOk(responseAs[Id])
+        }
+      }
+
+      deleteDeviceOk(id)
+    }
+  }
 }

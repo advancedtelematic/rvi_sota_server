@@ -6,7 +6,7 @@ package org.genivi.sota.resolver.vehicles
 
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Regex
-import org.genivi.sota.data.Namespace._
+import org.genivi.sota.datatype.Namespace._
 import org.genivi.sota.data.{PackageId, Vehicle}
 import org.genivi.sota.db.SlickExtensions._
 import org.genivi.sota.refined.SlickRefined._
@@ -180,7 +180,6 @@ object VehicleRepository {
 
   def updateInstalledPackages(vin: Vehicle.Vin, packages: Set[PackageId] )
                              (implicit ec: ExecutionContext): DBIO[Unit] = {
-
     def filterAvailablePackages(namespace: Namespace, ids: Set[PackageId] ) : DBIO[Set[PackageId]] =
       PackageRepository.load(namespace, ids).map(_.map(_.id))
 
@@ -228,8 +227,7 @@ object VehicleRepository {
         .mapValues(_.map(_._3)))
     // TODO: namespaces?
 
-  def packagesOnVin
-    (namespace: Namespace, vin: Vehicle.Vin)
+  def packagesOnVin(namespace: Namespace, vin: Vehicle.Vin)
     (implicit ec: ExecutionContext): DBIO[Seq[PackageId]] =
     for {
       _  <- VehicleRepository.exists(vin)
@@ -309,18 +307,13 @@ object VehicleRepository {
                 .flatten)
     } yield cs
 
-  def vinsWithPackagesAndComponents
-    (namespace: Namespace)
-    (implicit ec: ExecutionContext)
-      : DBIO[Seq[(Vehicle, (Seq[PackageId], Seq[Component.PartNumber]))]] =
+  def vinsWithPackagesAndComponents(namespace: Namespace)(implicit ec: ExecutionContext)
+      : DBIO[Seq[(Vehicle.Vin, (Seq[PackageId], Seq[Component.PartNumber]))]] =
     for {
-      vs   <- VehicleRepository.list
-      ps   : Seq[Seq[PackageId]]
-           <- DBIO.sequence(vs.map(v => VehicleRepository.packagesOnVin(namespace, v.vin)))
-      cs   : Seq[Seq[Component.PartNumber]]
-           <- DBIO.sequence(vs.map(v => VehicleRepository.componentsOnVin(namespace, v.vin)))
-      vpcs : Seq[(Vehicle, (Seq[PackageId], Seq[Component.PartNumber]))]
-           =  vs.zip(ps.zip(cs))
+      vs <- VehicleRepository.list.map(_.map(_.vin))
+      ps <- DBIO.sequence(vs.map(v => VehicleRepository.packagesOnVin(namespace, v)))
+      cs <- DBIO.sequence(vs.map(v => VehicleRepository.componentsOnVin(namespace, v)))
+      vpcs =  vs.zip(ps.zip(cs))
     } yield vpcs
     // TODO: namespaces?
 
@@ -347,7 +340,7 @@ object VehicleRepository {
 
     for {
       vpcs <- vinsWithPackagesAndComponents(namespace)
-    } yield vpcs.filter(query(And(vins, And(pkgs, comps)))).map(_._1)
+    } yield vpcs.filter(query(And(vins, And(pkgs, comps)))).map(i => Vehicle(namespace, i._1))
 
   }
 
@@ -361,7 +354,8 @@ object VehicleRepository {
       _    <- PackageRepository.exists(namespace, pkgId)
       fs   <- PackageFilterRepository.listFiltersForPackage(namespace, pkgId)
       vpcs <- vinsWithPackagesAndComponents(namespace)
-    } yield ResolveFunctions.makeFakeDependencyMap(pkgId,
-              vpcs.filter(query(fs.map(_.expression).map(parseValidFilter).foldLeft[FilterAST](True)(And)))
-                  .map(_._1))
+    } yield
+      ResolveFunctions.makeFakeDependencyMap(pkgId,
+        vpcs.filter(query(fs.map(_.expression).map(parseValidFilter).foldLeft[FilterAST](True)(And)))
+          .map(_._1))
 }

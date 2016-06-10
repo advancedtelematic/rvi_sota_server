@@ -7,7 +7,7 @@ package org.genivi.sota.core
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.{Directive1, Directives, Route}
 import org.genivi.sota.core.db.InstallHistories
-import org.genivi.sota.data.Namespace.Namespace
+import org.genivi.sota.datatype.Namespace.Namespace
 import org.genivi.sota.data.Vehicle.Vin
 import slick.driver.MySQLDriver.api._
 import akka.http.scaladsl.marshalling.Marshaller._

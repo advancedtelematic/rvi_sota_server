@@ -4,7 +4,7 @@
  */
 package org.genivi.sota.core.data
 
-import org.genivi.sota.data.Namespace._
+import org.genivi.sota.datatype.Namespace._
 import org.genivi.sota.data.{PackageId, Vehicle}
 import org.joda.time.DateTime
 import java.util.UUID
