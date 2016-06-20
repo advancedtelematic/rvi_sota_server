@@ -280,6 +280,22 @@ class VehicleUpdatesResourceSpec extends FunSuite
     }
   }
 
+  test("after blocking installation queue, no packages are returned even if some are pending for installation") {
+    // insert update spec
+    whenReady(createUpdateSpec()) { case (packageModel, vehicle, updateSpec) =>
+      // block the installation queue of the device
+      whenReady(db.run(Vehicles.updateBlockedInstallQueue(vehicle.vin, isBlocked = true))) { case _ =>
+        // check zero packages are returned for install
+        val url = baseUri.withPath(baseUri.path / vehicle.vin.get / "queued")
+        Get(url) ~> service.route ~> check {
+          status shouldBe StatusCodes.OK
+          val parsedResponse = responseAs[List[PendingUpdateRequest]]
+          parsedResponse should be(empty)
+        }
+      }
+    }
+  }
+
 }
 
 class FakeConnectivity extends Connectivity {
