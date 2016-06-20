@@ -170,6 +170,17 @@ class VehicleUpdatesResource(db : Database, resolverClient: ExternalResolverClie
   }
 
   /**
+    * The web app PUT to unblock the installation queue of a vehicle.
+    */
+  def unblockInstall(vin: Vehicle.Vin): Route = {
+    val resp =
+      db.run(Vehicles.updateBlockedInstallQueue(vin, isBlocked = false))
+        .map(_ => NoContent)
+
+    complete(resp)
+  }
+
+  /**
     * The web app PUT the status of the given ([[UpdateSpec]], VIN) to [[UpdateStatus.Canceled]]
     */
   def cancelUpdate(ns: Namespace, vin: Vehicle.Vin, uuid: Refined[String, Uuid]): Route = {
@@ -198,7 +209,8 @@ class VehicleUpdatesResource(db : Database, resolverClient: ExternalResolverClie
         path("order") { setInstallOrder(vin) } ~
         (extractUuid & path("cancelupdate") ) { uuid =>
           namespaceExtractor { ns => cancelUpdate(ns, vin, uuid) }
-        }
+        } ~
+        path("unblock") { unblockInstall(vin) }
       } ~
       post {
         path("sync") { sync(vin) } ~
