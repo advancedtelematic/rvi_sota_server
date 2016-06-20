@@ -17,6 +17,7 @@ import eu.timepit.refined.string.Uuid
 import org.genivi.sota.core.rvi.InstallReport
 import org.genivi.sota.core.transfer.{DefaultUpdateNotifier, PackageDownloadProcess, VehicleUpdates}
 import org.genivi.sota.data.{PackageId, Vehicle}
+import slick.dbio.DBIO
 import slick.driver.MySQLDriver.api.Database
 import io.circe.generic.auto._
 import org.genivi.sota.core.db.{OperationResults, UpdateSpecs, Vehicles}
@@ -75,19 +76,29 @@ class VehicleUpdatesResource(db : Database, resolverClient: ExternalResolverClie
     * in the form a Seq of [[PendingUpdateRequest]]
     * whose order was specified via [[setInstallOrder]].
     * To actually download each binary file, [[downloadPackage]] is used.
+    * <br>
+    * Special case: For a vehicle whose installation queue is blocked,
+    * no packages are returned.
     *
     * @see [[data.UpdateStatus]] (two of interest: InFlight and Pending)
     */
-  def pendingPackages(vin: Vehicle.Vin): Route = {
+  def pendingPackages(ns: Namespace, vin: Vehicle.Vin): Route = {
     import org.genivi.sota.core.data.client.PendingUpdateRequest._
     import ResponseConversions._
 
-    val vehiclePackages =
-      VehicleUpdates
-        .findPendingPackageIdsFor(vin)
-        .map(_.toResponse)
+    val pendingIO =
+      for {
+        isBlkd  <- Vehicles.isBlockedInstall(ns, vin)
+        pending <- if (isBlkd) {
+                     DBIO.successful(Seq.empty)
+                   } else {
+                     VehicleUpdates
+                       .findPendingPackageIdsFor(vin)
+                       .map(_.toResponse)
+                   }
+      } yield pending
 
-    complete(db.run(vehiclePackages))
+    complete(db.run(pendingIO))
   }
 
   /**
@@ -174,8 +185,10 @@ class VehicleUpdatesResource(db : Database, resolverClient: ExternalResolverClie
   val route = {
     (pathPrefix("api" / "v1" / "vehicle_updates") & extractVin) { vin =>
       get {
-        pathEnd { logVehicleSeen(vin) { pendingPackages(vin) } } ~
-        path("queued") { pendingPackages(vin) } ~
+        namespaceExtractor { ns =>
+          pathEnd { logVehicleSeen(vin) { pendingPackages(ns, vin) } } ~
+          path("queued") { pendingPackages(ns, vin) }
+        } ~
         path("results") { resultsForVehicle(vin) } ~
         (extractUuid & path("results")) { uuid => resultsForUpdate(uuid) } ~
         (extractUuid & path("download")) { uuid => downloadPackage(vin, uuid) }
