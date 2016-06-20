@@ -32,6 +32,7 @@ object Vehicles {
     def namespace = column[Namespace]("namespace")
     def vin = column[Vehicle.Vin]("vin")
     def lastSeen = column[Option[Instant]]("last_seen")
+    def isBlockedInstall = column[Boolean]("blocked_install")
 
     // insertOrUpdate buggy for composite-keys, see Slick issue #966.
     def pk = primaryKey("vin", (namespace, vin))
@@ -96,6 +97,15 @@ object Vehicles {
       .map(_.lastSeen)
       .update(Some(lastSeen))
       .map(_ => lastSeen)
+  }
+
+  def updateBlockedInstallQueue(vin: Vehicle.Vin, isBlocked: Boolean)
+                               (implicit ec: ExecutionContext): DBIO[Boolean] = {
+    vehicles
+      .filter(_.vin === vin)
+      .map(_.isBlockedInstall)
+      .update(isBlocked)
+      .map(_ => isBlocked)
   }
 
   def findBy(vehicle: Vehicle): DBIO[Vehicle] = {

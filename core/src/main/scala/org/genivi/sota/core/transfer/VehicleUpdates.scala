@@ -14,7 +14,8 @@ import org.genivi.sota.core.data.UpdateStatus.UpdateStatus
 import org.genivi.sota.data.Namespace._
 import org.genivi.sota.data.{PackageId, Vehicle}
 import org.genivi.sota.core.data._
-import org.genivi.sota.core.db.{Packages, UpdateSpecs}
+import org.genivi.sota.core.db.Packages
+import org.genivi.sota.core.db.{UpdateSpecs, Vehicles}
 import org.genivi.sota.db.SlickExtensions
 import slick.dbio.DBIO
 import slick.driver.MySQLDriver.api._
@@ -28,9 +29,6 @@ import org.genivi.sota.refined.SlickRefined._
 import scala.util.control.NoStackTrace
 import org.genivi.sota.core.db.OperationResults
 import org.genivi.sota.core.db.InstallHistories
-import java.time.Instant
-import org.genivi.sota.data.PackageId.{Name, Version}
-import org.genivi.sota.data.Vehicle.Vin
 
 
 object VehicleUpdates {
@@ -86,39 +84,14 @@ object VehicleUpdates {
       _    <- DBIO.sequence(writeResultsIO(spec.namespace))
       _    <- UpdateSpecs.setStatus(spec, newStatus)
       _    <- InstallHistories.log(spec, updateReport.isSuccess)
-      _    <- cancelInstallationQueueIO(vin, spec, updateReport.isFail, updateReport.update_id)
+      _    <- if (updateReport.isFail) {
+                Vehicles.updateBlockedInstallQueue(vin, isBlocked = true)
+              } else {
+                DBIO.successful(true)
+              }
     } yield spec.copy(status = newStatus)
 
     db.run(dbIO.transactionally)
-  }
-
-  /**
-    * <ul>
-    *   <li>
-    *     For a failed UpdateReport, mark as cancelled the rest of the installation queue.
-    *     <ul>
-    *       <li>"The rest of the installation queue" defined as those (InFlight and Pending) UpdateSpec-s
-    *       coming after the given one, for the VIN in question.</li>
-    *       <li>Note: those UpdateSpec-s correspond to different UpdateRequests than the current one.</li>
-    *     </ul>
-    *   </li>
-    *   <li>For a successful UpdateReport, do nothing.</li>
-    * </ul>
-    */
-  def cancelInstallationQueueIO(vin: Vehicle.Vin,
-                                spec: UpdateSpec,
-                                isFail: Boolean,
-                                updateRequestId: UUID): DBIO[Int] = {
-    updateSpecs
-      .filter(_.vin === vin && isFail)
-      .filter(_.requestId =!= updateRequestId)
-      .filter(_.status.inSet(List(UpdateStatus.InFlight, UpdateStatus.Pending)))
-      .filter(us =>
-        (us.installPos > spec.installPos) ||
-        (us.installPos === spec.installPos && us.creationTime > spec.creationTime)
-      )
-      .map(_.status)
-      .update(UpdateStatus.Canceled)
   }
 
   /**
