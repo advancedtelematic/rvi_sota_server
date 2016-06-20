@@ -37,7 +37,7 @@ object Vehicles {
     // insertOrUpdate buggy for composite-keys, see Slick issue #966.
     def pk = primaryKey("vin", (namespace, vin))
 
-    def * = (namespace, vin, lastSeen) <> (Vehicle.tupled, Vehicle.unapply)
+    def * = (namespace, vin, lastSeen, isBlockedInstall) <> (Vehicle.tupled, Vehicle.unapply)
   }
   // scalastyle:on
 
@@ -109,9 +109,20 @@ object Vehicles {
   }
 
   def findBy(vehicle: Vehicle): DBIO[Vehicle] = {
+    findBy(vehicle.namespace, vehicle.vin)
+  }
+
+  def findBy(ns: Namespace, vin: Vehicle.Vin): DBIO[Vehicle] = {
     vehicles
-      .filter(v => v.namespace === vehicle.namespace && v.vin === vehicle.vin)
+      .filter(v => v.namespace === ns && v.vin === vin)
       .result
       .head
   }
+
+  def isBlockedInstall(ns: Namespace, vin: Vehicle.Vin)
+                      (implicit ec: ExecutionContext): DBIO[Boolean] = {
+    findBy(ns, vin)
+      .map(v => v.isBlockedInstall)
+  }
+
 }
