@@ -123,6 +123,15 @@ object UpdateSpecs {
   }
 
   /**
+    * TODO use instead the overloaded version of this method taking a namespace.
+    */
+  private def queryBy(vin: Vehicle.Vin,
+                      requestId: UUID): Query[UpdateSpecTable, UpdateSpecTableRowType, Seq] = {
+    updateSpecs
+      .filter(row => row.vin === vin && row.requestId === requestId)
+  }
+
+  /**
     * Lookup by PK in [[UpdateSpecTable]] table.
     * Note: A tuple is returned instead of an [[UpdateSpec]] instance because
     * the later would require joining [[RequiredPackageTable]] to populate the `dependencies` of that instance.
@@ -218,10 +227,14 @@ object UpdateSpecs {
     *
     * @param uuid of the [[UpdateRequest]] being cancelled for the given VIN
     */
-  def cancelUpdate(ns: Namespace, vin: Vehicle.Vin, uuid: Refined[String, Uuid])
+  def cancelUpdate(nsOpt: Option[Namespace], vin: Vehicle.Vin, uuid: Refined[String, Uuid])
                   (implicit executor: ExecutionContext): DBIO[Unit] = {
-    queryBy(ns, vin, UUID.fromString(uuid.get))
-      .filter(_.status === UpdateStatus.Pending)
+    val q = nsOpt match {
+      case None     => queryBy(    vin, UUID.fromString(uuid.get))
+      case Some(ns) => queryBy(ns, vin, UUID.fromString(uuid.get))
+    }
+
+     q.filter(_.status === UpdateStatus.Pending)
       .map(_.status)
       .update(UpdateStatus.Canceled)
       .flatMap { rowsAffected =>
