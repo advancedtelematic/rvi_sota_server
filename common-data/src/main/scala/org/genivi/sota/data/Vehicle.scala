@@ -12,13 +12,16 @@ import java.time.Instant
  * The notion of vehicle has a identification number (VIN), this is
  * shared between the core and resolver.
  */
-case class Vehicle(namespace: Namespace, vin: Vehicle.Vin, lastSeen: Option[Instant] = None) {
+case class Vehicle(namespace: Namespace,
+                   vin: Vehicle.Vin,
+                   lastSeen: Option[Instant] = None,
+                   isBlockedInstall: Boolean = false) {
   override def toString(): String = s"Vehicle(${vin.get}, $lastSeen)"
 }
 
 object Vehicle {
-  def tupled: ((Namespace, Vin, Option[Instant])) => Vehicle = { case (ns, vin, lastSeen) =>
-    Vehicle(ns, vin, lastSeen)
+  def tupled: ((Namespace, Vin, Option[Instant], Boolean)) => Vehicle = {
+    case (ns, vin, lastSeen, isBlockedInstall) => Vehicle(ns, vin, lastSeen, isBlockedInstall)
   }
 
   def fromVin: (((Namespace, Vin)) => Vehicle) = { case (ns, vin) => Vehicle(ns, vin, None) }
