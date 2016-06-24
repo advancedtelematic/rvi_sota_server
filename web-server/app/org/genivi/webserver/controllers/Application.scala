@@ -64,7 +64,8 @@ class Application @Inject() (ws: WSClient, val messagesApi: MessagesApi, ldapAut
     val w = WS.url(apiUri + req.path)
       .withFollowRedirects(false)
       .withMethod(req.method)
-      .withHeaders(toWsHeaders(req.headers).toSeq :_*)
+      //drop Accept-Encoding to work around bug where resolver responds with chunked response of 0 bytes
+      .withHeaders(toWsHeaders(req.headers).filterNot(p => p._1 == "Accept-Encoding").toSeq :_*)
       .withQueryString(req.queryString.mapValues(_.head).toSeq :_*)
 
     val wreq = req.body.asBytes() match {
