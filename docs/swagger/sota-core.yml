@@ -258,24 +258,6 @@ paths:
           description: OK
           schema:
             type: file
-  /vehicle_updates/{uuid}/system_info:
-    put:
-      description: Update the system info for a device
-      parameters:
-      - name: uuid
-        in: path
-        description: The uuid of the vehicle making this call
-        required: true
-        type: string
-      - name: system
-        description: The json object representing the system info
-        in: body
-        required: true
-        schema:
-          $ref: '#/definitions/SystemInfo'
-      responses:
-        200:
-          description: OK
   /vehicle_updates/{uuid}/sync:
     post:
       description: todo
@@ -465,6 +447,19 @@ paths:
         201:
           description: OK
       description: Create a blacklist item
+
+  "/impact/blacklist":
+    get:
+      description: Current impact analysis for blacklisted packages
+      responses:
+        200:
+          description: An array of tuples (DeviceId -> PackageId)
+          schema:
+            type: array
+            items:
+              type: array
+              items:
+                type: string
 
 definitions:
   uuid:
