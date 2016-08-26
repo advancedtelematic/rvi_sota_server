@@ -54,9 +54,9 @@ class BlacklistResource(namespaceExtractor: Directive1[Namespace],
 
   val route: Route =
     (handleErrors & pathPrefix("blacklist") & namespaceExtractor) { ns =>
+      post { addPackageToBlacklist(ns) } ~
+      put { updatePackageBlacklist(ns) } ~
       extractPackageId { pkgId =>
-        post { addPackageToBlacklist(ns) } ~
-        put { updatePackageBlacklist(ns) } ~
         delete { deletePackageBlacklist(ns, pkgId) }
       } ~
         get {
