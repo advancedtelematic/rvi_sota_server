@@ -24,7 +24,7 @@ object Messages {
 
   final case class DeviceCreated(namespace: Namespace,
                                  uuid: Id,
-                                 deviceName: DeviceName,
+                                 deviceName: Option[DeviceName],
                                  deviceId: Option[Device.DeviceId],
                                  deviceType: Device.DeviceType) extends Message
 

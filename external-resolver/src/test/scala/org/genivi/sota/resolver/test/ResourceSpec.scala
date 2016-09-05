@@ -61,8 +61,11 @@ class FakeDeviceRegistryRoutes(deviceRegistry: FakeDeviceRegistry) {
   import akka.http.scaladsl.server.Directives._
 
   val route = path("fake_devices") {
-    (put & entity(as[Device.Id])) { device =>
-      deviceRegistry.addDevice(Device(Namespaces.defaultNs, device, DeviceName(s"name-${device.show}"), Option(DeviceId(device.show))))
+    (put & entity(as[Device.Id])) { uuid =>
+      deviceRegistry.addDevice(Device(Namespaces.defaultNs,
+                                      uuid,
+                                      Some(DeviceName(s"name-${uuid.show}")),
+                                      Option(DeviceId(uuid.show))))
       complete(StatusCodes.OK -> "")
     } ~
     get {

@@ -25,7 +25,7 @@ class ResolveResourceSpec extends ResourceWordSpec with ScalaFutures {
   lazy val testDevices: Seq[(DeviceT, Device.Id)] = {
     Future.sequence {
       (0 to 4).map { i =>
-        val d = DeviceT(DeviceName(s"Name $i"),
+        val d = DeviceT(Some(DeviceName(s"Name $i")),
           Some(DeviceId(s"${i}0RES0LVEV1N12345")))
 
         deviceRegistry.createDevice(d).map((d, _))

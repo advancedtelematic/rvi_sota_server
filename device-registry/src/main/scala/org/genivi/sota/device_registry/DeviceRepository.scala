@@ -46,7 +46,7 @@ object DeviceRepository {
   class DeviceTable(tag: Tag) extends Table[Device](tag, "Device") {
     def namespace = column[Namespace]("namespace")
     def id = column[Id]("uuid")
-    def deviceName = column[DeviceName]("device_name")
+    def deviceName = column[Option[DeviceName]]("device_name")
     def deviceId = column[Option[DeviceId]]("device_id")
     def deviceType = column[DeviceType]("device_type")
     def lastSeen = column[Option[Instant]]("last_seen")
@@ -78,7 +78,7 @@ object DeviceRepository {
     dbIO.transactionally
   }
 
-  def notConflicts(ns: Namespace, deviceName: DeviceName, deviceId: Option[DeviceId])
+  def notConflicts(ns: Namespace, deviceName: Option[DeviceName], deviceId: Option[DeviceId])
                   (implicit ec: ExecutionContext): DBIO[Unit] = {
     devices
       .filter(_.namespace === ns)

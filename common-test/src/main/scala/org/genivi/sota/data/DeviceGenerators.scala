@@ -37,7 +37,7 @@ trait DeviceGenerators {
 
   def genDeviceWith(deviceNameGen: Gen[DeviceName], deviceIdGen: Gen[DeviceId]): Gen[Device] = for {
     id <- genId
-    name <- deviceNameGen
+    name <- Gen.option(deviceNameGen)
     deviceId <- Gen.option(deviceIdGen)
     deviceType <- genDeviceType
     lastSeen <- Gen.option(genLastSeen)
@@ -46,7 +46,7 @@ trait DeviceGenerators {
   val genDevice: Gen[Device] = genDeviceWith(genDeviceName, genDeviceId)
 
   def genDeviceTWith(deviceNameGen: Gen[DeviceName], deviceIdGen: Gen[DeviceId]): Gen[DeviceT] = for {
-    name <- deviceNameGen
+    name <- Gen.option(deviceNameGen)
     deviceId <- Gen.option(deviceIdGen)
     deviceType <- genDeviceType
   } yield DeviceT(name, deviceId, deviceType)

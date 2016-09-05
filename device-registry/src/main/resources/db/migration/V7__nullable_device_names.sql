@@ -1,0 +1,4 @@
+
+ALTER TABLE Device
+MODIFY COLUMN device_name VARCHAR(200)
+;

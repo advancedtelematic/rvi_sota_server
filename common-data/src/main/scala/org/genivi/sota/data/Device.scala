@@ -18,7 +18,7 @@ import Device._
  */
 // TODO: Use org.genivi.sota.core.data.client.ResponseEncoder
 final case class DeviceT(
-  deviceName: DeviceName,
+  deviceName: Option[DeviceName] = None,
   deviceId: Option[Device.DeviceId] = None,
   deviceType: Device.DeviceType = Device.DeviceType.Other
 )
@@ -26,7 +26,7 @@ final case class DeviceT(
 
 final case class Device(namespace: Namespace,
                   id: Id,
-                  deviceName: DeviceName,
+                  deviceName: Option[DeviceName] = None,
                   deviceId: Option[DeviceId] = None,
                   deviceType: Device.DeviceType = DeviceType.Other,
                   lastSeen: Option[Instant] = None) {

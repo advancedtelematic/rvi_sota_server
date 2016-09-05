@@ -34,7 +34,7 @@ import org.genivi.sota.core.data.DeviceStatus.DeviceStatus
 case class DeviceSearchResult(
                         namespace: Namespace,
                         id: Device.Id,
-                        deviceName: DeviceName,
+                        deviceName: Option[DeviceName],
                         deviceId: Option[DeviceId],
                         deviceType: Device.DeviceType,
                         lastSeen: Option[Instant] = None,

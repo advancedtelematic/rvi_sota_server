@@ -19,7 +19,7 @@ class FirmwareResourceSpec extends ResourceWordSpec {
 
   override val deviceRegistry = {
     val deviceRegistry = new FakeDeviceRegistry(Namespaces.defaultNs)
-    deviceRegistry.addDevice(Device(Namespaces.defaultNs, device, DeviceName("device name")))
+    deviceRegistry.addDevice(Device(Namespaces.defaultNs, device, Some(DeviceName("device name"))))
     deviceRegistry
   }
 
