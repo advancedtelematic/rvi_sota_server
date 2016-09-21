@@ -52,21 +52,17 @@ trait DeviceGenerators {
     genConflictFreeDeviceTs(arbitrary[Int].sample.get)
 
   def genConflictFreeDeviceTs(n: Int): Gen[Seq[DeviceT]] = {
-    val names: Seq[DeviceName] =
-      Gen.containerOfN[Seq, DeviceName](n, genDeviceName)
-      .suchThat { c => c.distinct.length == c.length }
-      .sample.get
-    val ids: Seq[DeviceId] =
-      Gen.containerOfN[Seq, DeviceId](n, genDeviceId)
-      .suchThat { c => c.distinct.length == c.length }
-      .sample.get
+    val namesG = Gen.listOfN(n, arbitrary[DeviceName]).retryUntil { l =>
+      l.distinct.length == l.length }
 
-    val namesG: Seq[Gen[DeviceName]] = names.map(Gen.const(_))
-    val idsG: Seq[Gen[DeviceId]] = ids.map(Gen.const(_))
+    val idsG = Gen.listOfN(n, arbitrary[DeviceId]).retryUntil { l =>
+      l.distinct.length == l.length }
 
-    namesG.zip(idsG).map { case (nameG, idG) =>
-      genDeviceTWith(nameG, idG).sample.get
-    }
+    for {
+      names <- namesG
+      ids <- idsG
+      (n, id) <- names.zip(ids)
+    } yield genDeviceTWith(n, id).sample.get
   }
 
   implicit lazy val arbDeviceName: Arbitrary[DeviceName] = Arbitrary(genDeviceName)
