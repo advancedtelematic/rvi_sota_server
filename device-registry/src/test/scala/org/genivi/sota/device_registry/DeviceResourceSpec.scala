@@ -117,7 +117,7 @@ class DeviceResourceSpec extends ResourcePropSpec {
     import scala.util.Random
 
     def injectSubstr(s: String, substr: String): String = {
-      val pos = Random.nextInt(s.length)
+      val pos = Random.nextInt(s.length + 1)
       s.take(pos) ++ substr ++ s.drop(pos)
     }
 
