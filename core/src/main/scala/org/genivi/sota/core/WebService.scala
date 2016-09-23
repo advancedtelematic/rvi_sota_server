@@ -34,6 +34,7 @@ class WebService(notifier: UpdateNotifier,
                  deviceRegistry: DeviceRegistry,
                  db: Database,
                  authNamespace: Directive1[Namespace],
+                 authToken: Directive1[Option[String]],
                  messageBusPublisher: MessageBusPublisher)
                 (implicit val system: ActorSystem, val mat: ActorMaterializer,
                  val connectivity: Connectivity, val ec: ExecutionContext) extends Directives {
@@ -45,16 +46,16 @@ class WebService(notifier: UpdateNotifier,
   import eu.timepit.refined._
   import org.genivi.sota.marshalling.RefinedMarshallingSupport._
 
-  val devicesResource = new DevicesResource(db, connectivity.client, resolver, deviceRegistry, authNamespace)
-  val packagesResource = new PackagesResource(resolver, db, messageBusPublisher, authNamespace)
+  val devicesResource = new DevicesResource(db, connectivity.client, resolver, deviceRegistry, authNamespace, authToken)
+  val packagesResource = new PackagesResource(resolver, db, messageBusPublisher, authNamespace, authToken)
   val updateService = new UpdateService(notifier, deviceRegistry)
-  val updateRequestsResource = new UpdateRequestsResource(db, resolver, updateService, authNamespace)
+  val updateRequestsResource = new UpdateRequestsResource(db, resolver, updateService, authNamespace, authToken)
   val historyResource = new HistoryResource(db)
   val blacklistResource = new BlacklistResource(authNamespace, messageBusPublisher)(db, system)
-  val impactResource = new ImpactResource(authNamespace, resolver)(db, system)
+  val impactResource = new ImpactResource(authNamespace, authToken, resolver)(db, system)
 
   val route = (handleErrors & pathPrefix("api" / "v1")) {
-    devicesResource.route ~
+      devicesResource.route ~
       packagesResource.route ~
       updateRequestsResource.route ~
       historyResource.route ~

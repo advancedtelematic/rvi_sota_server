@@ -33,6 +33,7 @@ import slick.driver.MySQLDriver.api._
  * @see {@linktourl http://advancedtelematic.github.io/rvi_sota_server/dev/api.html}
  */
 class DeviceDirectives(namespaceExtractor: Directive1[Namespace],
+                       authToken: Directive1[Option[String]],
                        deviceRegistry: DeviceRegistry)
                       (implicit system: ActorSystem,
                         db: Database,
@@ -43,13 +44,14 @@ class DeviceDirectives(namespaceExtractor: Directive1[Namespace],
 
   val extractUuid: Directive1[Uuid] = refined[Uuid.Valid](Slash ~ Segment).map(Uuid(_))
 
-  def searchDevices(ns: Namespace): Route =
+  def searchDevices(ns: Namespace): Route = authToken { token =>
     parameters(('regex.as[String Refined Regex].?,
-      'packageName.as[PackageId.Name].?,
-      'packageVersion.as[PackageId.Version].?,
-      'component.as[Component.PartNumber].?)) { case (re, pn, pv, cp) =>
-      complete(DeviceRepository.search(ns, re, pn, pv, cp, deviceRegistry))
+                'packageName.as[PackageId.Name].?,
+                'packageVersion.as[PackageId.Version].?,
+                'component.as[Component.PartNumber].?)) { case (re, pn, pv, cp) =>
+        complete(DeviceRepository.search(ns, re, pn, pv, cp, deviceRegistry,token))
     }
+  }
 
   def getPackages(device: Uuid, regexFilter: Option[Refined[String, Regex]]): Route = {
     val result = for {
@@ -67,7 +69,7 @@ class DeviceDirectives(namespaceExtractor: Directive1[Namespace],
   def uninstallPackage(ns: Namespace, device: Uuid, pkgId: PackageId): Route =
     complete(db.run(DeviceRepository.uninstallPackage(ns, device, pkgId)))
 
-  def updateInstalledSoftware(device: Uuid): Route = {
+  def updateInstalledSoftware(device: Uuid): Route = authToken { token =>
     def updateSoftwareOnDb(namespace: Namespace, installedSoftware: InstalledSoftware): Future[Unit] = {
       db.run {
         for {
@@ -81,7 +83,7 @@ class DeviceDirectives(namespaceExtractor: Directive1[Namespace],
     entity(as[InstalledSoftware]) { installedSoftware =>
       val responseF = {
         for {
-          deviceData <- deviceRegistry.fetchDevice(device)
+          deviceData <- deviceRegistry.fetchDevice(device).withToken(token).exec
           _ <- updateSoftwareOnDb(deviceData.namespace, installedSoftware)
         } yield ()
       }

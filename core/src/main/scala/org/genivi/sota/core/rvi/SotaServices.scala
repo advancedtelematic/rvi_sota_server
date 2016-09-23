@@ -7,7 +7,7 @@ package org.genivi.sota.core.rvi
 import akka.actor.{ActorRef, ActorSystem}
 import akka.event.Logging
 import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.server.Directives
+import akka.http.scaladsl.server.{Directive1, Directives}
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.ActorMaterializer
 import eu.timepit.refined.api.Refined
@@ -72,7 +72,8 @@ final case class InstalledPackages(device: Uuid, installed_software: Json )
  * @param updateController the actor to forward messages for processing
  * @param resolverClient the resolver to update when a vehicle sends its installed packages
  */
-class SotaServices(updateController: ActorRef, resolverClient: ExternalResolverClient, deviceRegistry: DeviceRegistry)
+class SotaServices(updateController: ActorRef, resolverClient: ExternalResolverClient, deviceRegistry: DeviceRegistry,
+                   authToken: Directive1[Option[String]])
                   (implicit system: ActorSystem, mat: ActorMaterializer) {
   import Directives._
   import org.genivi.sota.core.jsonrpc.JsonRpcDirectives._
@@ -99,15 +100,15 @@ class SotaServices(updateController: ActorRef, resolverClient: ExternalResolverC
     path("report") {
       service( "message" -> lift[RviParameters[InstallReport], Unit](forwardMessage(updateController)))
     } ~
-    path("packages") {
+    (path("packages") & authToken) { token =>
       service( "message" -> lift[RviParameters[InstalledPackages], Unit](
-        m => updatePackagesInResolver(m.parameters.head)))
+        m => updatePackagesInResolver(token, m.parameters.head)))
     }
   }
 
-  def updatePackagesInResolver( message: InstalledPackages ) : Future[Unit] = {
+  def updatePackagesInResolver( token: Option[String], message: InstalledPackages ) : Future[Unit] = {
     log.debug( s"InstalledPackages from rvi: $message" )
-    resolverClient.setInstalledPackages(message.device, message.installed_software)
+    resolverClient.setInstalledPackages(message.device, message.installed_software).withToken(token).exec
   }
 }
 

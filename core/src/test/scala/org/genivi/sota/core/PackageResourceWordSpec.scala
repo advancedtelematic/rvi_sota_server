@@ -23,7 +23,7 @@ import scala.concurrent.Await
 import slick.driver.MySQLDriver.api._
 import DataPackage._
 import org.genivi.sota.data.PackageId
-import org.genivi.sota.http.NamespaceDirectives
+import org.genivi.sota.http.{AuthToken, NamespaceDirectives}
 
 import scala.concurrent.duration._
 import org.genivi.sota.data.Namespace
@@ -53,7 +53,8 @@ class PackageResourceWordSpec extends WordSpec
 
   lazy val messageBusPublisher = MessageBusPublisher.ignore
 
-  lazy val service = new PackagesResource(externalResolverClient, db, messageBusPublisher, defaultNamespaceExtractor)
+  lazy val service = new PackagesResource(externalResolverClient, db, messageBusPublisher, defaultNamespaceExtractor,
+                                          AuthToken.allowAll)
 
   val testPackagesParams = List(
     ("default", "vim", "7.0.1", UUID.randomUUID()),

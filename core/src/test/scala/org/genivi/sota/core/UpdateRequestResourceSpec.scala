@@ -20,7 +20,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FunSuite, ShouldMatchers}
 import akka.http.scaladsl.unmarshalling._
 import org.genivi.sota.data.{Interval, Namespaces}
-import org.genivi.sota.http.NamespaceDirectives
+import org.genivi.sota.http.{AuthToken, NamespaceDirectives}
 
 import scala.concurrent.Future
 
@@ -49,7 +49,7 @@ class UpdateRequestResourceSpec extends FunSuite
   implicit val connectivity = DefaultConnectivity
 
   val updateService = new UpdateService(DefaultUpdateNotifier, deviceRegistry)
-  val serve = new UpdateRequestsResource(db, resolver, updateService, defaultNamespaceExtractor)
+  val serve = new UpdateRequestsResource(db, resolver, updateService, defaultNamespaceExtractor, AuthToken.allowAll)
 
   test("accepts new updates with a Client specific format") {
     val now = Instant.now

@@ -16,7 +16,7 @@ import io.circe.Json
 import java.time.Instant
 import java.util.UUID._
 import java.util.concurrent.ConcurrentHashMap
-import org.genivi.sota.common.DeviceRegistry
+import org.genivi.sota.common.{ClientRequest, DeviceRegistry}
 import org.genivi.sota.data.Device._
 import org.genivi.sota.data.{Device, DeviceT, Namespace, Uuid}
 import org.genivi.sota.device_registry.common.Errors._
@@ -35,9 +35,12 @@ class FakeDeviceRegistry(namespace: Namespace)
   private val devices =  new ConcurrentHashMap[Uuid, Device]()
   private val systemInfo = new ConcurrentHashMap[Uuid, Json]()
 
+  type Request[Resp] = FutureClientRequest[Resp]
+  private def mkReq[Resp](f: Future[Resp]): Request[Resp] = FutureClientRequest(f)
+
   override def searchDevice
   (ns: Namespace, re: String Refined Regex)
-  (implicit ec: ExecutionContext): Future[Seq[Device]] = {
+  (implicit ec: ExecutionContext): Request[Seq[Device]] = mkReq {
     FastFuture.successful(
       devices
         .values()
@@ -50,7 +53,7 @@ class FakeDeviceRegistry(namespace: Namespace)
 
   // TODO: handle conflicts on deviceId
   override def createDevice(d: DeviceT)
-                           (implicit ec: ExecutionContext): Future[Uuid] = {
+                           (implicit ec: ExecutionContext): Request[Uuid] = mkReq {
     val uuid: Uuid = Uuid.generate()
     devices.put(uuid,
       Device(namespace = namespace,
@@ -62,16 +65,15 @@ class FakeDeviceRegistry(namespace: Namespace)
   }
 
   override def fetchDevice(uuid: Uuid)
-                          (implicit ec: ExecutionContext): Future[Device] = {
+                          (implicit ec: ExecutionContext): Request[Device] = mkReq{
     devices.asScala.get(uuid) match {
       case Some(d) => FastFuture.successful(d)
       case None => FastFuture.failed(MissingDevice)
     }
   }
 
-  override def fetchByDeviceId
-  (ns: Namespace, deviceId: DeviceId)
-  (implicit ec: ExecutionContext): Future[Device] =
+  override def fetchByDeviceId (ns: Namespace, deviceId: DeviceId)
+                               (implicit ec: ExecutionContext): Request[Device] = mkReq {
     devices
       .asScala
       .values
@@ -79,11 +81,12 @@ class FakeDeviceRegistry(namespace: Namespace)
       case Some(d) => FastFuture.successful(d)
       case None => FastFuture.failed(MissingDevice)
     }
+  }
 
   // TODO: handle conflicts on deviceId
   override def updateDevice
   (uuid: Uuid, device: DeviceT)
-  (implicit ec: ExecutionContext): Future[Unit] = {
+  (implicit ec: ExecutionContext): Request[Unit] = mkReq {
     devices.asScala.get(uuid) match {
       case Some(d) =>
         d.copy(deviceId = device.deviceId, deviceName = device.deviceName, deviceType = device.deviceType)
@@ -95,13 +98,13 @@ class FakeDeviceRegistry(namespace: Namespace)
 
   override def deleteDevice
   (uuid: Uuid)
-  (implicit ec: ExecutionContext): Future[Unit] = {
+  (implicit ec: ExecutionContext): Request[Unit] = mkReq {
     devices.remove(uuid)
     FastFuture.successful(())
   }
 
   override def updateLastSeen(uuid: Uuid, seenAt: Instant = Instant.now)
-  (implicit ec: ExecutionContext): Future[Unit] = {
+  (implicit ec: ExecutionContext): Request[Unit] = mkReq {
     devices.asScala.get(uuid).foreach { d =>
       devices.put(uuid, d.copy(lastSeen = Option(seenAt)))
     }
@@ -111,7 +114,7 @@ class FakeDeviceRegistry(namespace: Namespace)
 
   override def updateSystemInfo
   (uuid: Uuid, json: Json)
-  (implicit ec: ExecutionContext): Future[Unit] = {
+  (implicit ec: ExecutionContext): Request[Unit] = mkReq {
     devices.asScala.get(uuid) match {
       case Some(_) =>
         systemInfo.put(uuid, json)
@@ -123,7 +126,7 @@ class FakeDeviceRegistry(namespace: Namespace)
 
   override def getSystemInfo
   (uuid: Uuid)
-  (implicit ec: ExecutionContext): Future[Json] = {
+  (implicit ec: ExecutionContext): Request [Json] = mkReq {
     systemInfo.asScala.get(uuid) match {
       case Some(x) => FastFuture.successful(x)
       case None => FastFuture.failed(MissingDevice)

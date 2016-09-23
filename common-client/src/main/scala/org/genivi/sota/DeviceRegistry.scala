@@ -16,44 +16,46 @@ import Device._
 
 trait DeviceRegistry {
 
+  type Request[T] <: ClientRequest[T, Request]
+
   // TODO: Needs namespace
   def searchDevice
     (ns: Namespace, re: String Refined Regex)
-    (implicit ec: ExecutionContext): Future[Seq[Device]]
+    (implicit ec: ExecutionContext): Request[Seq[Device]]
 
   def listNamespace(ns: Namespace)
-  (implicit ec: ExecutionContext): Future[Seq[Device]] =
+  (implicit ec: ExecutionContext): Request[Seq[Device]] =
     searchDevice(ns, Refined.unsafeApply(".*"))
 
   def createDevice
   (device: DeviceT)
-  (implicit ec: ExecutionContext): Future[Uuid]
+  (implicit ec: ExecutionContext): Request[Uuid]
 
   def fetchDevice
     (uuid: Uuid)
-    (implicit ec: ExecutionContext): Future[Device]
+    (implicit ec: ExecutionContext): Request[Device]
 
   def fetchByDeviceId
     (ns: Namespace, deviceId: DeviceId)
-    (implicit ec: ExecutionContext): Future[Device]
+    (implicit ec: ExecutionContext): Request[Device]
 
   def updateDevice
     (uuid: Uuid, device: DeviceT)
-    (implicit ec: ExecutionContext): Future[Unit]
+    (implicit ec: ExecutionContext): Request[Unit]
 
   def deleteDevice
     (uuid: Uuid)
-    (implicit ec: ExecutionContext): Future[Unit]
+    (implicit ec: ExecutionContext): Request[Unit]
 
   def updateLastSeen
     (uuid: Uuid, seenAt: Instant = Instant.now)
-    (implicit ec: ExecutionContext): Future[Unit]
+    (implicit ec: ExecutionContext): Request[Unit]
 
   def updateSystemInfo
     (uuid: Uuid, json: Json)
-    (implicit ec: ExecutionContext): Future[Unit]
+    (implicit ec: ExecutionContext): Request[Unit]
 
   def getSystemInfo
     (uuid: Uuid)
-    (implicit ec: ExecutionContext): Future[Json]
+    (implicit ec: ExecutionContext): Request[Json]
 }

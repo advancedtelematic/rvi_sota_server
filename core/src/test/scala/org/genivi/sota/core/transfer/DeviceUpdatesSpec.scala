@@ -50,10 +50,10 @@ class DeviceUpdatesSpec extends FunSuite
 
   test("forwards request to resolver client") {
     val device = genDeviceT.sample.get.copy(deviceId = Some(genDeviceId.sample.get))
-    whenReady(deviceRegistry.createDevice(device)) { id =>
+    whenReady(deviceRegistry.createDevice(device).exec) { id =>
       val resolverClient = new FakeExternalResolver
       val packageIds = Gen.listOf(PackageIdGen).sample.get
-      val f = update(id, packageIds, resolverClient)
+      val f = update(id, packageIds, resolverClient, None)
 
       whenReady(f) { _ =>
         forAll(packageIds) { id =>

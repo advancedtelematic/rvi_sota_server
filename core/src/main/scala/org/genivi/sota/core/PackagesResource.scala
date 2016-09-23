@@ -54,7 +54,8 @@ object PackagesResource {
 
 class PackagesResource(resolver: ExternalResolverClient, db : Database,
                        messageBusPublisher: MessageBusPublisher,
-                       namespaceExtractor: Directive1[Namespace])
+                       namespaceExtractor: Directive1[Namespace],
+                       authToken: Directive1[Option[String]])
                       (implicit system: ActorSystem, mat: ActorMaterializer) {
 
   import system.dispatcher
@@ -108,13 +109,13 @@ class PackagesResource(resolver: ExternalResolverClient, db : Database,
     *   <li>A record for the package is inserted in Core's DB (Package SQL table).</li>
     * </ul>
     */
-  def updatePackage(ns: Namespace, pid: PackageId): Route = {
+  def updatePackage(ns: Namespace, pid: PackageId): Route = authToken { token =>
     def storePackage(ns: Namespace, pid: PackageId,
                      description: Option[String], vendor: Option[String],
                      signature: Option[String],
                      file: Source[ByteString, Any]): Future[StatusCode] = {
       val resultF = for {
-        _ <- resolver.putPackage(ns, pid, description, vendor)
+        _ <- resolver.putPackage(ns, pid, description, vendor).withToken(token).exec
         (uri, size, digest) <- packageStorageOp(pid, ns.get, file)
         newPkg = Package(ns, UUID.randomUUID(), pid, uri, size, digest, description, vendor, signature)
         pkg <- db.run(Packages.create(newPkg))

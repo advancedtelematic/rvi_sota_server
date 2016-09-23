@@ -18,7 +18,7 @@ import org.genivi.sota.core.data.{DeviceStatus, DeviceUpdateStatus}
 import org.genivi.sota.core.jsonrpc.HttpTransport
 import org.genivi.sota.core.rvi._
 import org.genivi.sota.data._
-import org.genivi.sota.http.NamespaceDirectives
+import org.genivi.sota.http.{AuthToken, NamespaceDirectives}
 import org.genivi.sota.marshalling.CirceMarshallingSupport
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
@@ -55,7 +55,8 @@ class DeviceResourceSpec extends FunSuite
   val fakeResolver = new FakeExternalResolver()
   val deviceRegistry = new FakeDeviceRegistry(Namespaces.defaultNs)
 
-  lazy val service = new DevicesResource(db, rviClient, fakeResolver, deviceRegistry, defaultNamespaceExtractor)
+  lazy val service = new DevicesResource(db, rviClient, fakeResolver, deviceRegistry,
+                                         defaultNamespaceExtractor, AuthToken.allowAll)
 
   val BasePath = Path("/devices")
 
@@ -74,10 +75,10 @@ class DeviceResourceSpec extends FunSuite
     val device2 = genDeviceT.sample.get.copy(deviceId = Some(genDeviceId.sample.get))
 
     val f = for {
-      uuid1 <- deviceRegistry.createDevice(device1)
-      uuid2 <- deviceRegistry.createDevice(device2)
+      uuid1 <- deviceRegistry.createDevice(device1).exec
+      uuid2 <- deviceRegistry.createDevice(device2).exec
       _   <- db.run(createUpdateSpecFor(uuid2))
-      _   <- deviceRegistry.updateLastSeen(uuid2, Instant.now.minus(1, ChronoUnit.HOURS))
+      _   <- deviceRegistry.updateLastSeen(uuid2, Instant.now.minus(1, ChronoUnit.HOURS)).exec
     } yield (uuid1, uuid2)
 
     whenReady(f) { case(uuid1, uuid2) =>
@@ -107,7 +108,7 @@ class DeviceResourceSpec extends FunSuite
   test("search with status=true returns current status for a device") {
     val device = genDeviceT.sample.get.copy(deviceId = Some(genDeviceId.sample.get))
 
-    whenReady(deviceRegistry.createDevice(device)) { created =>
+    whenReady(deviceRegistry.createDevice(device).exec) { created =>
       val url = Uri.Empty
         .withPath(BasePath)
         .withQuery(Uri.Query("status" -> "true"))

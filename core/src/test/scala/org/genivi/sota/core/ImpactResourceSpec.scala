@@ -11,6 +11,7 @@ import org.genivi.sota.core.db.BlacklistedPackages
 import org.genivi.sota.data.{Device, Namespace, PackageId, Uuid}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FunSuite, ShouldMatchers}
+import org.genivi.sota.http.AuthToken
 import org.genivi.sota.http.NamespaceDirectives._
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
 import org.genivi.sota.marshalling.RefinedMarshallingSupport._
@@ -33,8 +34,8 @@ class ImpactResourceSpec
   implicit val _ec = system.dispatcher
 
   def fakeExternalResolver(affected: Map[Uuid, Seq[PackageId]] = Map.empty) = new FakeExternalResolver() {
-    override def affectedDevices(namespace: Namespace, packageIds: Set[PackageId]): Future[Map[Uuid, Seq[PackageId]]] =
-      Future.successful(affected)
+    override def affectedDevices(namespace: Namespace, packageIds: Set[PackageId])
+        : Request[Map[Uuid, Seq[PackageId]]] = FutureClientRequest { Future.successful(affected) }
   }
 
   test("calculates impact for a blacklist item") {
@@ -47,7 +48,7 @@ class ImpactResourceSpec
 
     val affected = Map(device.uuid -> Seq(pkg.id))
 
-    val route = new ImpactResource(defaultNamespaceExtractor, fakeExternalResolver(affected)).route
+    val route = new ImpactResource(defaultNamespaceExtractor, AuthToken.allowAll, fakeExternalResolver(affected)).route
 
     Get("/impact/blacklist") ~> route ~> check {
       status shouldBe StatusCodes.OK

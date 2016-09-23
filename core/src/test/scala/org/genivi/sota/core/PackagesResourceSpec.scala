@@ -22,6 +22,7 @@ import cats.data.Xor
 import io.circe.Json
 import io.circe.generic.auto._
 import org.genivi.sota.core.db.{BlacklistedPackages, Packages}
+import org.genivi.sota.http.{AuthToken, NamespaceDirectives}
 import org.genivi.sota.core.storage.PackageStorage.PackageStorageOp
 import org.genivi.sota.core.storage.LocalPackageStore
 import org.scalatest.concurrent.ScalaFutures
@@ -40,13 +41,14 @@ class PackagesResourceSpec extends FunSuite
   with DefaultPatience
   with Generators
 {
-  import org.genivi.sota.http.NamespaceDirectives._
+  import NamespaceDirectives._
 
   implicit val _db = db
 
   val resolver = new FakeExternalResolver()
 
-  val service = new PackagesResource(resolver, db, MessageBusPublisher.ignore, defaultNamespaceExtractor) {
+  val service = new PackagesResource(resolver, db, MessageBusPublisher.ignore,
+                                     defaultNamespaceExtractor, AuthToken.allowAll) {
     override val packageStorageOp: PackageStorageOp = new LocalPackageStore().store _
   }
 

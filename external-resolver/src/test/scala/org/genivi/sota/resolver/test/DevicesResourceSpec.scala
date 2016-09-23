@@ -43,7 +43,7 @@ class DeviceResourcePropSpec extends ResourcePropSpec
     } yield (beforeUpdate ++ added, beforeUpdate -- removed ++ added ++ nonExistentAdded)
 
     forAll(genDevice, stateGen, minSuccessful(3)) { (device, state) =>
-      val id = deviceRegistry.createDevice(device.toResponse).futureValue
+      val id = deviceRegistry.createDevice(device.toResponse).exec.futureValue
 
       val (installedBefore, update) = state
       installedBefore.foreach( p => addPackageOK(p.id.name.get, p.id.version.get, p.description, p.vendor) )
@@ -62,7 +62,7 @@ class DeviceResourcePropSpec extends ResourcePropSpec
     } yield (beforeUpdate ++ added, beforeUpdate -- removed ++ added)
 
     forAll(genDevice, stateGen, minSuccessful(3)) { (device, state) =>
-      val id = deviceRegistry.createDevice(device.toResponse).futureValue
+      val id = deviceRegistry.createDevice(device.toResponse).exec.futureValue
 
       val (availablePackages, update) = state
       availablePackages.foreach( p => addPackageOK(p.id.name.get, p.id.version.get, p.description, p.vendor) )
@@ -77,7 +77,7 @@ class DeviceResourcePropSpec extends ResourcePropSpec
     val packageGen = Gen.nonEmptyContainerOf[Set, PackageId](genPackageId)
 
     forAll(genDevice, packageGen, minSuccessful(3)) { (device, packageIds) =>
-      val id = deviceRegistry.createDevice(device.toResponse).futureValue
+      val id = deviceRegistry.createDevice(device.toResponse).exec.futureValue
 
       Put(Resource.uri(devices, id.show, "packages"),
         InstalledSoftware(packageIds, Set())) ~> route ~> check {
@@ -95,7 +95,7 @@ class DeviceResourcePropSpec extends ResourcePropSpec
     val packageGen = Gen.nonEmptyContainerOf[Set, PackageId](genPackageId)
 
     forAll(genDevice, packageGen, minSuccessful(3)) { (device, packageIds) =>
-      val id = deviceRegistry.createDevice(device.toResponse).futureValue
+      val id = deviceRegistry.createDevice(device.toResponse).exec.futureValue
 
       Put(Resource.uri(devices, id.show, "packages"),
         InstalledSoftware(packageIds, Set())) ~> route ~> check {
@@ -113,7 +113,7 @@ class DeviceResourcePropSpec extends ResourcePropSpec
 
   property("filters installed packages by partial regex") {
     forAll(genDevice, genPackageId, minSuccessful(3)) { (device, packageId) =>
-      val id = deviceRegistry.createDevice(device.toResponse).futureValue
+      val id = deviceRegistry.createDevice(device.toResponse).exec.futureValue
 
       Put(Resource.uri(devices, id.show, "packages"),
         InstalledSoftware(Set(packageId), Set())) ~> route ~> check {
@@ -135,7 +135,7 @@ class DeviceResourcePropSpec extends ResourcePropSpec
     val packageGen = Gen.nonEmptyContainerOf[Set, PackageId](genPackageId)
 
     forAll(genDevice, packageGen, minSuccessful(3)) { (device, packageIds) =>
-      val id = deviceRegistry.createDevice(device.toResponse).futureValue
+      val id = deviceRegistry.createDevice(device.toResponse).exec.futureValue
 
       val installedSoftware = InstalledSoftware(packageIds, Set())
 

@@ -4,13 +4,13 @@
  */
 package org.genivi.sota.resolver
 
-import org.genivi.sota.http.{HealthResource, NamespaceDirectives, TraceId}
+import org.genivi.sota.http.{AuthToken, HealthResource, NamespaceDirectives, TraceId}
 
 import scala.concurrent.ExecutionContext
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.server.{Directive1, Directives, Route}
+import akka.http.scaladsl.server.{Directive0, Directive1, Directives, Route}
 import akka.stream.ActorMaterializer
 import com.typesafe.config.Config
 import org.genivi.sota.client.DeviceRegistryClient
@@ -37,17 +37,19 @@ import slick.driver.MySQLDriver.api._
   *
   * @see {@linktourl http://advancedtelematic.github.io/rvi_sota_server/dev/api.html}
  */
-class Routing(namespaceDirective: Directive1[Namespace], deviceRegistry: DeviceRegistry)
+class Routing(namespaceDirective: Directive1[Namespace],
+              authToken: Directive1[Option[String]],
+              deviceRegistry: DeviceRegistry)
   (implicit db: Database, system: ActorSystem, mat: ActorMaterializer, exec: ExecutionContext)
  {
    import Directives._
 
    val route: Route = pathPrefix("api" / "v1" / "resolver") {
      handleRejections(rejectionHandler) {
-       new DeviceDirectives(namespaceDirective, deviceRegistry).route ~
+         new DeviceDirectives(namespaceDirective, authToken, deviceRegistry).route ~
          new PackageDirectives(namespaceDirective).route ~
          new FilterDirectives(namespaceDirective).route ~
-         new ResolveDirectives(namespaceDirective, deviceRegistry).route ~
+         new ResolveDirectives(namespaceDirective, authToken, deviceRegistry).route ~
          new ComponentDirectives(namespaceDirective).route ~
          new PackageFiltersResource(namespaceDirective).routes
      }
@@ -82,6 +84,7 @@ object Boot extends App with Directives with BootMigrations {
   }
 
   val namespaceDirective = NamespaceDirectives.fromConfig()
+  val authToken = AuthToken.fromConfig()
 
   val deviceRegistryClient = new DeviceRegistryClient(
     settings.deviceRegistryUri, settings.deviceRegistryApi
@@ -92,7 +95,7 @@ object Boot extends App with Directives with BootMigrations {
       logResponseMetrics("sota-resolver", TraceId.traceMetrics) &
       versionHeaders(version)) {
       Route.seal {
-        new Routing(namespaceDirective, deviceRegistryClient).route ~
+        new Routing(namespaceDirective, authToken, deviceRegistryClient).route ~
         new HealthResource(db, org.genivi.sota.resolver.BuildInfo.toMap).route
       }
     }

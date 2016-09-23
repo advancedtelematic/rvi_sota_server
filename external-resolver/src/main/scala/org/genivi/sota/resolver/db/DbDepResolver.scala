@@ -42,11 +42,11 @@ object DbDepResolver {
  /*
   * Resolving package dependencies.
   */
-  def resolve(namespace: Namespace, deviceRegistry: DeviceRegistry, pkgId: PackageId)
+  def resolve(namespace: Namespace, deviceRegistry: DeviceRegistry, token: Option[String], pkgId: PackageId)
              (implicit db: Database, ec: ExecutionContext,
               mat: Materializer): Future[Map[Uuid, Seq[PackageId]]] = {
     for {
-      devices <- deviceRegistry.listNamespace(namespace)
+      devices <- deviceRegistry.listNamespace(namespace).withToken(token).exec
       filtersForPkg <- db.run(PackageFilterRepository.listFiltersForPackage(namespace, pkgId))
       vf <- filterDevices(namespace,
                           devices.map(d => (d.uuid, d.deviceId)).toMap,

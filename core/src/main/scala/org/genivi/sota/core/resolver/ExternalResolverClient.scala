@@ -15,6 +15,8 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.ActorMaterializer
 import org.genivi.sota.data.{Device, Namespace, PackageId, Uuid}
+import org.genivi.sota.client.HttpClientRequest
+import org.genivi.sota.common.ClientRequest
 import Device._
 import akka.http.scaladsl.marshalling.Marshal
 import cats.syntax.show._
@@ -26,6 +28,8 @@ import scala.util.Failure
 
 trait ExternalResolverClient {
 
+  type Request[T] <: ClientRequest[T,Request]
+
   /**
     * Add a new package to SOTA
     * This is called when the user adds a new package to the SOTA system
@@ -35,7 +39,7 @@ trait ExternalResolverClient {
     * @param vendor The vendor providing the package (optional)
     */
   def putPackage(namespace: Namespace, packageId: PackageId, description: Option[String],
-                 vendor: Option[String]): Future[Unit]
+                 vendor: Option[String]): Request[Unit]
 
   /**
     * Given a package name and version, return vehicles that it should be
@@ -44,7 +48,7 @@ trait ExternalResolverClient {
     * @param packageId The name and version of the package
     * @return Which packages need to be installed on which vehicles
     */
-  def resolve(namespace: Namespace, packageId: PackageId): Future[Map[Uuid, Set[PackageId]]]
+  def resolve(namespace: Namespace, packageId: PackageId): Request[Map[Uuid, Set[PackageId]]]
 
   /**
     * Update the list of packages that are installed on a vehicle.
@@ -58,9 +62,9 @@ trait ExternalResolverClient {
     * @param device The device uuid that is sending the update
     * @param json A JSON encoded list of installed packages
     */
-  def setInstalledPackages(device: Uuid, json: io.circe.Json) : Future[Unit]
+  def setInstalledPackages(device: Uuid, json: io.circe.Json) : Request[Unit]
 
-  def affectedDevices(namespace: Namespace, packageIds: Set[PackageId]): Future[Map[Uuid, Seq[PackageId]]]
+  def affectedDevices(namespace: Namespace, packageIds: Set[PackageId]): Request[Map[Uuid, Seq[PackageId]]]
 }
 
 /**
@@ -121,7 +125,9 @@ class DefaultExternalResolverClient(baseUri : Uri, resolveUri: Uri, packagesUri:
 
   private[this] val log = Logging( system, "org.genivi.sota.externalResolverClient" )
 
-  override def resolve(namespace: Namespace, packageId: PackageId): Future[Map[Uuid, Set[PackageId]]] = {
+  type Request[T] = HttpClientRequest[T]
+
+  override def resolve(namespace: Namespace, packageId: PackageId): Request[Map[Uuid, Set[PackageId]]] = {
     val resolvePath = resolveUri
       .withPath(resolveUri.path)
       .withQuery(Query(
@@ -133,9 +139,7 @@ class DefaultExternalResolverClient(baseUri : Uri, resolveUri: Uri, packagesUri:
     val httpRequest = HttpRequest(uri = resolvePath)
       .addHeader(`Accept-Encoding`(HttpEncodings.gzip))
 
-    val requestF = Http().singleRequest(httpRequest)
-
-    requestF flatMap { response =>
+    def cont (requestF: Future[HttpResponse]) = requestF flatMap { response =>
       val e = if (response.encoding == HttpEncodings.gzip) {
         response.entity.transformDataBytes(Gzip.decoderFlow)
       } else {
@@ -144,9 +148,11 @@ class DefaultExternalResolverClient(baseUri : Uri, resolveUri: Uri, packagesUri:
 
       Unmarshal(e).to[Map[Uuid, Set[PackageId]]]
     } recoverWith { case t =>
-      log.error(t, "Request to resolver failed")
-      Future.failed(t)
+        log.error(t, "Request to resolver failed")
+        Future.failed(t)
     }
+
+    HttpClientRequest(httpRequest, cont _)
   }
 
   def handlePutResponse( futureResponse: Future[HttpResponse] ) : Future[Unit] =
@@ -162,28 +168,32 @@ class DefaultExternalResolverClient(baseUri : Uri, resolveUri: Uri, packagesUri:
       case e => Future.failed( ExternalResolverRequestFailed(e) )
     }
 
-  override def setInstalledPackages(device: Uuid, json: io.circe.Json) : Future[Unit] = {
+  override def setInstalledPackages(device: Uuid, json: io.circe.Json) : Request[Unit] = {
     import akka.http.scaladsl.client.RequestBuilding.Put
     import org.genivi.sota.rest.ErrorRepresentation
 
     val uri = vehiclesUri.withPath( vehiclesUri.path / device.show / "packages" )
-    val futureResult = Http().singleRequest( Put(uri, json) ).flatMap {
-      case HttpResponse( StatusCodes.NoContent, _, _, _ ) =>
-        FastFuture.successful( () )
 
-      case HttpResponse( StatusCodes.BadRequest, _, entity, _ ) =>
-        Unmarshal(entity).to[ErrorRepresentation].flatMap( x =>
-          FastFuture.failed( ExternalResolverRequestFailed(s"Error returned from external resolver: $x") ) )
+    def cont(resp: Future[HttpResponse]) = {
+      val futureResult = resp.flatMap {
+        case HttpResponse( StatusCodes.NoContent, _, _, _ ) =>
+          FastFuture.successful( () )
 
-      case HttpResponse( status, _, _, _ ) =>
-        FastFuture.failed( ExternalResolverRequestFailed(status) )
+        case HttpResponse( StatusCodes.BadRequest, _, entity, _ ) =>
+          Unmarshal(entity).to[ErrorRepresentation].flatMap( x =>
+            FastFuture.failed( ExternalResolverRequestFailed(s"Error returned from external resolver: $x") ) )
+
+        case HttpResponse( status, _, _, _ ) =>
+          FastFuture.failed( ExternalResolverRequestFailed(status) )
+      }
+      futureResult.onFailure { case t => log.error( t, "Request to external resolver failed." ) }
+      futureResult
     }
-    futureResult.onFailure { case t => log.error( t, "Request to external resolver failed." ) }
-    futureResult
+    HttpClientRequest(Put(uri,json), cont _)
   }
 
   override def putPackage(namespace: Namespace, packageId: PackageId, description: Option[String],
-                          vendor: Option[String]): Future[Unit] = {
+                          vendor: Option[String]): Request[Unit] = {
     import akka.http.scaladsl.client.RequestBuilding._
     import shapeless._
     import syntax.singleton._
@@ -198,30 +208,32 @@ class DefaultExternalResolverClient(baseUri : Uri, resolveUri: Uri, packagesUri:
 
     val request : HttpRequest =
       Put(packagesUri.withPath(packagesUri.path / packageId.name.get / packageId.version.get ), payload)
-    handlePutResponse( Http().singleRequest( request ) )
+    HttpClientRequest(request, handlePutResponse _)
   }
 
-  override def affectedDevices(namespace: Namespace, packageIds: Set[PackageId]): Future[Map[Uuid, Seq[PackageId]]] = {
+  override def affectedDevices(namespace: Namespace, packageIds: Set[PackageId]): Request[Map[Uuid, Seq[PackageId]]] = {
     val uri = vehiclesUri.withPath(packagesUri.path / "affected").withQuery(Query("namespace" -> namespace.get))
 
-    val responseF = for {
+    val req = for {
       entity <- Marshal(packageIds).to[MessageEntity]
-      req = HttpRequest(method = HttpMethods.POST, uri = uri, entity = entity)
-      response <- Http().singleRequest(req)
-    } yield response
+    } yield HttpRequest(method = HttpMethods.POST, uri = uri, entity = entity)
 
-    val futureResult = responseF.flatMap {
-      case HttpResponse(StatusCodes.OK, _, entity, _) =>
-        Unmarshal(entity).to[Map[Uuid, Seq[PackageId]]]
+    def cont(responseF: Future[HttpResponse]) = {
+      val futureResult = responseF.flatMap {
+        case HttpResponse(StatusCodes.OK, _, entity, _) =>
+          Unmarshal(entity).to[Map[Uuid, Seq[PackageId]]]
 
-      case HttpResponse(StatusCodes.BadRequest, _, entity, _) =>
-        Unmarshal(entity).to[ErrorRepresentation].flatMap( x =>
-          FastFuture.failed(ExternalResolverRequestFailed(s"Error returned from external resolver: $x")))
+        case HttpResponse(StatusCodes.BadRequest, _, entity, _) =>
+          Unmarshal(entity).to[ErrorRepresentation].flatMap( x =>
+            FastFuture.failed(ExternalResolverRequestFailed(s"Error returned from external resolver: $x")))
 
-      case HttpResponse(status, _, _, _) =>
-        FastFuture.failed(ExternalResolverRequestFailed(status))
+        case HttpResponse(status, _, _, _) =>
+          FastFuture.failed(ExternalResolverRequestFailed(status))
+      }
+
+      futureResult.andThen { case Failure(t) => log.error(t, "Request to external resolver failed." ) }
     }
 
-    futureResult.andThen { case Failure(t) => log.error(t, "Request to external resolver failed." ) }
+    HttpClientRequest(req, cont _)
   }
 }

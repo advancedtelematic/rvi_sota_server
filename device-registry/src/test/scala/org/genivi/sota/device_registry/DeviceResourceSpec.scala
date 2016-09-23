@@ -4,7 +4,7 @@
  */
 package org.genivi.sota.device_registry
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{HttpRequest, StatusCodes}
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Regex
 import io.circe.generic.auto._
@@ -53,7 +53,7 @@ class DeviceResourceSpec extends ResourcePropSpec {
   }
 
   property("GET, PUT, DELETE, and POST '/ping' request fails on non-existent device") {
-    forAll { (uuid: Uuid, device: DeviceT, json: Json) =>
+    forAll { (uuid: Uuid, device: DeviceT) =>
       fetchDevice(uuid)          ~> route ~> check { status shouldBe NotFound }
       updateDevice(uuid, device) ~> route ~> check { status shouldBe NotFound }
       deleteDevice(uuid)         ~> route ~> check { status shouldBe NotFound }
@@ -61,11 +61,11 @@ class DeviceResourceSpec extends ResourcePropSpec {
     }
   }
 
-  property("GET /system_info request fails on non-existent device") {
+  property("GET, PUT and POST /system_info request fails on non-existent device") {
     forAll { (uuid: Uuid, json: Json) =>
-      fetchSystemInfo(uuid)      ~> route ~> check { status shouldBe NotFound }
-      createSystemInfo(uuid, json) ~> route ~> check { status shouldBe NotFound}
-      updateSystemInfo(uuid, json) ~> route ~> check { status shouldBe NotFound}
+      fetchSystemInfo(uuid)        ~> route ~> check { status shouldBe NotFound }
+      createSystemInfo(uuid, json) ~> route ~> check { status shouldBe NotFound }
+      updateSystemInfo(uuid, json) ~> route ~> check { status shouldBe NotFound }
     }
   }
 
@@ -110,7 +110,7 @@ class DeviceResourceSpec extends ResourcePropSpec {
       deleteDeviceOk(uuid)
     }
   }
-  
+
   property("PUT request after POST succeeds with updated device.") {
     forAll(genConflictFreeDeviceTs(2)) { case Seq(d1, d2) =>
 

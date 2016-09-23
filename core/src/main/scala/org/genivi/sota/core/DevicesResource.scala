@@ -43,7 +43,8 @@ case class DeviceSearchResult(
 class DevicesResource(db: Database, client: ConnectivityClient,
                       resolverClient: ExternalResolverClient,
                       deviceRegistry: DeviceRegistry,
-                      namespaceExtractor: Directive1[Namespace])
+                      namespaceExtractor: Directive1[Namespace],
+                      authToken: Directive1[Option[String]])
                      (implicit system: ActorSystem, mat: ActorMaterializer) {
 
   import CirceMarshallingSupport._
@@ -60,15 +61,15 @@ class DevicesResource(db: Database, client: ConnectivityClient,
   /**
     * An ota client GET a Seq of [[Device]] from regex/status search.
     */
-  def search(ns: Namespace): Route = {
+  def search(ns: Namespace): Route = authToken { token =>
     parameters(('status.?(false), 'regex.as[RefinedRegx].?)) {
       (includeStatus: Boolean, reqRegex: Option[RefinedRegx]) =>
         val regex = reqRegex.getOrElse(Refined.unsafeApply(".*")) // TODO optimize or forbid
-        val devices = deviceRegistry.searchDevice(ns, regex)
+        val devices = deviceRegistry.searchDevice(ns, regex).withToken(token).exec
 
         if (includeStatus) {
           val f = DeviceSearch.fetchDeviceStatus(devices)
-          val response = f flatMap buildSearchResponse(devices)
+            val response = f flatMap buildSearchResponse(devices)
           completeWith(response)
         } else {
           val response = buildSearchResponse(devices)(Seq.empty)

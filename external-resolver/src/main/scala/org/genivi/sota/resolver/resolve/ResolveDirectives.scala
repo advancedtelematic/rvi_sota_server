@@ -28,14 +28,15 @@ import org.genivi.sota.resolver.db.DbDepResolver
  * API routes for package resolution.
  */
 class ResolveDirectives(namespaceExtractor: Directive1[Namespace],
+                        authToken: Directive1[Option[String]],
                         deviceRegistry: DeviceRegistry)
                        (implicit system: ActorSystem,
                         db: Database,
                         mat: ActorMaterializer,
                         ec: ExecutionContext) {
 
-  def resolvePackage(ns: Namespace, id: PackageId): Route = {
-    val resultF = DbDepResolver.resolve(ns, deviceRegistry, id)
+  def resolvePackage(ns: Namespace, id: PackageId): Route = authToken { token =>
+    val resultF = DbDepResolver.resolve(ns, deviceRegistry, token, id)
 
     complete(resultF)
   }

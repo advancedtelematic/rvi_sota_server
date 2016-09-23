@@ -44,6 +44,7 @@ class DeviceUpdatesResource(db: Database,
                             resolverClient: ExternalResolverClient,
                             deviceRegistry: DeviceRegistry,
                             authNamespace: Directive1[Namespace],
+                            authToken: Directive1[Option[String]],
                             authDirective: AuthScope => Directive0,
                             messageBus: MessageBusPublisher)
                            (implicit system: ActorSystem, mat: ActorMaterializer,
@@ -66,30 +67,30 @@ class DeviceUpdatesResource(db: Database,
 
   protected lazy val updateService = new UpdateService(DefaultUpdateNotifier, deviceRegistry)
 
-  def logDeviceSeen(id: Uuid): Directive0 = {
+  def logDeviceSeen(id: Uuid): Directive0 = authToken flatMap { token =>
     extractRequestContext flatMap { _ =>
       onComplete {
         for {
           _ <- messageBus.publishSafe(DeviceSeen(id, Instant.now()))
-          _ <- deviceRegistry.updateLastSeen(id)
+          _ <- deviceRegistry.updateLastSeen(id).withToken(token).exec
         } yield ()
       }
     } flatMap (_ => pass)
   }
 
-  def updateSystemInfo(id: Uuid): Route = {
+  def updateSystemInfo(id: Uuid): Route = authToken { token =>
     entity(as[Json]) { json =>
-      complete(deviceRegistry.updateSystemInfo(id,json))
+      complete(deviceRegistry.updateSystemInfo(id,json).withToken(token).exec)
     }
   }
 
   /**
     * An ota client PUT a list of packages to record they're installed on a device, overwriting any previous such list.
     */
-  def updateInstalledPackages(id: Uuid): Route = {
+  def updateInstalledPackages(id: Uuid): Route = authToken { token =>
     entity(as[List[PackageId]]) { ids =>
       val f = DeviceUpdates
-        .update(id, ids, resolverClient)
+        .update(id, ids, resolverClient, token)
         .map(_ => OK)
 
       complete(f)

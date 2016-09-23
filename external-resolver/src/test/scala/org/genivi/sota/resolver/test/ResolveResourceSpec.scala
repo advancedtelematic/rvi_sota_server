@@ -28,7 +28,7 @@ class ResolveResourceSpec extends ResourceWordSpec with ScalaFutures {
         val d = DeviceT(DeviceName(s"Name $i"),
           Some(DeviceId(s"${i}0RES0LVEV1N12345")))
 
-        deviceRegistry.createDevice(d).map((d, _))
+        deviceRegistry.createDevice(d).exec.map((d, _))
       }
     }.futureValue
   }
