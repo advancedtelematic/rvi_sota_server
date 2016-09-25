@@ -44,7 +44,7 @@ trait ExternalResolverClient {
     * @param packageId The name and version of the package
     * @return Which packages need to be installed on which vehicles
     */
-  def resolve(namespace: Namespace, packageId: PackageId): Future[Map[Uuid, Set[PackageId]]]
+  def resolve(packageId: PackageId): Future[Map[Uuid, Set[PackageId]]]
 
   /**
     * Update the list of packages that are installed on a vehicle.
@@ -121,11 +121,10 @@ class DefaultExternalResolverClient(baseUri : Uri, resolveUri: Uri, packagesUri:
 
   private[this] val log = Logging( system, "org.genivi.sota.externalResolverClient" )
 
-  override def resolve(namespace: Namespace, packageId: PackageId): Future[Map[Uuid, Set[PackageId]]] = {
+  override def resolve(packageId: PackageId): Future[Map[Uuid, Set[PackageId]]] = {
     val resolvePath = resolveUri
       .withPath(resolveUri.path)
       .withQuery(Query(
-        "namespace" -> namespace.get,
         "package_name" -> packageId.name.get,
         "package_version" -> packageId.version.get
       ))

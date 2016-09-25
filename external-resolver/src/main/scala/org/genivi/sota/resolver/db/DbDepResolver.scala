@@ -46,7 +46,7 @@ object DbDepResolver {
              (implicit db: Database, ec: ExecutionContext,
               mat: Materializer): Future[Map[Uuid, Seq[PackageId]]] = {
     for {
-      devices <- deviceRegistry.listNamespace(namespace)
+      devices <- deviceRegistry.listNamespace()
       filtersForPkg <- db.run(PackageFilterRepository.listFiltersForPackage(namespace, pkgId))
       vf <- filterDevices(namespace,
                           devices.map(d => (d.uuid, d.deviceId)).toMap,

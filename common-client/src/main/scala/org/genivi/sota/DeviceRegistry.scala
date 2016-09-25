@@ -18,12 +18,12 @@ trait DeviceRegistry {
 
   // TODO: Needs namespace
   def searchDevice
-    (ns: Namespace, re: String Refined Regex)
+    (re: String Refined Regex)
     (implicit ec: ExecutionContext): Future[Seq[Device]]
 
-  def listNamespace(ns: Namespace)
+  def listNamespace()
   (implicit ec: ExecutionContext): Future[Seq[Device]] =
-    searchDevice(ns, Refined.unsafeApply(".*"))
+    searchDevice(Refined.unsafeApply(".*"))
 
   def createDevice
   (device: DeviceT)

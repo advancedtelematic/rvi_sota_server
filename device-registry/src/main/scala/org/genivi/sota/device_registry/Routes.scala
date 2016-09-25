@@ -42,7 +42,15 @@ class Routes(namespaceExtractor: Directive1[Namespace],
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
-  val extractUuid: Directive1[Uuid] = refined[Uuid.Valid](Slash ~ Segment).map(Uuid(_))
+  def extractUuid(ns: Namespace): Directive1[Uuid] =
+    refined[Uuid.Valid](Slash ~ Segment).map(Uuid(_)).flatMap { id =>
+      extractExecutionContext.flatMap { implicit ec =>
+        val f = db.run(DeviceRepository.exists(ns, id))
+
+        onSuccess(f).flatMap{ _ => provide(id) }
+      }
+    }
+
   val extractDeviceId: Directive1[DeviceId] = parameter('deviceId.as[String]).map(DeviceId)
   val extractGroupName: Directive1[GroupInfo.Name] =
     refined[GroupInfo.ValidName](Slash ~ Segment)
@@ -101,12 +109,12 @@ class Routes(namespaceExtractor: Directive1[Namespace],
   def fetchDevice(uuid: Uuid): Route =
     complete(db.run(DeviceRepository.findByUuid(uuid)))
 
-  def updateDevice(ns: Namespace, uuid: Uuid, device: DeviceT): Route =
-    complete(db.run(DeviceRepository.update(ns, uuid, device)))
+  def updateDevice(uuid: Uuid, device: DeviceT): Route =
+    complete(db.run(DeviceRepository.update(uuid, device)))
 
   def deleteDevice(ns: Namespace, uuid: Uuid): Route = {
     val f = db
-      .run(DeviceRepository.delete(ns, uuid))
+      .run(DeviceRepository.delete(uuid))
       .andThen {
         case scala.util.Success(_) =>
           messageBus.publish(DeviceDeleted(ns, uuid))
@@ -121,52 +129,46 @@ class Routes(namespaceExtractor: Directive1[Namespace],
 
   def api: Route =
     ErrorHandler.handleErrors {
-      pathPrefix("devices") {
-        namespaceExtractor { ns =>
-          (get & path("group_info") & pathEnd) {
-            listGroups(ns)
-          } ~
-          (extractGroupName & path("group_info") & pathEnd) { groupName =>
-             {
-              get {
-                fetchGroupInfo(groupName, ns)
-              } ~
-              post {
-                entity(as[Json]) { body => createGroupInfo(groupName, ns, body) }
-              } ~
-              put {
-                entity(as[Json]) { body => updateGroupInfo(groupName, ns, body) }
-              } ~
-              delete {
-                deleteGroupInfo(groupName, ns)
-              }
+      (pathPrefix("devices") & namespaceExtractor) { ns =>
+        (get & path("group_info") & pathEnd) {
+          listGroups(ns)
+        } ~
+        (extractGroupName & path("group_info") & pathEnd) { groupName =>
+           {
+            get {
+              fetchGroupInfo(groupName, ns)
+            } ~
+            post {
+              entity(as[Json]) { body => createGroupInfo(groupName, ns, body) }
+            } ~
+            put {
+              entity(as[Json]) { body => updateGroupInfo(groupName, ns, body) }
+            } ~
+            delete {
+              deleteGroupInfo(groupName, ns)
             }
-          } ~
-          (post & entity(as[DeviceT]) & pathEndOrSingleSlash) { device => createDevice(ns, device) } ~
-          (extractUuid & put & entity(as[DeviceT]) & pathEnd) { (uuid, device) =>
-            updateDevice(ns, uuid, device)
-          } ~
-          (extractUuid & delete & pathEnd) { uuid =>
-            deleteDevice(ns, uuid)
           }
         } ~
-        (extractUuid & post & path("ping")) { uuid =>
-          updateLastSeen(uuid)
-        } ~
-        (extractUuid & get & path("system_info") & pathEnd) { uuid =>
-          fetchSystemInfo(uuid)
-        } ~
-        (extractUuid & post & path("system_info") & pathEnd) { uuid =>
-          entity(as[Json]) {body => createSystemInfo(uuid, body)}
-        } ~
-        (extractUuid & put & path("system_info") & pathEnd) { uuid =>
-          entity(as[Json]) {body => updateSystemInfo(uuid, body)}
-        } ~
-        (extractUuid & get & pathEnd) { uuid =>
-          fetchDevice(uuid)
-        } ~
-        (get & pathEnd & parameter('namespace.as[Namespace])) { ns =>
-          searchDevice(ns)
+        (post & entity(as[DeviceT]) & pathEndOrSingleSlash) { device => createDevice(ns, device) } ~
+        (get & pathEnd) { searchDevice(ns) } ~
+        extractUuid(ns) { uuid =>
+          (put & entity(as[DeviceT]) & pathEnd) { device =>
+            updateDevice(uuid, device)
+          } ~
+          (delete & pathEnd) {
+            deleteDevice(ns, uuid)
+          } ~
+          (post & path("ping")) {
+            updateLastSeen(uuid)
+          } ~
+          (path("system_info") & pathEnd) {
+            get { fetchSystemInfo(uuid) } ~
+            post{ entity(as[Json]) {body => createSystemInfo(uuid, body)} } ~
+            put { entity(as[Json]) {body => updateSystemInfo(uuid, body)} }
+          } ~
+          (get & pathEnd) {
+            fetchDevice(uuid)
+          }
         }
       }
     }

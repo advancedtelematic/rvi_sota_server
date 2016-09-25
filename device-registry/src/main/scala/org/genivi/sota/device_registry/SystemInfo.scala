@@ -13,12 +13,13 @@ import org.genivi.sota.data.Device
 import org.genivi.sota.data.Uuid
 import org.genivi.sota.device_registry.common.{Errors, SlickJsonHelper}
 import slick.driver.MySQLDriver.api._
-import org.genivi.sota.db.SlickExtensions._
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
 
 object SystemInfo extends SlickJsonHelper {
+  import org.genivi.sota.db.SlickExtensions._
+  import org.genivi.sota.db.Operators._
 
   type SystemInfoType = Json
   case class SystemInfo(uuid: Uuid, systemInfo: SystemInfoType)
@@ -64,30 +65,20 @@ object SystemInfo extends SlickJsonHelper {
       .flatMap(_.
         fold[DBIO[SystemInfo]](DBIO.failed(Errors.MissingSystemInfo))(DBIO.successful))
 
-  def findByUuid(uuid: Uuid)(implicit ec: ExecutionContext): DBIO[SystemInfoType] = {
-    import org.genivi.sota.db.Operators._
+  def findByUuid(uuid: Uuid)(implicit ec: ExecutionContext): DBIO[SystemInfoType] =
     systemInfos
       .filter(_.uuid === uuid)
       .result
       .failIfNotSingle(Errors.MissingSystemInfo)
       .map(p => p.systemInfo)
-  }
 
-  def create(uuid: Uuid, data: SystemInfoType)(implicit ec: ExecutionContext): DBIO[Unit] = for {
-    _ <- DeviceRepository.findByUuid(uuid) // check that the device exists
-    _ <- exists(uuid).asTry.flatMap {
-      case Success(_) => DBIO.failed(Errors.ConflictingSystemInfo)
-      case Failure(_) => DBIO.successful(())
-    }
-    newData = addUniqueIdsSI(data)
-    _ <- systemInfos += SystemInfo(uuid,newData)
-  } yield ()
+  def create(uuid: Uuid, data: SystemInfoType)(implicit ec: ExecutionContext): DBIO[Unit] =
+    (systemInfos += SystemInfo(uuid,addUniqueIdsSI(data)))
+      .handleIntegrityErrors(Errors.ConflictingSystemInfo)
+      .map(_ => ())
 
-  def update(uuid: Uuid, data: SystemInfoType)(implicit ec: ExecutionContext): DBIO[Unit] = for {
-    _ <- DeviceRepository.findByUuid(uuid) // check that the device exists
-    newData = addUniqueIdsSI(data)
-    _ <- systemInfos.insertOrUpdate(SystemInfo(uuid, newData))
-  } yield ()
+  def update(uuid: Uuid, data: SystemInfoType)(implicit ec: ExecutionContext): DBIO[Unit] =
+    systemInfos.insertOrUpdate(SystemInfo(uuid,addUniqueIdsSI(data))).map(_ => ())
 
   def delete(uuid: Uuid)(implicit ec: ExecutionContext): DBIO[Int] =
     systemInfos.filter(_.uuid === uuid).delete

@@ -75,7 +75,7 @@ class UpdateRequestsResource(db: Database, resolver: ExternalResolverClient, upd
     import org.genivi.sota.rest.ResponseConversions._
 
     clientUpdateRequest(ns) { case (creq: ClientUpdateRequest, req: UpdateRequest) =>
-      val resultF = updateService.queueUpdate(ns, req, pkg => resolver.resolve(ns, pkg.id))
+      val resultF = updateService.queueUpdate(ns, req, pkg => resolver.resolve(pkg.id))
       complete(resultF.map (_ => (StatusCodes.Created, req.toResponse(creq.packageId))))
     }
   }

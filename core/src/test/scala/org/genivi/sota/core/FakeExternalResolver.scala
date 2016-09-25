@@ -31,7 +31,7 @@ class FakeExternalResolver()(implicit system: ActorSystem, mat: ActorMaterialize
     Future.successful(())
   }
 
-  override def resolve(namespace: Namespace, packageId: PackageId): Future[Map[Uuid, Set[PackageId]]] = {
+  override def resolve(packageId: PackageId): Future[Map[Uuid, Set[PackageId]]] = {
     Future.successful(Map.empty)
   }
 

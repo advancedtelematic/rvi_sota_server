@@ -60,11 +60,11 @@ class DevicesResource(db: Database, client: ConnectivityClient,
   /**
     * An ota client GET a Seq of [[Device]] from regex/status search.
     */
-  def search(ns: Namespace): Route = {
+  def search(): Route = {
     parameters(('status.?(false), 'regex.as[RefinedRegx].?)) {
       (includeStatus: Boolean, reqRegex: Option[RefinedRegx]) =>
         val regex = reqRegex.getOrElse(Refined.unsafeApply(".*")) // TODO optimize or forbid
-        val devices = deviceRegistry.searchDevice(ns, regex)
+        val devices = deviceRegistry.searchDevice(regex)
 
         if (includeStatus) {
           val f = DeviceSearch.fetchDeviceStatus(devices)
@@ -108,7 +108,7 @@ class DevicesResource(db: Database, client: ConnectivityClient,
   }
 
   val route =
-    (pathPrefix("devices") & namespaceExtractor) { ns =>
-      (pathEnd & get) { search(ns) }
+    pathPrefix("devices") {
+      (pathEnd & get) { search() }
     }
 }

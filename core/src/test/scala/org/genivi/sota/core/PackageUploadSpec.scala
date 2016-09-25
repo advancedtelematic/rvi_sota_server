@@ -52,7 +52,7 @@ class PackageUploadSpec extends PropSpec
     val resolver = new ExternalResolverClient {
       override def putPackage(namespace: Namespace, packageId: PackageId, description: Option[String], vendor: Option[String]): Future[Unit] = resolverResult
 
-      override def resolve(namespace: Namespace, packageId: PackageId): Future[Map[Uuid, Set[PackageId]]] = ???
+      override def resolve(packageId: PackageId): Future[Map[Uuid, Set[PackageId]]] = ???
 
       override def setInstalledPackages(device: Uuid, json: io.circe.Json) : Future[Unit] = ???
 

@@ -36,7 +36,7 @@ class FakeDeviceRegistry(namespace: Namespace)
   private val systemInfo = new ConcurrentHashMap[Uuid, Json]()
 
   override def searchDevice
-  (ns: Namespace, re: String Refined Regex)
+  (re: String Refined Regex)
   (implicit ec: ExecutionContext): Future[Seq[Device]] = {
     FastFuture.successful(
       devices

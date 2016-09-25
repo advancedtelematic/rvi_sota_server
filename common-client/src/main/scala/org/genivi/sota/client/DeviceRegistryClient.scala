@@ -39,10 +39,10 @@ class DeviceRegistryClient(baseUri: Uri, devicesUri: Uri)
 
   private val http = Http()
 
-  override def searchDevice(ns: Namespace, re: String Refined Regex)
+  override def searchDevice(re: String Refined Regex)
                            (implicit ec: ExecutionContext): Future[Seq[Device]] =
     execHttp[Seq[Device]](HttpRequest(uri = baseUri.withPath(devicesUri.path)
-      .withQuery(Query("regex" -> re.get, "namespace" -> ns.get))))
+      .withQuery(Query("regex" -> re.get))))
       .recover { case t =>
         log.error(t, "Could not contact device registry")
         Seq.empty[Device]

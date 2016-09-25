@@ -18,12 +18,7 @@ produces:
 paths:
   /devices:
     get:
-      description: 'Get a list of all the devices in a particular namespace in the device registry.'
-      parameters:
-      - name: namespace
-        in: query
-        required: true
-        type: string
+      description: 'Get a list of all the devices in the current namespace in the device registry.'
       responses:
         200:
           description: OK

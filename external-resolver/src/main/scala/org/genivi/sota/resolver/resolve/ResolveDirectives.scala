@@ -46,8 +46,8 @@ class ResolveDirectives(namespaceExtractor: Directive1[Namespace],
     (get &
       encodeResponse &
       pathPrefix("resolve") &
-      parameter('namespace.as[Namespace]) & refinedPackageIdParams) { (ns, id) =>
-      resolvePackage(ns, id)
+      namespaceExtractor & refinedPackageIdParams) { (ns, id) =>
+        resolvePackage(ns, id)
     }
   }
 }
