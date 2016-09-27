@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directive1, Directives, Route}
 import io.circe.Json
 import io.circe.generic.auto._
+import org.genivi.sota.data.GroupInfo.Name
 import org.genivi.sota.data.Namespace
 import org.genivi.sota.marshalling.RefinedMarshallingSupport._
 import org.genivi.sota.device_registry.common.CreateGroupRequest
@@ -38,10 +39,17 @@ class GroupsResource(namespaceExtractor: Directive1[Namespace])
     }
   }
 
+  def getDevicesInGroup(groupName: Name, namespace: Namespace): Route = {
+    complete(db.run(GroupMember.listDevicesInGroup(groupName, namespace)))
+  }
+
   val route: Route =
     (pathPrefix("device_groups") & namespaceExtractor) { ns =>
       (post & pathPrefix("from_attributes") & pathEnd) {
         entity(as[CreateGroupRequest]) { groupInfo => createGroupFromDevices(groupInfo, ns) }
+      } ~
+      (get & pathEnd & parameter('groupName.as[Name])) { groupName =>
+        getDevicesInGroup(groupName, ns)
       }
     }
 

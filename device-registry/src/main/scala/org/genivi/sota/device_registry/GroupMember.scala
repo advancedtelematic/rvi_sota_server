@@ -40,4 +40,10 @@ object GroupMember {
     groupMembers ++= Seq(GroupMember(groupInfo.groupName, namespace, groupInfo.device1),
                          GroupMember(groupInfo.groupName, namespace, groupInfo.device2))
 
+  def listDevicesInGroup(groupName: Name, namespace: Namespace)(implicit ec: ExecutionContext): DBIO[Seq[Uuid]] =
+    groupMembers
+      .filter(r => r.namespace === namespace && r.groupName === groupName)
+      .map(r => r.deviceUuid)
+      .result
+
 }
