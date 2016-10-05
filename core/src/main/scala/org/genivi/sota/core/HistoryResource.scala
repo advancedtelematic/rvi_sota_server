@@ -15,7 +15,6 @@ import org.genivi.sota.data.{Namespace, Uuid}
 import org.genivi.sota.marshalling.CirceMarshallingSupport
 import org.genivi.sota.marshalling.RefinedMarshallingSupport._
 import slick.driver.MySQLDriver.api._
-import org.genivi.sota.http.UuidDirectives.allowExtractor
 
 import scala.concurrent.Future
 
@@ -26,6 +25,7 @@ class HistoryResource(namespaceExtractor: Directive1[Namespace])
   import CirceMarshallingSupport._
   import org.genivi.sota.rest.ResponseConversions._
   import org.genivi.sota.core.data.ClientInstallHistory._
+  import WebService.allowExtractor
   import system.dispatcher
 
   /**
