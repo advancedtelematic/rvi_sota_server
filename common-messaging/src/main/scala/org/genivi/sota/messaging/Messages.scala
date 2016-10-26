@@ -46,6 +46,8 @@ object Messages {
   final case class UpdateSpec(namespace: Namespace, device: Uuid, packageUuid: UUID,
                               status: String) extends BusMessage
 
+  final case class InstalledPackagesChanged(namespace: Namespace, device: Uuid) extends BusMessage
+
   implicit class StreamNameOp[T <: Class[_]](v: T) {
     def streamName: String = {
       v.getSimpleName.filterNot(c => List('$').contains(c))
@@ -112,5 +114,12 @@ object Messages {
 
     override implicit val encoder: Encoder[PackageBlacklisted] = deriveEncoder
     override implicit val decoder: Decoder[PackageBlacklisted] = deriveDecoder
+  }
+
+  implicit val installedPackagesChangedLike = new MessageLike[InstalledPackagesChanged]() {
+    override def id(v: InstalledPackagesChanged): String = v.namespace.get
+
+    override implicit val encoder: Encoder[InstalledPackagesChanged] = deriveEncoder
+    override implicit val decoder: Decoder[InstalledPackagesChanged] = deriveDecoder
   }
 }

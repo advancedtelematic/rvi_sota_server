@@ -12,17 +12,19 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Regex
 import io.circe.generic.auto._
 import org.genivi.sota.common.DeviceRegistry
-import org.genivi.sota.data.Namespace._
-import org.genivi.sota.data.{Device, Namespace, PackageId, Uuid}
+import org.genivi.sota.data.{Namespace, PackageId, Uuid}
 import org.genivi.sota.http.ErrorHandler
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
 import org.genivi.sota.marshalling.RefinedMarshallingSupport._
+import org.genivi.sota.messaging.MessageBusPublisher
+import org.genivi.sota.messaging.Messages.InstalledPackagesChanged
 import org.genivi.sota.resolver.common.Errors
 import org.genivi.sota.resolver.common.InstalledSoftware
 import org.genivi.sota.resolver.common.RefinementDirectives.{refinedPackageId, refinedPartNumber}
 import org.genivi.sota.resolver.components.Component
-import org.genivi.sota.resolver.db.{DeviceRepository, ForeignPackages, Package}
+import org.genivi.sota.resolver.db.{DeviceRepository, ForeignPackages}
 import org.genivi.sota.rest.Validation._
+
 import scala.concurrent.{ExecutionContext, Future}
 import slick.driver.MySQLDriver.api._
 
@@ -33,6 +35,7 @@ import slick.driver.MySQLDriver.api._
  * @see {@linktourl http://advancedtelematic.github.io/rvi_sota_server/dev/api.html}
  */
 class DeviceDirectives(namespaceExtractor: Directive1[Namespace],
+                       messageBusPublisher: MessageBusPublisher,
                        deviceRegistry: DeviceRegistry)
                       (implicit system: ActorSystem,
                         db: Database,
@@ -83,6 +86,7 @@ class DeviceDirectives(namespaceExtractor: Directive1[Namespace],
         for {
           deviceData <- deviceRegistry.fetchDevice(device)
           _ <- updateSoftwareOnDb(deviceData.namespace, installedSoftware)
+          _ <- messageBusPublisher.publish(InstalledPackagesChanged(deviceData.namespace, deviceData.uuid))
         } yield ()
       }
 

@@ -18,6 +18,7 @@ import Device._
 import cats.syntax.show._
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
 import org.genivi.sota.marshalling.RefinedMarshallingSupport._
+import org.genivi.sota.messaging.MessageBusPublisher
 
 trait ResourceSpec extends
   LongRequestTimeout
@@ -39,8 +40,9 @@ trait ResourceSpec extends
   import akka.http.scaladsl.server.Directives._
 
   // Route
-  lazy implicit val route: Route = new Routing(NamespaceDirectives.defaultNamespaceExtractor,
-    deviceRegistry).route ~ new FakeDeviceRegistryRoutes(deviceRegistry).route
+  lazy implicit val route: Route =
+    new Routing(NamespaceDirectives.defaultNamespaceExtractor, MessageBusPublisher.ignore, deviceRegistry).route ~
+    new FakeDeviceRegistryRoutes(deviceRegistry).route
 }
 
 /**
