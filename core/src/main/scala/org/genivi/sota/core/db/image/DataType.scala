@@ -23,7 +23,7 @@ object DataType {
   case class Image(namespace: Namespace,
                    id: ImageId,
                    commit: Commit,
-                   ref: RefName,
+                   imageRef: RefName,
                    description: String,
                    pullUri: PullUri,
                    createdAt: Instant,

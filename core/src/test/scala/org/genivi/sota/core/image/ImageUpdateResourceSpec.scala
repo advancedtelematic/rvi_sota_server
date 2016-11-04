@@ -95,7 +95,7 @@ class ImageUpdateResourceSpec extends FunSuite
 
       queue.map(_.imageId) should contain(img.id)
       queue.map(_.commit) should contain(commit)
-      queue.map(_.ref) should contain(refName)
+      queue.map(_.imageRef) should contain(refName)
     }
   }
 }

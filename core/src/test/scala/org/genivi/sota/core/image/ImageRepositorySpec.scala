@@ -29,8 +29,8 @@ class ImageRepositorySpec extends FunSuite
     val image = imageGenerator.generate
 
     val f = for {
-      inserted <- imageRepository.persist(image.namespace, image.commit, image.ref, image.description, image.pullUri)
-      updated <- imageRepository.persist(image.namespace, image.commit, image.ref, "Other description", image.pullUri)
+      inserted <- imageRepository.persist(image.namespace, image.commit, image.imageRef, image.description, image.pullUri)
+      updated <- imageRepository.persist(image.namespace, image.commit, image.imageRef, "Other description", image.pullUri)
     } yield (inserted, updated)
 
     val (inserted, updated) = f.futureValue
@@ -43,8 +43,8 @@ class ImageRepositorySpec extends FunSuite
     val image = imageGenerator.generate
 
     val f = for {
-      _ <- imageRepository.persist(image.namespace, image.commit, image.ref, image.description, image.pullUri)
-      _ <- imageRepository.persist(image.namespace, image.commit, image.ref, "Other description", image.pullUri)
+      _ <- imageRepository.persist(image.namespace, image.commit, image.imageRef, image.description, image.pullUri)
+      _ <- imageRepository.persist(image.namespace, image.commit, image.imageRef, "Other description", image.pullUri)
       images <- imageRepository.findAll(image.namespace)
     } yield images
 
@@ -59,9 +59,9 @@ class ImageRepositorySpec extends FunSuite
     val image = imageGenerator.generate
 
     val f = for {
-      inserted <- imageRepository.persist(image.namespace, image.commit, image.ref, image.description, image.pullUri)
+      inserted <- imageRepository.persist(image.namespace, image.commit, image.imageRef, image.description, image.pullUri)
       _ <- Future.successful(Thread.sleep(2000))
-      updated <- imageRepository.persist(image.namespace, image.commit, image.ref, "Other description", image.pullUri)
+      updated <- imageRepository.persist(image.namespace, image.commit, image.imageRef, "Other description", image.pullUri)
     } yield (inserted, updated)
 
     val (inserted, updated) = f.futureValue

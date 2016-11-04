@@ -27,14 +27,14 @@ protected class ImageRepository()(implicit ec: ExecutionContext, db: Database) {
   import org.genivi.sota.db.SlickAnyVal._
   import org.genivi.sota.refined.SlickRefined._
 
-  def persist(ns: Namespace, commit: Commit, ref: RefName, desc: String, pullUri: PullUri): Future[Image] = {
+  def persist(ns: Namespace, commit: Commit, imageRef: RefName, desc: String, pullUri: PullUri): Future[Image] = {
     val now = Instant.now()
-    val image = Image(ns, ImageId.generate(), commit, ref, desc, pullUri, now, now)
+    val image = Image(ns, ImageId.generate(), commit, imageRef, desc, pullUri, now, now)
 
     val io = images
       .insertOrUpdateWithKey(image,
-        _.filter(_.namespace === ns).filter(_.commit === commit).filter(_.ref === ref),
-        _.copy(commit = commit, ref = ref,
+        _.filter(_.namespace === ns).filter(_.commit === commit).filter(_.imageRef === imageRef),
+        _.copy(commit = commit, imageRef = imageRef,
           description = desc, pullUri = pullUri, updatedAt = now)
       )
 

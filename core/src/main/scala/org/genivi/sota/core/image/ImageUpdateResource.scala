@@ -23,7 +23,7 @@ object ImageUpdateResource {
   case class PendingImageUpdate(id: ImageUpdateId,
                                 imageId: ImageId,
                                 commit: Commit,
-                                ref: RefName,
+                                imageRef: RefName,
                                 description: String,
                                 pullUri: PullUri)
 
@@ -33,7 +33,7 @@ object ImageUpdateResource {
         imageUpdate.id,
         image.id,
         image.commit,
-        image.ref,
+        image.imageRef,
         image.description,
         image.pullUri
       )

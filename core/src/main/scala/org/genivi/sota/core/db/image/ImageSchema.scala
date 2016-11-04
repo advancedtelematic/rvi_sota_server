@@ -25,7 +25,7 @@ object ImageSchema {
     def namespace = column[Namespace]("namespace")
     def id = column[ImageId]("uuid")
     def commit = column[Commit]("commit")
-    def ref = column[RefName]("ref")
+    def imageRef = column[RefName]("ref")
     def description = column[String]("description")
     def pullUrl = column[PullUri]("pull_url")
     def createdAt = column[Instant]("created_at")
@@ -33,7 +33,7 @@ object ImageSchema {
 
     def pk = primaryKey("pk_image", id)
 
-    def * = (namespace, id, commit, ref, description, pullUrl, createdAt, updatedAt) <> ((Image.apply _).tupled, Image.unapply)
+    def * = (namespace, id, commit, imageRef, description, pullUrl, createdAt, updatedAt) <> ((Image.apply _).tupled, Image.unapply)
   }
 
   protected[image] val images = TableQuery[ImageTable]
