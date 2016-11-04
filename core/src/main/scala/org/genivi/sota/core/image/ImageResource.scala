@@ -16,7 +16,7 @@ import slick.driver.MySQLDriver.api._
 import scala.concurrent.ExecutionContext
 
 object ImageResource {
-  case class ImageRequest(commit: Commit, ref: RefName, description: String, pullUri: PullUri)
+  case class ImageRequest(commit: Commit, imageRef: RefName, description: String, pullUri: PullUri)
 }
 
 class ImageResource(namespace: Directive1[Namespace])(implicit db: Database, ec: ExecutionContext)
@@ -28,7 +28,7 @@ class ImageResource(namespace: Directive1[Namespace])(implicit db: Database, ec:
     path("image") {
       post {
         entity(as[ImageRequest]) { img =>
-          complete(imageRepository.persist(ns, img.commit, img.ref, img.description, img.pullUri))
+          complete(imageRepository.persist(ns, img.commit, img.imageRef, img.description, img.pullUri))
         }
       } ~
       get {

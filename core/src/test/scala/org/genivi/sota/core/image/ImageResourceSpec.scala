@@ -54,7 +54,7 @@ class ImageResourceSpec extends FunSuite
   test("GET Retrieves a namespace image") {
     val imgG = imageGenerator.generate
 
-    imageRepository.persist(imgG.namespace, imgG.commit, imgG.ref, imgG.description, imgG.pullUri).futureValue
+    imageRepository.persist(imgG.namespace, imgG.commit, imgG.imageRef, imgG.description, imgG.pullUri).futureValue
 
     Get("/image") ~> route ~> check {
       status shouldBe StatusCodes.OK

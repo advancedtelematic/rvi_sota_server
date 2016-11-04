@@ -29,7 +29,7 @@ class ImageUpdateRepositorySpec extends FunSuite
     val (image, imageUpdate) = imageUpdateGenerator.generate
 
     val f = for {
-      image <- imageRepository.persist(image.namespace, image.commit, image.ref, image.description, image.pullUri)
+      image <- imageRepository.persist(image.namespace, image.commit, image.imageRef, image.description, image.pullUri)
       inserted <- imageUpdateRepository.persist(imageUpdate.namespace, image.id, imageUpdate.device)
       updated <- imageUpdateRepository.persist(imageUpdate.namespace, image.id, imageUpdate.device)
     } yield (inserted, updated)
@@ -43,7 +43,7 @@ class ImageUpdateRepositorySpec extends FunSuite
     val (image, imageUpdate) = imageUpdateGenerator.generate
 
     val f = for {
-      image <- imageRepository.persist(image.namespace, image.commit, image.ref, image.description, image.pullUri)
+      image <- imageRepository.persist(image.namespace, image.commit, image.imageRef, image.description, image.pullUri)
       inserted <- imageUpdateRepository.persist(imageUpdate.namespace, image.id, imageUpdate.device)
       updated <- imageUpdateRepository.persist(imageUpdate.namespace, image.id, imageUpdate.device)
     } yield (inserted, updated)
