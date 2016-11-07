@@ -678,6 +678,24 @@ paths:
       responses:
         200:
           description: OK
+  /image:
+    get:
+      description: Returns a list of all images stored for in the user's namespace
+      responses:
+        200:
+          description:
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Image'
+    post:
+      parameters:
+        - name: body
+          in: body
+          description: The image request
+          required: true
+          schema:
+            $ref: '#/definitions/ImageRequest'
 
 definitions:
   uuid:
@@ -804,6 +822,7 @@ definitions:
           - Pending
           - Canceled
           - Failed
+          - Finished
   installReport:
     type: object
   operationResult:
@@ -956,3 +975,57 @@ definitions:
     description: |
       This is a free-form JSON blob describing the hardware components of the client system. 
       The format expected by the server is the output of `lshw -json -sanitize`.
+  Image:
+    type: object
+    properties:
+      namespace:
+        $ref: '#/definitions/namespace'
+      id:
+        $ref: '#/definitions/uuid'
+      commit:
+        type: string
+        description: A SHA-256 hash representing the commit of this image
+      ref:
+        type: string
+        description: the name of the reference for this commit
+      description:
+        type: string
+      pullUri:
+        type: string
+        description: The uri of the ostree instance
+      createdAt:
+        type: string
+        format: dateTime
+        description: The date the commit was made
+      updatedAt:
+        type: string
+        format: dateTime
+        description: The date when this reference was last modified
+  ImageUpdate:
+    type: object
+    properties:
+      namespace:
+        $ref: '#/definitions/namespace'
+      id:
+        $ref: '#/definitions/uuid'
+      imageId:
+        $ref: '#/definitions/uuid'
+      device:
+        $ref: '#/definitions/uuid'
+      status:
+        type: string
+        enum:
+          - InFlight
+          - Pending
+          - Canceled
+          - Failed
+          - Finished
+      createdAt:
+        type: string
+        format: dateTime
+        description: The date the commit was made
+      updatedAt:
+        type: string
+        format: dateTime
+        description: The date when this reference was last modified
+
