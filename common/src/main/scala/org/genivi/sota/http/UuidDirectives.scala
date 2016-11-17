@@ -11,7 +11,7 @@ object UuidDirectives {
   val extractUuid: Directive1[Uuid] = refined[Uuid.Valid](Slash ~ Segment).map(Uuid(_))
   val extractRefinedUuid = refined[Uuid.Valid](Slash ~ Segment)
 
-  def allowExtractor[T](namespaceExtractor: Directive1[Namespace],
+  def allowExtractor[T](namespaceExtractor: Directive1[AuthedNamespaceScope],
                         extractor: Directive1[T],
                         allowFn: (T => Future[Namespace])): Directive1[T] = {
     (extractor & namespaceExtractor).tflatMap { case (value, ns) =>

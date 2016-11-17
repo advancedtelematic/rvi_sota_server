@@ -34,6 +34,7 @@ import scala.language.implicitConversions
 import slick.driver.MySQLDriver.api.Database
 import cats.syntax.show.toShowOps
 import org.genivi.sota.http.AuthDirectives.AuthScope
+import org.genivi.sota.http.AuthedNamespaceScope
 import org.genivi.sota.messaging.MessageBusPublisher
 import org.genivi.sota.core.data.client.PendingUpdateRequest._
 import UpdateSpec._
@@ -44,7 +45,7 @@ import scala.concurrent.Future
 class DeviceUpdatesResource(db: Database,
                             resolverClient: ExternalResolverClient,
                             deviceRegistry: DeviceRegistry,
-                            authNamespace: Directive1[Namespace],
+                            authNamespace: Directive1[AuthedNamespaceScope],
                             authDirective: AuthScope => Directive0,
                             messageBus: MessageBusPublisher)
                            (implicit system: ActorSystem, mat: ActorMaterializer,
@@ -237,7 +238,7 @@ class DeviceUpdatesResource(db: Database,
 
   private[this] def failNamespaceRejection(msg: String): Rejection = AuthorizationFailedRejection
 
-  def authDeviceNamespace(deviceId: Uuid) : Directive1[Namespace] =
+  def authDeviceNamespace(deviceId: Uuid) : Directive1[AuthedNamespaceScope] =
     authNamespace flatMap { ns =>
       import scala.util.{Success, Failure}
       val f = deviceRegistry.fetchDevice(ns, deviceId)

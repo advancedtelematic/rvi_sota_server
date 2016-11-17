@@ -27,7 +27,7 @@ import scala.util.Try
  * Base API routing class.
  * @see {@linktourl http://advancedtelematic.github.io/rvi_sota_server/dev/api.html}
  */
-class DeviceRegistryRoutes(namespaceExtractor: Directive1[Namespace], authDirective: AuthScope => Directive0,
+class DeviceRegistryRoutes(namespaceExtractor: Directive1[AuthedNamespaceScope], authDirective: AuthScope => Directive0,
                            deviceNamespaceAuthorizer: Directive1[Uuid], messageBus: MessageBusPublisher)
                           (implicit db: Database, system: ActorSystem, mat: ActorMaterializer, exec: ExecutionContext)
     extends Directives {

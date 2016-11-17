@@ -15,6 +15,7 @@ import org.genivi.sota.common.DeviceRegistry
 import org.genivi.sota.data.Namespace
 import org.genivi.sota.db.BootMigrations
 import org.genivi.sota.http.AuthDirectives
+import org.genivi.sota.http.AuthedNamespaceScope
 import org.genivi.sota.http.LogDirectives._
 import org.genivi.sota.http.{HealthResource, NamespaceDirectives, TraceId}
 import org.genivi.sota.messaging.daemon.MessageBusListenerActor.Subscribe
@@ -37,7 +38,7 @@ import scala.util.Try
   *
   * @see {@linktourl http://advancedtelematic.github.io/rvi_sota_server/dev/api.html}
  */
-class Routing(namespaceDirective: Directive1[Namespace],
+class Routing(namespaceDirective: Directive1[AuthedNamespaceScope],
               authDirective: AuthDirectives.AuthScope => Directive0,
               deviceRegistry: DeviceRegistry)
   (implicit db: Database, system: ActorSystem, mat: ActorMaterializer, exec: ExecutionContext)

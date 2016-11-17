@@ -25,6 +25,8 @@ object AuthedNamespaceScope {
 
   val namespacePrefix = "namespace."
 
+  def apply(ns: Namespace) : AuthedNamespaceScope = AuthedNamespaceScope(ns, Scope(Set.empty), false)
+
   def apply(token: IdToken) : AuthedNamespaceScope = {
     AuthedNamespaceScope(Namespace(token.sub.underlying), Scope(Set.empty), true)
   }
@@ -47,41 +49,16 @@ object AuthedNamespaceScope {
   */
 trait NsFromToken[T] {
   def toNamespaceScope(token: T): AuthedNamespaceScope
-  def namespace(token: T): String
-  def accept(ns: Namespace, token: T): Boolean
 }
 
 object NsFromToken {
 
   implicit val NsFromIdToken = new NsFromToken[IdToken] {
-    override def namespace(token: IdToken): String = token.sub.underlying
-    override def accept(ns: Namespace, token: IdToken): Boolean = namespace(token) == ns.get
     override def toNamespaceScope(token: IdToken) = AuthedNamespaceScope(token)
   }
 
   implicit val NsFromJwt = new NsFromToken[JsonWebToken] {
     override def toNamespaceScope(token: JsonWebToken) = AuthedNamespaceScope(token)
-    def grantNs(token: JsonWebToken): Set[String] = {
-      val nsPrefix = "namespace."
-      token.scope.underlying.collect {
-        case x if x.startsWith(nsPrefix) => x.substring(nsPrefix.length)
-      }
-    }
-
-    override def namespace(token: JsonWebToken): String = {
-      val nsSet = grantNs(token)
-
-      if (nsSet.size == 1) {
-        nsSet.toVector(0)
-      } else {
-        token.subject.underlying
-      }
-    }
-
-    override def accept(ns: Namespace, token: JsonWebToken): Boolean = {
-      val nsSet = grantNs(token)
-      nsSet.contains(ns.get) || (nsSet.isEmpty && ns.get == token.subject.underlying)
-    }
   }
 
   def parseToken[T: NsFromToken](serializedToken: String)
@@ -113,7 +90,7 @@ object AuthNamespaceDirectives {
   private[this] def badNamespaceRejection(msg: String): Rejection = AuthorizationFailedRejection
 
   def authNamespace[T](ns0: Option[Namespace])
-                   (implicit nsFromToken: NsFromToken[T], decoder: Decoder[T]): Directive1[Namespace] =
+                   (implicit nsFromToken: NsFromToken[T], decoder: Decoder[T]): Directive1[AuthedNamespaceScope] =
     extractCredentials flatMap { creds =>
       val maybeNamespace = creds match {
         case Some(OAuth2BearerToken(serializedToken)) =>

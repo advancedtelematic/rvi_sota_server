@@ -15,6 +15,7 @@ import org.genivi.sota.common.DeviceRegistry
 import org.genivi.sota.data.{Namespace, PackageId, Uuid}
 import org.genivi.sota.device_registry.common.{Errors => DeviceRegistryErrors}
 import org.genivi.sota.http.AuthDirectives.AuthScope
+import org.genivi.sota.http.AuthedNamespaceScope
 import org.genivi.sota.http.ErrorHandler
 import org.genivi.sota.http.UuidDirectives.extractUuid
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
@@ -34,7 +35,7 @@ import scala.util.{Success, Failure}
  *
  * @see {@linktourl http://advancedtelematic.github.io/rvi_sota_server/dev/api.html}
  */
-class DeviceDirectives(namespaceExtractor: Directive1[Namespace],
+class DeviceDirectives(namespaceExtractor: Directive1[AuthedNamespaceScope],
                        authDirective: AuthScope => Directive0,
                        deviceRegistry: DeviceRegistry)
                       (implicit system: ActorSystem,

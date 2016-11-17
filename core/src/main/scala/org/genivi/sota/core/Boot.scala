@@ -55,13 +55,13 @@ trait RviBoot {
     new rvi.SotaServices(updateController, resolverClient, deviceRegistryClient).route
   }
 
-  def rviRoutes(db: Database, notifier: UpdateNotifier, namespaceDirective: Directive1[Namespace]): Route = {
+  def rviRoutes(db: Database, notifier: UpdateNotifier, namespaceDirective: Directive1[AuthedNamespaceScope]): Route = {
       new WebService(notifier, resolverClient,
         deviceRegistryClient, db, namespaceDirective, messageBusPublisher).route ~
       startSotaServices(db)
   }
 
-  def rviInteractionRoutes(db: Database, namespaceDirective: Directive1[Namespace]): Future[Route] = {
+  def rviInteractionRoutes(db: Database, namespaceDirective: Directive1[AuthedNamespaceScope]): Future[Route] = {
     SotaServices.register(settings.rviSotaUri) map { sotaServices =>
       rviRoutes(db, new RviUpdateNotifier(sotaServices), namespaceDirective)
     }
@@ -82,7 +82,7 @@ trait HttpBoot {
 
   def httpInteractionRoutes(db: Database,
                             tokenValidator: Directive0,
-                            namespaceDirective: Directive1[Namespace],
+                            namespaceDirective: Directive1[AuthedNamespaceScope],
                             authDirective: AuthScope => Directive0,
                             messageBus: MessageBusPublisher): Route = {
     val webService = new WebService(DefaultUpdateNotifier, resolverClient, deviceRegistryClient, db,
