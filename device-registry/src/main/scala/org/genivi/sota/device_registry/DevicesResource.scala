@@ -23,7 +23,6 @@ import org.genivi.sota.messaging.MessageBusPublisher
 import org.genivi.sota.messaging.MessageBusPublisher._
 import org.genivi.sota.messaging.Messages.{DeviceCreated, DeviceDeleted, DeviceSeen}
 import org.genivi.sota.rest.Validation._
-import org.genivi.sota.http.AuthDirectives.AuthScope
 import org.genivi.sota.http.AuthedNamespaceScope
 import org.genivi.sota.http.UuidDirectives.extractUuid
 import slick.driver.MySQLDriver.api._
@@ -31,7 +30,6 @@ import slick.driver.MySQLDriver.api._
 import scala.concurrent.ExecutionContext
 
 class DevicesResource(namespaceExtractor: Directive1[AuthedNamespaceScope],
-                      authDirective: (AuthedNamespaceScope, AuthScope, Boolean) => Directive0,
                       messageBus: MessageBusPublisher,
                       deviceNamespaceAuthorizer: Directive1[Uuid])
                      (implicit system: ActorSystem,

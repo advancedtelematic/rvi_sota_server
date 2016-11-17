@@ -14,7 +14,6 @@ import io.circe.generic.auto._
 import org.genivi.sota.common.DeviceRegistry
 import org.genivi.sota.data.{Namespace, PackageId, Uuid}
 import org.genivi.sota.device_registry.common.{Errors => DeviceRegistryErrors}
-import org.genivi.sota.http.AuthDirectives.AuthScope
 import org.genivi.sota.http.AuthedNamespaceScope
 import org.genivi.sota.http.ErrorHandler
 import org.genivi.sota.http.UuidDirectives.extractUuid
@@ -36,7 +35,6 @@ import scala.util.{Success, Failure}
  * @see {@linktourl http://advancedtelematic.github.io/rvi_sota_server/dev/api.html}
  */
 class DeviceDirectives(namespaceExtractor: Directive1[AuthedNamespaceScope],
-                       authDirective: (AuthedNamespaceScope, AuthScope, Boolean) => Directive0,
                        deviceRegistry: DeviceRegistry)
                       (implicit system: ActorSystem,
                         db: Database,
@@ -125,11 +123,13 @@ class DeviceDirectives(namespaceExtractor: Directive1[AuthedNamespaceScope],
     }
   }
 
-  def packagesApi: Route = namespaceExtractor { authedNs => extractUuid { device =>
-    (path("packages") & put & authDirective(authedNs, s"ota-core.{device.show}.write", false)) {
-      updateInstalledSoftware(device)
+  def packagesApi: Route = namespaceExtractor { authedNs =>
+    extractUuid { device =>
+      (path("packages") & put & authedNs.oauthScope(s"ota-core.{device.show}.write", false)) {
+        updateInstalledSoftware(device)
+      }
     }
-  }}
+  }
 
   def getComponents(ns: Namespace, device: Uuid): Route =
     complete(db.run(DeviceRepository.componentsOnDevice(ns, device)))

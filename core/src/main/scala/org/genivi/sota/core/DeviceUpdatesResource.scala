@@ -33,7 +33,6 @@ import org.genivi.sota.data.{Device, Namespace, PackageId, Uuid}
 import scala.language.implicitConversions
 import slick.driver.MySQLDriver.api.Database
 import cats.syntax.show.toShowOps
-import org.genivi.sota.http.AuthDirectives.AuthScope
 import org.genivi.sota.http.AuthedNamespaceScope
 import org.genivi.sota.http.NamespaceDirectives
 import org.genivi.sota.messaging.MessageBusPublisher
@@ -47,7 +46,6 @@ class DeviceUpdatesResource(db: Database,
                             resolverClient: ExternalResolverClient,
                             deviceRegistry: DeviceRegistry,
                             authNamespace: Directive1[AuthedNamespaceScope],
-                            authDirective: (AuthedNamespaceScope, AuthScope, Boolean) => Directive0,
                             messageBus: MessageBusPublisher)
                            (implicit system: ActorSystem, mat: ActorMaterializer,
                             connectivity: Connectivity = DefaultConnectivity) {

@@ -13,7 +13,6 @@ import org.genivi.sota.data.{Namespace, Uuid}
 import org.genivi.sota.device_registry.db._
 import org.genivi.sota.device_registry.common.Errors.MissingSystemInfo
 import org.genivi.sota.http.UuidDirectives.extractUuid
-import org.genivi.sota.http.AuthDirectives.AuthScope
 import org.genivi.sota.http.AuthedNamespaceScope
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
 import org.slf4j.LoggerFactory
@@ -22,7 +21,7 @@ import slick.driver.MySQLDriver.api._
 import scala.concurrent.{ExecutionContext, Future}
 
 class SystemInfoResource(authNamespace: Directive1[AuthedNamespaceScope],
-    authDirective: (AuthedNamespaceScope, AuthScope, Boolean) => Directive0, deviceNamespaceAuthorizer: Directive1[Uuid])
+    deviceNamespaceAuthorizer: Directive1[Uuid])
               (implicit db: Database,
                actorSystem: ActorSystem,
                ec: ExecutionContext) {
