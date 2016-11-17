@@ -14,13 +14,15 @@ import org.genivi.sota.device_registry.db._
 import org.genivi.sota.device_registry.common.Errors.MissingSystemInfo
 import org.genivi.sota.http.UuidDirectives.extractUuid
 import org.genivi.sota.http.AuthDirectives.AuthScope
+import org.genivi.sota.http.AuthedNamespaceScope
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
 import org.slf4j.LoggerFactory
 import slick.driver.MySQLDriver.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class SystemInfoResource(authDirective: AuthScope => Directive0, deviceNamespaceAuthorizer: Directive1[Uuid])
+class SystemInfoResource(authNamespace: Directive1[AuthedNamespaceScope],
+    authDirective: (AuthedNamespaceScope, AuthScope, Boolean) => Directive0, deviceNamespaceAuthorizer: Directive1[Uuid])
               (implicit db: Database,
                actorSystem: ActorSystem,
                ec: ExecutionContext) {
@@ -62,12 +64,13 @@ class SystemInfoResource(authDirective: AuthScope => Directive0, deviceNamespace
       }
     }
 
-  def mydeviceRoutes: Route =
+  def mydeviceRoutes: Route = authNamespace { authedNs =>
     (pathPrefix("mydevice") & extractUuid) { uuid =>
-      (put & path("system_info") & authDirective(s"ota-core.{uuid.show}.write")) {
+      (put & path("system_info") & authDirective(authedNs, s"ota-core.{uuid.show}.write", false)) {
         entity(as[Json]) { body => updateSystemInfo(uuid, body) }
       }
     }
+  }
 
   def route: Route = api ~ mydeviceRoutes
 }

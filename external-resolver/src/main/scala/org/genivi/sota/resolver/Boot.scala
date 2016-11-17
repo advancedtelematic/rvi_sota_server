@@ -39,7 +39,7 @@ import scala.util.Try
   * @see {@linktourl http://advancedtelematic.github.io/rvi_sota_server/dev/api.html}
  */
 class Routing(namespaceDirective: Directive1[AuthedNamespaceScope],
-              authDirective: AuthDirectives.AuthScope => Directive0,
+              authDirective: (AuthedNamespaceScope, AuthDirectives.AuthScope, Boolean) => Directive0,
               deviceRegistry: DeviceRegistry)
   (implicit db: Database, system: ActorSystem, mat: ActorMaterializer, exec: ExecutionContext)
  {

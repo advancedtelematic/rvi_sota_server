@@ -83,7 +83,7 @@ trait HttpBoot {
   def httpInteractionRoutes(db: Database,
                             tokenValidator: Directive0,
                             namespaceDirective: Directive1[AuthedNamespaceScope],
-                            authDirective: AuthScope => Directive0,
+                            authDirective: (AuthedNamespaceScope, AuthScope, Boolean) => Directive0,
                             messageBus: MessageBusPublisher): Route = {
     val webService = new WebService(DefaultUpdateNotifier, resolverClient, deviceRegistryClient, db,
       namespaceDirective, messageBusPublisher)

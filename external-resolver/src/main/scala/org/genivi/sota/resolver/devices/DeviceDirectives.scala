@@ -36,7 +36,7 @@ import scala.util.{Success, Failure}
  * @see {@linktourl http://advancedtelematic.github.io/rvi_sota_server/dev/api.html}
  */
 class DeviceDirectives(namespaceExtractor: Directive1[AuthedNamespaceScope],
-                       authDirective: AuthScope => Directive0,
+                       authDirective: (AuthedNamespaceScope, AuthScope, Boolean) => Directive0,
                        deviceRegistry: DeviceRegistry)
                       (implicit system: ActorSystem,
                         db: Database,
@@ -125,11 +125,11 @@ class DeviceDirectives(namespaceExtractor: Directive1[AuthedNamespaceScope],
     }
   }
 
-  def packagesApi: Route = extractUuid { device =>
-    (path("packages") & put & authDirective(s"ota-core.{device.show}.write")) {
+  def packagesApi: Route = namespaceExtractor { authedNs => extractUuid { device =>
+    (path("packages") & put & authDirective(authedNs, s"ota-core.{device.show}.write", false)) {
       updateInstalledSoftware(device)
     }
-  }
+  }}
 
   def getComponents(ns: Namespace, device: Uuid): Route =
     complete(db.run(DeviceRepository.componentsOnDevice(ns, device)))

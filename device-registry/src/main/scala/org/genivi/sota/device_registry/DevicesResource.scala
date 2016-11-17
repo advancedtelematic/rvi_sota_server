@@ -31,7 +31,7 @@ import slick.driver.MySQLDriver.api._
 import scala.concurrent.ExecutionContext
 
 class DevicesResource(namespaceExtractor: Directive1[AuthedNamespaceScope],
-                      authDirective: AuthScope => Directive0,
+                      authDirective: (AuthedNamespaceScope, AuthScope, Boolean) => Directive0,
                       messageBus: MessageBusPublisher,
                       deviceNamespaceAuthorizer: Directive1[Uuid])
                      (implicit system: ActorSystem,
@@ -124,15 +124,16 @@ class DevicesResource(namespaceExtractor: Directive1[AuthedNamespaceScope],
       }
     }
 
-  def mydeviceRoutes: Route =
+  def mydeviceRoutes: Route = namespaceExtractor { authedNs =>
     (pathPrefix("mydevice") & extractUuid) { uuid =>
-      (post & path("ping") & authDirective(s"ota-core.${uuid.show}.write")) {
+      (post & path("ping") & authDirective(authedNs, s"ota-core.${uuid.show}.write", false)) {
         updateLastSeen(uuid)
       } ~
-      (get & pathEnd & authDirective(s"ota-core.${uuid.show}.read")) {
+      (get & pathEnd & authDirective(authedNs, s"ota-core.${uuid.show}.read", true)) {
         fetchDevice(uuid)
       }
     }
+  }
 
   /**
    * Base API route for devices.
