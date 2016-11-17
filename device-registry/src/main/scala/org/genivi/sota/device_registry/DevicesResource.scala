@@ -127,7 +127,7 @@ class DevicesResource(namespaceExtractor: Directive1[AuthedNamespaceScope],
       (post & path("ping") & authedNs.oauthScope(s"ota-core.${uuid.show}.write")) {
         updateLastSeen(uuid)
       } ~
-      (get & pathEnd & authedNs.oauthScope(s"ota-core.${uuid.show}.read", true)) {
+      (get & pathEnd & authedNs.oauthScopeReadonly(s"ota-core.${uuid.show}.read")) {
         fetchDevice(uuid)
       }
     }

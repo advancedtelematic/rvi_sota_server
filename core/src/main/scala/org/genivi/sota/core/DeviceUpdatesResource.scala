@@ -254,16 +254,16 @@ class DeviceUpdatesResource(db: Database,
                               & extractUuid) { device =>
       get {
         pathEnd {
-          authedNs.oauthScope(s"ota-core.${device.show}.read", true) {
+          authedNs.oauthScopeReadonly(s"ota-core.${device.show}.read") {
             logDeviceSeen(device) { pendingPackages(device) }
           }
         } ~
-        (path("queued") & authedNs.oauthScope(s"ota-core.${device.show}.read", true)) {
+        (path("queued") & authedNs.oauthScopeReadonly(s"ota-core.${device.show}.read")) {
           // Backward compatible with sota_client v0.2.17
           logDeviceSeen(device) { pendingPackages(device) }
         } ~
         (extractRefinedUuid & path("download")) { updateId =>
-          authedNs.oauthScope(s"ota-core.${device.show}.read", true) {
+          authedNs.oauthScopeReadonly(s"ota-core.${device.show}.read") {
             downloadPackage(device, updateId)
           }
         } ~
@@ -334,7 +334,7 @@ class DeviceUpdatesResource(db: Database,
   val mydeviceRoutes = handleErrors { authNamespace { authedNs =>
     (pathPrefix("api" / "v1" / "mydevice") & extractUuid) { device =>
       pathPrefix("updates") {
-        (get & authedNs.oauthScope(s"ota-core.${device.show}.read", true)) {
+        (get & authedNs.oauthScopeReadonly(s"ota-core.${device.show}.read")) {
           pathEnd {
             logDeviceSeen(device) { pendingPackages(device) }
           } ~

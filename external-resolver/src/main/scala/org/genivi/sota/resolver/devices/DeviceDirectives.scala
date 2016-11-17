@@ -125,7 +125,7 @@ class DeviceDirectives(namespaceExtractor: Directive1[AuthedNamespaceScope],
 
   def packagesApi: Route = namespaceExtractor { authedNs =>
     extractUuid { device =>
-      (path("packages") & put & authedNs.oauthScope(s"ota-core.{device.show}.write", false)) {
+      (path("packages") & put & authedNs.oauthScope(s"ota-core.{device.show}.write")) {
         updateInstalledSoftware(device)
       }
     }

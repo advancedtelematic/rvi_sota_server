@@ -13,15 +13,20 @@ import eu.timepit.refined.refineV
 import io.circe.Decoder
 import org.genivi.sota.data.Namespace
 
-case class AuthedNamespaceScope(namespace: Namespace, scope: Scope, owned: Boolean = false) {
+case class AuthedNamespaceScope(namespace: Namespace, scope: Scope, owned: Boolean) {
   type ScopeItem = String
 
-  def hasScope(sc: ScopeItem, readonly: Boolean = false) : Boolean =
-    owned || scope.underlying.contains(sc) ||
-    (readonly && scope.underlying.contains(sc + ".readonly"))
+  def hasScope(sc: ScopeItem) : Boolean = owned || scope.underlying.contains(sc)
 
-  def oauthScope(scope: ScopeItem, readonly: Boolean = false): Directive0 = {
-    if (hasScope(scope, readonly)) pass
+  def hasScopeReadonly(sc: ScopeItem) : Boolean = hasScope(sc) || hasScope(sc + ".readonly")
+
+  def oauthScope(scope: ScopeItem): Directive0 = {
+    if (hasScope(scope)) pass
+    else reject(InvalidScopeRejection(scope), AuthorizationFailedRejection)
+  }
+
+  def oauthScopeReadonly(scope: ScopeItem): Directive0 = {
+    if (hasScopeReadonly(scope)) pass
     else reject(InvalidScopeRejection(scope), AuthorizationFailedRejection)
   }
 }
