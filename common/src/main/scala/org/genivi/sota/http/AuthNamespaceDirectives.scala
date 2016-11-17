@@ -20,8 +20,6 @@ case class AuthedNamespaceScope(namespace: Namespace, scope: Scope, owned: Boole
     owned || scope.underlying.contains(sc) ||
     (readonly && scope.underlying.contains(sc + ".readonly"))
 
-  def hasNamespace(ns: Namespace) = ns == namespace || hasScope(AuthedNamespaceScope.namespacePrefix + ns)
-
   def oauthScope(scope: ScopeItem, readonly: Boolean = false): Directive0 = {
     if (hasScope(scope, readonly)) pass
     else reject(InvalidScopeRejection(scope), AuthorizationFailedRejection)
@@ -106,7 +104,9 @@ object AuthNamespaceDirectives {
           NsFromToken.parseToken[T](serializedToken).flatMap{ token =>
             val authedNs = nsFromToken.toNamespaceScope(token)
             ns0 match {
-              case Some(ns) if authedNs.hasNamespace(ns) => Xor.right(authedNs)
+              case Some(ns) if ns == authedNs.namespace => Xor.right(authedNs)
+              case Some(ns) if authedNs.hasScope(AuthedNamespaceScope.namespacePrefix + ns) =>
+                Xor.right(AuthedNamespaceScope(ns, authedNs.scope, false))
               case Some(ns) => Xor.Left("The oauth token does not accept the given namespace")
               case None => Xor.right(authedNs)
             }
