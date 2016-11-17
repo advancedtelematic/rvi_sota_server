@@ -166,9 +166,9 @@ class PackagesResource(resolver: ExternalResolverClient, db : Database,
   val route = ErrorHandler.handleErrors {
     pathPrefix("packages") {
       (get & namespaceExtractor & pathEnd) { ns =>
-        // authDirective(ns, "packages", true) {
+        ns.oauthScope("packages", true) {
           searchPackage(ns)
-        // }
+        }
       } ~
       (namespaceExtractor & extractPackageId) { (ns, pid) =>
         path("info") {

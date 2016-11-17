@@ -1,8 +1,10 @@
 package org.genivi.sota.http
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import akka.http.scaladsl.server.{AuthorizationFailedRejection, Directive1, Directives, Rejection}
+import akka.http.scaladsl.server.{AuthorizationFailedRejection, Directive0, Directive1, Directives, Rejection}
+import akka.http.scaladsl.server.Directives._
 import cats.data.Xor
+import com.advancedtelematic.akka.http.jwt.InvalidScopeRejection
 import com.advancedtelematic.jws.CompactSerialization
 import com.advancedtelematic.jwt.{JsonWebToken, Scope, Subject}
 import io.circe.parser._
@@ -12,11 +14,18 @@ import io.circe.Decoder
 import org.genivi.sota.data.Namespace
 
 case class AuthedNamespaceScope(namespace: Namespace, scope: Scope, owned: Boolean = false) {
-  def hasScope(sc: String, readonly: Boolean = false) =
+  type ScopeItem = String
+
+  def hasScope(sc: ScopeItem, readonly: Boolean = false) : Boolean =
     owned || scope.underlying.contains(sc) ||
-   (readonly && scope.underlying.contains(sc + ".readonly"))
+    (readonly && scope.underlying.contains(sc + ".readonly"))
 
   def hasNamespace(ns: Namespace) = ns == namespace || hasScope(AuthedNamespaceScope.namespacePrefix + ns)
+
+  def oauthScope(scope: ScopeItem, readonly: Boolean = false): Directive0 = {
+    if (hasScope(scope, readonly)) pass
+    else reject(InvalidScopeRejection(scope), AuthorizationFailedRejection)
+  }
 }
 
 object AuthedNamespaceScope {
@@ -25,10 +34,10 @@ object AuthedNamespaceScope {
 
   val namespacePrefix = "namespace."
 
-  def apply(ns: Namespace) : AuthedNamespaceScope = AuthedNamespaceScope(ns, Scope(Set.empty), false)
+  def apply(ns: Namespace) : AuthedNamespaceScope = AuthedNamespaceScope(ns, Scope(Set.empty), true)
 
   def apply(token: IdToken) : AuthedNamespaceScope = {
-    AuthedNamespaceScope(Namespace(token.sub.underlying), Scope(Set.empty), true)
+    AuthedNamespaceScope(Namespace(token.sub.underlying))
   }
 
   def apply(token: JsonWebToken) : AuthedNamespaceScope = {

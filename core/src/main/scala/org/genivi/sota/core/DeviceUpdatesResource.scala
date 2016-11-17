@@ -35,6 +35,7 @@ import slick.driver.MySQLDriver.api.Database
 import cats.syntax.show.toShowOps
 import org.genivi.sota.http.AuthDirectives.AuthScope
 import org.genivi.sota.http.AuthedNamespaceScope
+import org.genivi.sota.http.NamespaceDirectives
 import org.genivi.sota.messaging.MessageBusPublisher
 import org.genivi.sota.core.data.client.PendingUpdateRequest._
 import UpdateSpec._
@@ -255,16 +256,16 @@ class DeviceUpdatesResource(db: Database,
                               & extractUuid) { device =>
       get {
         pathEnd {
-          authDirective(authedNs, s"ota-core.${device.show}.read", true) {
+          authedNs.oauthScope(s"ota-core.${device.show}.read", true) {
             logDeviceSeen(device) { pendingPackages(device) }
           }
         } ~
-        (path("queued") & authDirective(authedNs, s"ota-core.${device.show}.read", true)) {
+        (path("queued") & authedNs.oauthScope(s"ota-core.${device.show}.read", true)) {
           // Backward compatible with sota_client v0.2.17
           logDeviceSeen(device) { pendingPackages(device) }
         } ~
         (extractRefinedUuid & path("download")) { updateId =>
-          authDirective(authedNs, s"ota-core.${device.show}.read", true) {
+          authedNs.oauthScope(s"ota-core.${device.show}.read", true) {
             downloadPackage(device, updateId)
           }
         } ~
@@ -277,12 +278,12 @@ class DeviceUpdatesResource(db: Database,
       } ~
       put {
         path("installed") {
-          authDirective(authedNs, s"ota-core.${device.show}.write", false) {
+          authedNs.oauthScope(s"ota-core.${device.show}.write") {
             updateInstalledPackages(device)
           }
         } ~
         path("system_info") {
-          authDirective(authedNs, s"ota-core.${device.show}.write", false) {
+          authedNs.oauthScope(s"ota-core.${device.show}.write") {
             updateSystemInfo(device)
           }
         } ~
@@ -293,7 +294,7 @@ class DeviceUpdatesResource(db: Database,
         }
       } ~
       post {
-        (extractRefinedUuid & pathEnd & authDirective(authedNs, s"ota-core.${device.show}.write", false)) { reportInstall } ~
+        (extractRefinedUuid & pathEnd & authedNs.oauthScope(s"ota-core.${device.show}.write")) { reportInstall } ~
         authDeviceNamespace(device) { ns =>
           pathEnd { queueDeviceUpdate(ns, device) } ~
           path("sync") { sync(device) }
@@ -335,7 +336,7 @@ class DeviceUpdatesResource(db: Database,
   val mydeviceRoutes = handleErrors { authNamespace { authedNs =>
     (pathPrefix("api" / "v1" / "mydevice") & extractUuid) { device =>
       pathPrefix("updates") {
-        (get & authDirective(authedNs, s"ota-core.${device.show}.read", true)) {
+        (get & authedNs.oauthScope(s"ota-core.${device.show}.read", true)) {
           pathEnd {
             logDeviceSeen(device) { pendingPackages(device) }
           } ~
@@ -343,13 +344,13 @@ class DeviceUpdatesResource(db: Database,
             downloadPackage(device, updateId)
           }
         } ~
-        (post & authDirective(authedNs, s"ota-core.${device.show}.write", false)) {
+        (post & authedNs.oauthScope(s"ota-core.${device.show}.write")) {
           (extractUuid & pathEnd ) { updateId =>
             reportUpdateResult(device, updateId)
           }
         }
       } ~
-      (put & authDirective(authedNs, s"ota-core.${device.show}.write", false)) {
+      (put & authedNs.oauthScope(s"ota-core.${device.show}.write")) {
         path("installed") {
           updateInstalledPackages(device)
         } ~

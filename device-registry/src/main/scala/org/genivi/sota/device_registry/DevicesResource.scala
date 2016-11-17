@@ -126,10 +126,10 @@ class DevicesResource(namespaceExtractor: Directive1[AuthedNamespaceScope],
 
   def mydeviceRoutes: Route = namespaceExtractor { authedNs =>
     (pathPrefix("mydevice") & extractUuid) { uuid =>
-      (post & path("ping") & authDirective(authedNs, s"ota-core.${uuid.show}.write", false)) {
+      (post & path("ping") & authedNs.oauthScope(s"ota-core.${uuid.show}.write")) {
         updateLastSeen(uuid)
       } ~
-      (get & pathEnd & authDirective(authedNs, s"ota-core.${uuid.show}.read", true)) {
+      (get & pathEnd & authedNs.oauthScope(s"ota-core.${uuid.show}.read", true)) {
         fetchDevice(uuid)
       }
     }
