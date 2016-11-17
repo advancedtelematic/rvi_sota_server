@@ -4,18 +4,49 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.{AuthorizationFailedRejection, Directive1, Directives, Rejection}
 import cats.data.Xor
 import com.advancedtelematic.jws.CompactSerialization
-import com.advancedtelematic.jwt.{JsonWebToken, Subject}
+import com.advancedtelematic.jwt.{JsonWebToken, Scope, Subject}
 import io.circe.parser._
 import org.genivi.sota.data.Namespace._
 import eu.timepit.refined.refineV
 import io.circe.Decoder
 import org.genivi.sota.data.Namespace
 
+case class AuthedNamespaceScope(namespace: Namespace, scope: Scope, owned: Boolean = false) {
+  def hasScope(sc: String, readonly: Boolean = false) =
+    owned || scope.underlying.contains(sc) ||
+   (readonly && scope.underlying.contains(sc + ".readonly"))
+
+  def hasNamespace(ns: Namespace) = ns == namespace || hasScope(AuthedNamespaceScope.namespacePrefix + ns)
+}
+
+object AuthedNamespaceScope {
+  import scala.language.implicitConversions
+  implicit def toNamespace(ns: AuthedNamespaceScope) = ns.namespace
+
+  val namespacePrefix = "namespace."
+
+  def apply(token: IdToken) : AuthedNamespaceScope = {
+    AuthedNamespaceScope(Namespace(token.sub.underlying), Scope(Set.empty), true)
+  }
+
+  def apply(token: JsonWebToken) : AuthedNamespaceScope = {
+    val nsSet = token.scope.underlying.collect {
+      case x if x.startsWith(namespacePrefix) => x.substring(namespacePrefix.length)
+    }
+    if (nsSet.size == 1) {
+      AuthedNamespaceScope(Namespace(nsSet.toVector(0)), token.scope, false)
+    } else {
+      AuthedNamespaceScope(Namespace(token.subject.underlying), token.scope, true)
+    }
+  }
+}
+
 /**
   * Type class defining an extraction of namespace information from a token of type `T`
   * @tparam T type of a token
   */
 trait NsFromToken[T] {
+  def toNamespaceScope(token: T): AuthedNamespaceScope
   def namespace(token: T): String
   def accept(ns: Namespace, token: T): Boolean
 }
@@ -25,9 +56,11 @@ object NsFromToken {
   implicit val NsFromIdToken = new NsFromToken[IdToken] {
     override def namespace(token: IdToken): String = token.sub.underlying
     override def accept(ns: Namespace, token: IdToken): Boolean = namespace(token) == ns.get
+    override def toNamespaceScope(token: IdToken) = AuthedNamespaceScope(token)
   }
 
   implicit val NsFromJwt = new NsFromToken[JsonWebToken] {
+    override def toNamespaceScope(token: JsonWebToken) = AuthedNamespaceScope(token)
     def grantNs(token: JsonWebToken): Set[String] = {
       val nsPrefix = "namespace."
       token.scope.underlying.collect {
@@ -85,10 +118,11 @@ object AuthNamespaceDirectives {
       val maybeNamespace = creds match {
         case Some(OAuth2BearerToken(serializedToken)) =>
           NsFromToken.parseToken[T](serializedToken).flatMap{ token =>
+            val authedNs = nsFromToken.toNamespaceScope(token)
             ns0 match {
-              case Some(ns) if nsFromToken.accept(ns, token) => Xor.right(ns)
+              case Some(ns) if authedNs.hasNamespace(ns) => Xor.right(authedNs)
               case Some(ns) => Xor.Left("The oauth token does not accept the given namespace")
-              case None => Xor.right(Namespace(nsFromToken.namespace(token)))
+              case None => Xor.right(authedNs)
             }
           }
 
