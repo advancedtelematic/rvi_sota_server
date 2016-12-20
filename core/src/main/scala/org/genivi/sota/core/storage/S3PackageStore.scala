@@ -56,8 +56,9 @@ class S3PackageStore(credentials: S3Credentials)
               .andThen { case _ =>
                 Try(tempFile.delete())
               }
-          } else
+          } else {
             Future.failed(result.getError)
+          }
         }
       }
 
@@ -84,7 +85,7 @@ class S3PackageStore(credentials: S3Credentials)
 
     asyncPut map { case (putResult, url)  =>
       log.info(s"$fileName uploaded to $url")
-      (Uri(url.toString), putResult.getMetadata.getContentLength)
+      (Uri(url.toString), file.length())
     }
   }
 

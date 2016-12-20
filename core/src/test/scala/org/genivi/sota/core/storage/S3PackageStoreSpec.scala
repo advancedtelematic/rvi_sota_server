@@ -50,8 +50,9 @@ class S3PackageStoreSpec extends TestKit(ActorSystem("LocalPackageStoreSpec"))
 
     val f = s3.store(packageId, fileData.filename.get, fileData.entity.dataBytes)
 
-    whenReady(f) { case (uri, _, _) =>
-      uri.toString should startWith("https://sota-core-it-tests.s3.eu-central-1.amazonaws.com/")
+    whenReady(f) { case (uri, size, _) =>
+      size shouldBe fileData.entity.contentLength
+      uri.toString should startWith("https://" + s3.bucketId)
     }
   }
 
