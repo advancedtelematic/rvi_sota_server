@@ -44,6 +44,4 @@ class FakeExternalResolver()(implicit system: ActorSystem, mat: ActorMaterialize
 
   override def affectedDevices(namespace: Namespace, packageIds: Set[PackageId]): Future[Map[Uuid, Seq[PackageId]]] =
     Future.successful(Map.empty)
-
-  def isInstalled(packageId: PackageId): Boolean = installedPackages.contains(packageId)
 }

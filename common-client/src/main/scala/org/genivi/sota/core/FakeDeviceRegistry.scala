@@ -7,6 +7,7 @@ package org.genivi.sota.core
 
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
+import java.util.function.BiFunction
 
 import akka.actor.ActorSystem
 import akka.event.Logging
@@ -35,6 +36,7 @@ class FakeDeviceRegistry(namespace: Namespace)
   private val devices =  new ConcurrentHashMap[Uuid, Device]()
   private val systemInfo = new ConcurrentHashMap[Uuid, Json]()
   private val groups = new ConcurrentHashMap[Uuid, Seq[Uuid]]
+  private val installedPackages = new ConcurrentHashMap[Uuid, Seq[PackageId]]()
 
   override def searchDevice
   (ns: Namespace, re: String Refined Regex)
@@ -132,10 +134,25 @@ class FakeDeviceRegistry(namespace: Namespace)
   }
 
   def setInstalledPackages
-    (device: Uuid, packages: Seq[PackageId])(implicit ec: ExecutionContext) : Future[NoContent] =
-      FastFuture.successful(NoContent())
+    (device: Uuid, packages: Seq[PackageId])(implicit ec: ExecutionContext) : Future[NoContent] = {
+
+    installedPackages.compute(device, new BiFunction[Uuid, Seq[PackageId], Seq[PackageId]] {
+      override def apply(t: Uuid, u: Seq[PackageId]) = u match {
+        case null => packages
+        case others => others ++ packages
+      }
+    })
+
+    FastFuture.successful(NoContent())
+  }
 
   def setInstalledPackagesForDevices(data: Seq[(Uuid, Set[PackageId])])
-                                    (implicit ec: ExecutionContext) : Future[NoContent] =
-    FastFuture.successful(NoContent())
+                                    (implicit ec: ExecutionContext) : Future[NoContent] = {
+    Future
+      .sequence { data.map { case (uuid, pkgs) => setInstalledPackages(uuid, pkgs.toSeq) } }
+      .map(_ => NoContent())
+  }
+
+  def isInstalled(uuid: Uuid, packageId: PackageId): Boolean =
+    installedPackages.getOrDefault(uuid, List.empty).contains(packageId)
 }
