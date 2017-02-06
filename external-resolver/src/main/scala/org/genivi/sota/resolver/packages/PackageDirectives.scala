@@ -17,7 +17,7 @@ import org.genivi.sota.http.ErrorHandler
 import org.genivi.sota.http.Scopes
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
 import org.genivi.sota.resolver.common.RefinementDirectives._
-import org.genivi.sota.resolver.db.{DeviceRepository, Package, PackageFilterRepository, PackageRepository, PackageStat}
+import org.genivi.sota.resolver.db.{DeviceRepository, PackageFilterRepository, PackageRepository, PackageStat}
 import org.genivi.sota.resolver.filters.Filter
 import akka.http.scaladsl.unmarshalling.{FromStringUnmarshaller, Unmarshaller}
 import org.genivi.sota.common.DeviceRegistry
@@ -48,15 +48,6 @@ class PackageDirectives(namespaceExtractor: Directive1[AuthedNamespaceScope], de
 
   def getPackage(ns: Namespace, id: PackageId): Route =
     complete(db.run(PackageRepository.exists(ns, id)))
-
-  def addPackage(ns: Namespace, id: PackageId): Route =
-    entity(as[Package.Metadata]) { metadata =>
-      if (metadata.namespace == ns) {
-        complete(db.run(PackageRepository.add(id, metadata)))
-      } else {
-        reject(AuthorizationFailedRejection)
-      }
-    }
 
   def getPackageFilters(ns: Namespace, id: PackageId): Route =
     complete(db.run(PackageFilterRepository.listFiltersForPackage(ns, id)))
@@ -104,11 +95,8 @@ class PackageDirectives(namespaceExtractor: Directive1[AuthedNamespaceScope], de
         (scope.get & pathEnd) {
           getPackage(ns, id)
         } ~
-        (scope.put & pathEnd) {
-          addPackage(ns, id)
-        } ~
         pathPrefix("filter") { packageFilterApi(ns, id) }
-        }
+      }
     } ~
     pathPrefix("package_stats") {
       (scope.checkReadonly & refinedPackageName) { name =>

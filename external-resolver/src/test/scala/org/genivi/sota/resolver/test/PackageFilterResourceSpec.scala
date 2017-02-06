@@ -30,12 +30,6 @@ class PackageFilterResourceWordSpec extends ResourceWordSpec with Namespaces {
       Refined.unsafeApply(pkgVersion),
       Refined.unsafeApply(filterName))
 
-    "be able to assign exisiting filters to existing packages" in {
-      addPackageOK(pkgName, pkgVersion, None, None)
-      addFilterOK(filterName, filterExpr)
-      addPackageFilterOK(pkgName, pkgVersion, filterName)
-    }
-
     "not allow assignment of filters to non-existing package names" in {
       addPackageFilter("nonexistant", pkgVersion, filterName) ~> route ~> check {
         status shouldBe StatusCodes.NotFound

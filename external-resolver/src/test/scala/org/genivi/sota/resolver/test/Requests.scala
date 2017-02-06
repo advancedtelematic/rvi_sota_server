@@ -53,18 +53,6 @@ trait VehicleRequestsHttp {
     Put("/fake_devices", device.show)
   }
 
-  def installPackage(device: Uuid, pkg: Package): HttpRequest =
-    installPackage(device, pkg.id.name.get, pkg.id.version.get)
-
-  def installPackage(device: Uuid, pname: String, pversion: String): HttpRequest =
-    Put(Resource.uri("devices", device.show, "package", pname, pversion))
-
-  def uninstallPackage(device: Uuid, pkg: Package): HttpRequest =
-    uninstallPackage(device, pkg.id.name.get, pkg.id.version.get)
-
-  def uninstallPackage(device: Uuid, pname: String, pversion: String): HttpRequest =
-    Delete(Resource.uri("devices", device.show, "package", pname, pversion))
-
   def listPackagesOnVehicle(veh: Uuid): HttpRequest =
     Get(Resource.uri("devices", veh.show, "package"))
 
@@ -96,11 +84,6 @@ trait VehicleRequests extends
     PackageRequestsHttp with
     Matchers { self: ResourceSpec =>
 
-  def installPackageOK(device: Uuid, pname: String, pversion: String)(implicit route: Route): Unit =
-    installPackage(device, pname, pversion) ~> route ~> check {
-      status shouldBe StatusCodes.OK
-    }
-
   def installComponentOK(device: Uuid, part: Component.PartNumber)
                         (implicit route: Route): Unit =
     installComponent(device, part) ~> route ~> check {
@@ -120,27 +103,9 @@ trait VehicleRequests extends
   */
 trait PackageRequestsHttp {
 
-  def addPackage(pkg: Package)
-                (implicit ec: ExecutionContext): HttpRequest =
-    addPackage(pkg.namespace, pkg.id.name.get, pkg.id.version.get, pkg.description, pkg.vendor)
-
-  def addPackage(namespace: Namespace, name: String, version: String, desc: Option[String], vendor: Option[String])
-                (implicit ec: ExecutionContext): HttpRequest =
-    Put(Resource.uri("packages", name, version), Package.Metadata(namespace, desc, vendor))
-
   def getPackageStats(namespace: Namespace, name: PackageId.Name)
                  (implicit ec: ExecutionContext): HttpRequest =
     Get(Resource.uri("package_stats", name.get))
-}
-
-trait PackageRequests extends
-  PackageRequestsHttp with Namespaces with Matchers { self: ResourceSpec =>
-
-    def addPackageOK(name: String, version: String, desc: Option[String], vendor: Option[String])
-                  (implicit route: Route): Unit =
-    addPackage(defaultNs, name, version, desc, vendor) ~> route ~> check {
-      status shouldBe StatusCodes.OK
-    }
 }
 
 /**
