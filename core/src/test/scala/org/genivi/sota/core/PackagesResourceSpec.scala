@@ -54,7 +54,7 @@ class PackagesResourceSpec extends FunSuite
   implicit val connectivity = DefaultConnectivity
 
   lazy val updateService = new UpdateService(DefaultUpdateNotifier, deviceRegistry)
-  val service = new PackagesResource(resolver, updateService, db, LocalMessageBus.publisher(system), defaultNamespaceExtractor) {
+  val service = new PackagesResource(updateService, db, LocalMessageBus.publisher(system), defaultNamespaceExtractor) {
     override val packageStorageOp: PackageStorageOp = new LocalPackageStore().store _
   }
 

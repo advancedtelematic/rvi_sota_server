@@ -23,7 +23,6 @@ import org.genivi.sota.marshalling.CirceMarshallingSupport._
 trait ResourceSpec extends
   LongRequestTimeout
     with VehicleRequests
-    with PackageRequests
     with FirmwareRequests
     with ComponentRequests
     with FilterRequests

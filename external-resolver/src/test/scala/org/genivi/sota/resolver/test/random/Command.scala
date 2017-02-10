@@ -100,26 +100,6 @@ trait CommandUtils extends
         _ <- State.set(s.creating(veh))
       } yield Semantics(addVehicle(veh.uuid), StatusCodes.OK, Success)
 
-    case AddPackage(pkg) =>
-      for {
-        s <- State.get
-        _ <- State.set(s.creating(pkg))
-      } yield Semantics(addPackage(pkg), StatusCodes.OK, SuccessPackage(pkg))
-
-    case InstallPackage(veh, pkg) =>
-      for {
-        s <- State.get
-        _ <- State.set(s.installing(veh, pkg))
-      } yield Semantics(installPackage(veh, pkg), StatusCodes.OK, Success)
-
-    case UninstallPackage(veh, pkg) =>
-      for {
-        s <- State.get
-        _ <- State.set(s.uninstalling(veh, pkg))
-      } yield Semantics(
-        uninstallPackage(veh, pkg),
-        StatusCodes.OK, Success) // whether already uninstalled or not, OK is the reply
-
     case AddFilter(filt) =>
       for {
         s <- State.get
@@ -301,18 +281,6 @@ trait InvalidCommandUtils { _: CommandUtils =>
   def pickOneOf[T](g: Gen[T]): T = g.sample.getOrElse(pickOneOf(g))
 
   def pickOneOf[T](t1: T, t2: T, tn: T*): T = pickOneOf(Gen.oneOf(t1, t2, tn: _*))
-
-  def getBadReqAddPackage(pkg: db.Package, statusCode: StatusCode, result: Result)
-                         (implicit ec: ExecutionContext): Semantics =
-    Semantics(addPackage(pkg), statusCode, result)
-
-  def getBadReqInstallPackage(veh: Uuid, pkg: db.Package)
-                             (implicit ec: ExecutionContext): Semantics =
-    Semantics(installPackage(veh, pkg), StatusCodes.BadRequest, Success)
-
-  def getBadReqUninstallPackage(veh: Uuid, pkg: db.Package)
-                               (implicit ec: ExecutionContext): Semantics =
-    Semantics(uninstallPackage(veh, pkg), StatusCodes.BadRequest, Success)
 
   def getBadReqAddFilter(flt: Filter)
                         (implicit ec: ExecutionContext): Semantics =
@@ -574,12 +542,6 @@ object Command extends CommandUtils with InvalidCommandUtils {
       case AddVehicleFail(device: Uuid) =>
         import akka.http.scaladsl.client.RequestBuilding.Get
         Semantics(Get("/fake_devices"), StatusCodes.MethodNotAllowed, Success)
-
-      case AddPackageFail(pkg, statusCode, result) => getBadReqAddPackage(pkg, statusCode, result)
-
-      case InstallPackageFail(veh, pkg) => getBadReqInstallPackage(veh, pkg)
-
-      case UninstallPackageFail(veh, pkg) => getBadReqUninstallPackage(veh, pkg)
 
       case AddFilterFail(flt) => getBadReqAddFilter(flt)
 

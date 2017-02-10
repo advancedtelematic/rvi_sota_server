@@ -10,7 +10,6 @@ import org.genivi.sota.marshalling.CirceMarshallingSupport._
 import org.genivi.sota.rest.{ErrorCodes, ErrorRepresentation}
 import org.scalatest.concurrent.ScalaFutures
 import Device._
-import cats.syntax.show._
 
 import scala.concurrent.Future
 
@@ -34,56 +33,6 @@ class ResolveResourceSpec extends ResourceWordSpec with ScalaFutures {
   }
 
   "Resolve resource" should {
-    "return all VINs if the filter is trivially true" in {
-      val deviceIds = testDevices.map(_._2)
-
-      // Add a package.
-      addPackageOK("resolvePkg", "0.0.1", None, None)
-
-      // Add a trival filter that lets all vins through.
-      addFilterOK("truefilter", "TRUE")
-      addPackageFilterOK(pkgName, "0.0.1", "truefilter")
-
-      resolveOK(pkgName, "0.0.1", deviceIds)
-    }
-
-    "support filtering by VIN" in {
-      // Add another filter.
-      addPackageOK("resolvePkg", "0.0.1", None, None)
-      addFilterOK("0xfilter", s"""vin_matches "^00.*" OR vin_matches "^01.*"""")
-      addPackageFilterOK(pkgName, "0.0.1", "0xfilter")
-
-      val deviceIds = testDevices
-        .map(e => (e._1.deviceId.get, e._2))
-        .filter(e => e._1.show.startsWith("00") || e._1.show.startsWith("01"))
-        .map(_._2)
-
-      resolveOK(pkgName, "0.0.1", deviceIds)
-    }
-
-    //noinspection ZeroIndexToHead
-    "support filtering by installed packages on VIN" in {
-      // Delete the previous filter and add another one which uses
-      // has_package instead.
-
-      deletePackageFilterOK(pkgName, "0.0.1", "0xfilter")
-      addPackageOK("apa",  "1.0.0", None, None)
-      addPackageOK("bepa", "1.0.0", None, None)
-
-      val (_, id0) = testDevices(0)
-      val (_, id1) = testDevices(1)
-      val (_, id2) = testDevices(2)
-
-      installPackageOK(id0, "apa", "1.0.0")
-      installPackageOK(id1, "apa", "1.0.0")
-      installPackageOK(id2, "bepa", "1.0.0")
-
-      addFilterOK("1xfilter", s"""has_package "^a.*" "1.*"""")
-      addPackageFilterOK(pkgName, "0.0.1", "1xfilter")
-
-      resolveOK(pkgName, "0.0.1", List(id0, id1))
-    }
-
     //noinspection ZeroIndexToHead
     "support filtering by hardware components on VIN" in {
 
