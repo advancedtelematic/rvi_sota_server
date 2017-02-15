@@ -38,8 +38,6 @@ class UpdateServiceSpec extends PropSpec
 
   implicit val defaultPatience = PatienceConfig(5.seconds, 500.millis)
 
-  implicit override val generatorDrivenConfig = PropertyCheckConfig(minSuccessful = 20)
-
   implicit val system = akka.actor.ActorSystem("UpdateServiceSpec")
   import system.dispatcher
   implicit val mat = ActorMaterializer()
