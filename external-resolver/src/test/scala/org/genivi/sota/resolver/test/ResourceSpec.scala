@@ -56,7 +56,10 @@ trait ResourceWordSpec extends WordSpec with ResourceSpec
  * Includes helpers for Packages, Components, Filters, PackageFilters and
  * Resolver
  */
-trait ResourcePropSpec extends PropSpec with ResourceSpec with PropertyChecks
+trait ResourcePropSpec extends PropSpec with ResourceSpec with PropertyChecks {
+  self: Suite =>
+  implicit override val generatorDrivenConfig = PropertyCheckConfig(minSuccessful = 20)
+}
 
 class FakeDeviceRegistryRoutes(deviceRegistry: FakeDeviceRegistry) {
   import akka.http.scaladsl.server.Directives._
