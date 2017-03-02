@@ -87,9 +87,7 @@ object Messages {
     packageUuid: UUID,
     status: String) extends BusMessage
 
-  final case class UserCreated(id: String, email: String) extends BusMessage
-
-  final case class UserLogin(id: String, timestamp: Instant) extends BusMessage
+  final case class UserLogin(id: String, email: String, timestamp: Instant) extends BusMessage
 
   final case class DeviceUpdateStatus(namespace: Namespace,
                                       device: Uuid,
@@ -159,8 +157,6 @@ object Messages {
   implicit val packageStorageUsageMessageLike = MessageLike[PackageStorageUsage](_.namespace.get)
 
   implicit val bandwidthUsageMessageLike = MessageLike[BandwidthUsage](_.id.toString)
-
-  implicit val userCreatedMessageLike = MessageLike[UserCreated](_.id)
 
   implicit val userLoginMessageLike = MessageLike[UserLogin](_.id)
 
