@@ -139,12 +139,12 @@ trait Generators {
     reqConfirm <- Gen.option(arbitrary[Boolean])
   } yield LaunchCampaign(startDate, endDate, prio, sig, desc, reqConfirm)
 
-  val TargetInfoGen: Gen[TargetInfoMeta] = for {
+  val TargetInfoGen: Gen[TargetInfo] = for {
       deviceId <- genIdentifier(200)
       targetInfo <- genIdentifier(200)
       size <- Gen.chooseNum(0, Long.MaxValue)
       hash <- genIdentifier(200)
-  } yield TargetInfoMeta(deviceId, targetInfo, hash, size)
+  } yield TargetInfo(Uuid.generate(), deviceId, targetInfo, hash, size)
 }
 
 object Generators extends Generators

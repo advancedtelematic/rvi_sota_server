@@ -5,7 +5,7 @@
 package org.genivi.sota.core.db
 
 import org.genivi.sota.core.SotaCoreErrors
-import org.genivi.sota.core.data.{TargetInfo, TargetInfoMeta}
+import org.genivi.sota.core.data.TargetInfo
 import org.genivi.sota.data.Uuid
 import slick.driver.MySQLDriver.api._
 
@@ -39,12 +39,10 @@ object MultiTargetUpdates {
       .failIfNotSingle(MissingTargetInfo)
   }
 
-  def create(row: TargetInfoMeta)
-            (implicit ec: ExecutionContext): DBIO[Uuid] = {
-    val id = Uuid.generate()
-
-    (multiTargets += TargetInfo(id, row.deviceId, row.targetUpdates, row.targetHash, row.targetSize))
+  def create(row: TargetInfo)
+            (implicit ec: ExecutionContext): DBIO[Unit] = {
+    (multiTargets += row)
       .handleIntegrityErrors(ConflictingTargetInfo)
-      .map(_ => id)
+      .map(_ => ())
   }
 }

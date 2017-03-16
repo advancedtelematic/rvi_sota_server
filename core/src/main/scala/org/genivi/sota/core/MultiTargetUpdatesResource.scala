@@ -9,7 +9,7 @@ import akka.http.scaladsl.marshalling.Marshaller._
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server._
 import io.circe.generic.auto._
-import org.genivi.sota.core.data.TargetInfoMeta
+import org.genivi.sota.core.data.TargetInfo
 import org.genivi.sota.core.db.MultiTargetUpdates
 import org.genivi.sota.data.Uuid
 import slick.driver.MySQLDriver.api.Database
@@ -26,7 +26,7 @@ class MultiTargetUpdatesResource()(implicit db: Database, system: ActorSystem) {
   implicit val _config = system.settings.config
 
   def createTargetInfo(): Route =
-    entity(as[TargetInfoMeta]) { targetInfo =>
+    entity(as[TargetInfo]) { targetInfo =>
       complete(Created -> db.run(MultiTargetUpdates.create(targetInfo)))
     }
 

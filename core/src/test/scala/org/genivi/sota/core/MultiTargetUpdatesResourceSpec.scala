@@ -11,7 +11,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import cats.implicits._
 import io.circe.generic.auto._
 import org.genivi.sota.DefaultPatience
-import org.genivi.sota.core.data.{TargetInfo, TargetInfoMeta}
+import org.genivi.sota.core.data.TargetInfo
 import org.genivi.sota.data.Uuid
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
 import org.scalatest.concurrent.ScalaFutures
@@ -35,10 +35,9 @@ class MultiTargetUpdatesResourceSpec extends FunSuite
     }
   }
 
-  def createTargetInfoOk(targetInfo: TargetInfoMeta): Uuid =
+  def createTargetInfoOk(targetInfo: TargetInfo): Unit =
     Post(Resource.uri(), targetInfo) ~> service.route ~> check {
       status shouldBe StatusCodes.Created
-      responseAs[Uuid]
     }
 
   def fetchTargetInfoOk(id: Uuid): TargetInfo =
@@ -54,12 +53,14 @@ class MultiTargetUpdatesResourceSpec extends FunSuite
 
   test("fetch target info") {
     val targetInfo = TargetInfoGen.sample.get
-    val id = createTargetInfoOk(targetInfo)
-    val response = fetchTargetInfoOk(id)
-    response.id shouldBe id
-    response.deviceId shouldBe targetInfo.deviceId
-    response.targetUpdates shouldBe targetInfo.targetUpdates
-    response.targetHash shouldBe targetInfo.targetHash
-    response.targetSize shouldBe targetInfo.targetSize
+    createTargetInfoOk(targetInfo)
+    fetchTargetInfoOk(targetInfo.id) shouldBe targetInfo
+  }
+
+  test("fetching non-existent target info returns 404") {
+    val id = Uuid.generate()
+    Get(Resource.uri(id.show)) ~> service.route ~> check {
+      status shouldBe StatusCodes.NotFound
+    }
   }
 }
