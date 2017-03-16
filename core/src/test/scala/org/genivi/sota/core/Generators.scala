@@ -28,6 +28,7 @@ trait Generators {
   import Campaign._
   import Namespaces._
   import UuidGenerator._
+  import DeviceGenerators.genIdentifier
 
   val PackageVersionGen: Gen[PackageId.Version] =
     Gen.listOfN(3, Gen.choose(0, 999)).map(_.mkString(".")).map(Refined.unsafeApply)
@@ -137,6 +138,13 @@ trait Generators {
     desc       <- Gen.option(Gen.alphaStr)
     reqConfirm <- Gen.option(arbitrary[Boolean])
   } yield LaunchCampaign(startDate, endDate, prio, sig, desc, reqConfirm)
+
+  val TargetInfoGen: Gen[TargetInfoMeta] = for {
+      deviceId <- genIdentifier(200)
+      targetInfo <- genIdentifier(200)
+      size <- Gen.chooseNum(0, Long.MaxValue)
+      hash <- genIdentifier(200)
+  } yield TargetInfoMeta(deviceId, targetInfo, hash, size)
 }
 
 object Generators extends Generators

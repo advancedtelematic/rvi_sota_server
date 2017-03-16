@@ -6,7 +6,7 @@
 package org.genivi.sota.core
 
 import akka.http.scaladsl.model.StatusCodes
-import org.genivi.sota.core.data.Campaign
+import org.genivi.sota.core.data.{Campaign, TargetInfo}
 import org.genivi.sota.http.Errors.{EntityAlreadyExists, MissingEntity, RawError}
 import org.genivi.sota.rest.{ErrorCode, ErrorCodes}
 
@@ -21,6 +21,7 @@ object SotaCoreErrors {
     val MissingImageForUpdate = ErrorCode("missing_image_to_queue")
     val DeviceLimitReached = ErrorCode("device_limit_reached")
     val DeviceNotActivated = ErrorCode("device_not_activated")
+    val MissingTargetInfo = ErrorCode("missing_target_info")
   }
 
   import StatusCodes._
@@ -45,4 +46,6 @@ object SotaCoreErrors {
     "limit of free devices reached")
   val DeviceNotActivated = RawError(SotaCoreErrorCodes.DeviceNotActivated, NotFound,
     "device has not been activated")
+  val ConflictingTargetInfo = EntityAlreadyExists(classOf[TargetInfo])
+  val MissingTargetInfo = RawError(SotaCoreErrorCodes.MissingTargetInfo, NotFound, "target info not found")
 }
