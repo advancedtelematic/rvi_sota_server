@@ -5,7 +5,7 @@
 package org.genivi.sota.core
 
 import akka.http.scaladsl.model.Uri
-import eu.timepit.refined.api.Refined
+import eu.timepit.refined.api.{Refined, Validate}
 import java.nio.file.{Files, Paths, StandardOpenOption}
 import java.security.MessageDigest
 import java.util.UUID
@@ -17,6 +17,7 @@ import org.scalacheck.{Arbitrary, Gen}
 import java.time.Instant
 import java.time.Duration
 
+import com.advancedtelematic.libtuf.data.TufDataType.{Checksum, HashMethod, ValidChecksum}
 import org.genivi.sota.data.Interval
 
 /**
@@ -29,6 +30,7 @@ trait Generators {
   import Namespaces._
   import UuidGenerator._
   import DeviceGenerators.genIdentifier
+  import com.advancedtelematic.libats.data.RefinedUtils._
 
   val PackageVersionGen: Gen[PackageId.Version] =
     Gen.listOfN(3, Gen.choose(0, 999)).map(_.mkString(".")).map(Refined.unsafeApply)
@@ -139,12 +141,29 @@ trait Generators {
     reqConfirm <- Gen.option(arbitrary[Boolean])
   } yield LaunchCampaign(startDate, endDate, prio, sig, desc, reqConfirm)
 
+  lazy val GenHexChar: Gen[Char] = Gen.oneOf(('0' to '9') ++ ('a' to 'f'))
+
+  implicit class GenRefine[T](gen: Gen[T]) {
+    final def refine[P](implicit ev: Validate[T,P]): Gen[Refined[T,P]] =
+      gen.map(_.refineTry.get)
+  }
+
+  def GenStringByCharN(len: Int, gen: Gen[Char]) =
+    Gen.containerOfN[List, Char](len, gen).map(_.mkString)
+
+  def GenRefinedStringByCharN[P](len: Int, gen: Gen[Char])(implicit ev: Validate[String, P])
+  = GenStringByCharN(len, gen).refine
+
+  lazy val GenChecksum: Gen[Checksum] = for {
+    hash <- GenRefinedStringByCharN[ValidChecksum](64, GenHexChar)
+  } yield Checksum(HashMethod.SHA256, hash)
+
   val TargetInfoGen: Gen[TargetInfo] = for {
       deviceId <- genIdentifier(200)
       targetInfo <- genIdentifier(200)
       size <- Gen.chooseNum(0, Long.MaxValue)
-      hash <- genIdentifier(200)
-  } yield TargetInfo(Uuid.generate(), deviceId, targetInfo, hash, size)
+      checksum <- GenChecksum
+  } yield TargetInfo(Uuid.generate(), deviceId, targetInfo, checksum, size)
 }
 
 object Generators extends Generators

@@ -21,9 +21,7 @@ class MultiTargetUpdatesResource()(implicit db: Database, system: ActorSystem) {
   import org.genivi.sota.http.UuidDirectives._
   import org.genivi.sota.marshalling.CirceMarshallingSupport._
 
-  implicit val ec = system.dispatcher
-  implicit val _db = db
-  implicit val _config = system.settings.config
+  implicit private val ec = system.dispatcher
 
   def createTargetInfo(): Route =
     entity(as[TargetInfo]) { targetInfo =>
