@@ -14,14 +14,11 @@ trait DeviceGenerators {
   import UuidGenerator._
 
   val genDeviceName: Gen[DeviceName] = for {
-    //use a minimum length for DeviceName to reduce possibility of naming conflicts
-    size <- Gen.choose(10, 100)
-    name <- Gen.containerOfN[Seq, Char](size, Gen.alphaNumChar)
+    name <- genIdentifier(100)
   } yield DeviceName(name.mkString)
 
   val genDeviceId: Gen[DeviceId] = for {
-    size <- Gen.choose(10, 100)
-    name <- Gen.containerOfN[Seq, Char](size, Gen.alphaNumChar)
+    name <- genIdentifier(100)
   } yield DeviceId(name.mkString)
 
   val genDeviceType: Gen[DeviceType] = for {
@@ -31,6 +28,12 @@ trait DeviceGenerators {
   val genInstant: Gen[Instant] = for {
     millis <- Gen.chooseNum[Long](0, 10000000000000L)
   } yield Instant.ofEpochMilli(millis)
+
+  def genIdentifier(maxLen: Int): Gen[String] = for {
+  //use a minimum length of 10 to reduce possibility of naming conflicts
+    size <- Gen.choose(10, maxLen)
+    name <- Gen.containerOfN[Seq, Char](size, Gen.alphaNumChar)
+  } yield name.mkString
 
   def genDeviceWith(deviceNameGen: Gen[DeviceName], deviceIdGen: Gen[DeviceId]): Gen[Device] = for {
     uuid <- arbitrary[Uuid]

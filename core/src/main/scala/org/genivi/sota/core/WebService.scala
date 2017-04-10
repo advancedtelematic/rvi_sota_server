@@ -38,6 +38,7 @@ class WebService(updateService: UpdateService,
   val impactResource = new ImpactResource(authNamespace, deviceRegistry)(db, system)
   val campaignResource =
     new CampaignResource(authNamespace, deviceRegistry, updateService, messageBusPublisher)(db, system)
+  val multiTargetUpdatesResource = new MultiTargetUpdatesResource()(db, system)
 
   val route = (handleErrors & pathPrefix("api" / "v1")) {
     campaignResource.route ~
@@ -47,6 +48,7 @@ class WebService(updateService: UpdateService,
     updateRequestsResource.route ~
     historyResource.route ~
     blacklistResource.route ~
-    impactResource.route
+    impactResource.route ~
+    multiTargetUpdatesResource.route
   }
 }
