@@ -357,11 +357,6 @@ paths:
         description: The campaign uuid for which a static delta should be generated
         required: true
         type: string
-      - name: deltaFromName
-        in: query
-        description: The name of the package to generate the delta from
-        required: false
-        type: string
       - name: deltaFromVersion
         in: query
         description: The version of the package to generate the delta from
@@ -980,7 +975,7 @@ definitions:
         format: dateTime
         description: The time the package was uploaded to core
       deltaFrom:
-        $ref: '#/definitions/packageId'
+        $ref: '#/definitions/Strings/properties/commit'
       size:
         type: integer
         format: int64
@@ -1064,6 +1059,9 @@ definitions:
       uuid:
         type: string
         description: 32 lowercase hexadecimal digits, displayed in five groups separated by hyphens
+      commit:
+        type: string
+        description: A SHA-256 hash representing a commit in Ostree/Treehub
       namespace:
         type: string
         description: The namespace scope of the request. Default value is 'default'

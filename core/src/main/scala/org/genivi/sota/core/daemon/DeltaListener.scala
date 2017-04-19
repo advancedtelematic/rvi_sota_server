@@ -30,8 +30,8 @@ class DeltaListener(deviceRegistry: DeviceRegistry, updateService: UpdateService
     val preCheck: Xor[String, Uuid] = for {
       deltaFrom <- Xor.fromEither(meta.deltaFrom.toRight("Received GeneratedDelta message for campaign without static" +
                                                          " delta"))
-      _ <- if (deltaFrom.version.get.equalsIgnoreCase(from.get)) Xor.Right(Unit)
-      else Xor.Left("Received GeneratedDelta message for campaign with differing from version")
+      _ <- if (deltaFrom.get.equalsIgnoreCase(from.get)) { Xor.Right(Unit) }
+           else { Xor.Left("Received GeneratedDelta message for campaign with differing from version") }
       pkg <- Xor.fromEither(meta.packageUuid.toRight("Received GeneratedDelta message for campaign without a " +
                                                      "target version"))
     } yield pkg
@@ -56,10 +56,10 @@ class DeltaListener(deviceRegistry: DeviceRegistry, updateService: UpdateService
       _        <- validateMessage(campaign, msg.from, msg.to)
       _        <- Campaigns.setSize(id, msg.size)
       lc       <- Campaigns.fetchLaunchCampaignRequest(id)
-    } yield lc
+    } yield (campaign, lc)
 
-    db.run(f.transactionally).flatMap { lc =>
-      CampaignLauncher.launch(deviceRegistry, updateService, id, lc, messageBus)(db, ec).map(_ => Done)
+    db.run(f.transactionally).flatMap { case (campaign, lc) =>
+      CampaignLauncher.launch(deviceRegistry, updateService, campaign, lc, messageBus)(db, ec).map(_ => Done)
     }
   }
 

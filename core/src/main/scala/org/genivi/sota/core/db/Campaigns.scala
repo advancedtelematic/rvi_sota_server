@@ -13,6 +13,7 @@ import org.genivi.sota.core.data.{Campaign, CampaignStatus}
 import org.genivi.sota.core.SotaCoreErrors
 import org.genivi.sota.core.data.CampaignStatus.Status
 import org.genivi.sota.data.{Namespace, PackageId, Uuid}
+import org.genivi.sota.messaging.Commit.Commit
 import org.genivi.sota.refined.SlickRefined._
 
 import scala.concurrent.ExecutionContext
@@ -23,12 +24,6 @@ object Campaigns {
   import Campaign._
   import SotaCoreErrors._
 
-  private def optionPackageId(name: Option[PackageId.Name], version: Option[PackageId.Version]): Option[PackageId] =
-    (name, version) match {
-      case (Some(n), Some(v)) => Some(PackageId(n, v))
-      case _ => None
-    }
-
   // scalastyle:off
   class CampaignTable(tag: Tag) extends Table[CampaignMeta](tag, "Campaign") {
     def id = column[Campaign.Id]("uuid")
@@ -37,17 +32,15 @@ object Campaigns {
     def status = column[Status]("status")
     def packageUuid = column[Option[UUID]]("package_uuid")
     def createdAt = column[Instant]("created_at")
-    def deltaFromName = column[Option[PackageId.Name]]("delta_from_name")
-    def deltaFromVersion = column[Option[PackageId.Version]]("delta_from_version")
+    def deltaFromVersion = column[Option[Commit]]("delta_from_version")
     def size = column[Option[Long]]("size")
 
     def pk = primaryKey("pk_campaign", id)
 
-    def * = (id, namespace, name, status, packageUuid, createdAt, deltaFromName, deltaFromVersion, size).shaped <>
-      (x => CampaignMeta(x._1, x._2, x._3, x._4, x._5.map(Uuid.fromJava _), x._6, optionPackageId(x._7, x._8), x._9)
+    def * = (id, namespace, name, status, packageUuid, createdAt, deltaFromVersion, size).shaped <>
+      (x => CampaignMeta(x._1, x._2, x._3, x._4, x._5.map(Uuid.fromJava _), x._6, x._7, x._8)
       ,(x: CampaignMeta) =>
-        Some((x.id, x.namespace, x.name, x.status, x.packageUuid.map(_.toJava), x.createdAt,
-          x.deltaFrom.map(_.name), x.deltaFrom.map(_.version), x.size)))
+        Some((x.id, x.namespace, x.name, x.status, x.packageUuid.map(_.toJava), x.createdAt, x.deltaFrom, x.size)))
 
     def uniqueName = index("Campaign_unique_name", (namespace, name), unique = true)
     def fkPkg = foreignKey("Campaign_pkg_fk", packageUuid, Packages.packages)(_.uuid.?)
@@ -229,21 +222,20 @@ object Campaigns {
       .handleSingleUpdateError(MissingCampaign)
   }
 
-  def setDeltaFrom(id: Campaign.Id, deltaFrom: Option[PackageId])(implicit ec: ExecutionContext): DBIO[Unit] = {
+  def setDeltaFrom(id: Campaign.Id, deltaFrom: Option[Commit])(implicit ec: ExecutionContext): DBIO[Unit] = {
     val dbIO = for {
       _    <- canEdit(id)
       cam  <- fetch(id)
-      _    <- if(deltaFrom.isDefined && cam.packageId.isDefined && deltaFrom.get.version == cam.packageId.get.version) {
-                DBIO.failed(InvalidDeltaFrom)
-              } else {
-                DBIO.successful(())
+      _    <- (deltaFrom, cam.packageId) match {
+                case (Some(d), Some(p)) if d.get.equalsIgnoreCase(p.version.get) => DBIO.failed(InvalidDeltaFrom)
+                case _ =>
+                  campaignsMeta
+                    .filter(_.id === id)
+                    .map(_.deltaFromVersion)
+                    .update(deltaFrom)
+                    .handleSingleUpdateError(MissingCampaign)
+                    .map(_ => ())
               }
-      _    <- campaignsMeta
-                .filter(_.id === id)
-                .map(r => (r.deltaFromName, r.deltaFromVersion))
-                .update((deltaFrom.map(_.name), deltaFrom.map(_.version)))
-                .handleSingleUpdateError(MissingCampaign)
-                .map(_ => ())
     } yield ()
     dbIO.transactionally
   }

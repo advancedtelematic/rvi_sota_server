@@ -9,7 +9,6 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
 import cats.data.Xor
-import eu.timepit.refined.api.Refined
 import io.circe.generic.auto._
 import org.genivi.sota.common.DeviceRegistry
 import org.genivi.sota.core.campaigns.{CampaignLauncher, CampaignStats}
@@ -20,10 +19,10 @@ import org.genivi.sota.http.UuidDirectives._
 import org.genivi.sota.http.{AuthedNamespaceScope, ErrorHandler, Scopes}
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
 import org.genivi.sota.marshalling.RefinedMarshallingSupport._
+import org.genivi.sota.messaging.Commit.Commit
 import org.genivi.sota.messaging.MessageBusPublisher
 import slick.driver.MySQLDriver.api.Database
 
-import scala.async.Async._
 import scala.concurrent.Future
 
 class CampaignResource(namespaceExtractor: Directive1[AuthedNamespaceScope],
@@ -53,14 +52,14 @@ class CampaignResource(namespaceExtractor: Directive1[AuthedNamespaceScope],
   def launch(id: Campaign.Id, lc: LaunchCampaignRequest): Route = {
     lc.isValid() match {
       case Xor.Right(()) =>
-        val r = async {
-          val campaign = await(db.run(Campaigns.fetch(id)))
+        val f = db.run(Campaigns.fetch(id)).flatMap { campaign =>
           campaign.meta.deltaFrom match {
-            case Some(_) => await(CampaignLauncher.generateDeltaRequest(id, lc, messageBus))
-            case None => await(CampaignLauncher.launch(deviceRegistry, updateService, id, lc, messageBus))
+            case Some(_) => CampaignLauncher.generateDeltaRequest(id, lc, messageBus).map(_ => NoContent)
+            case None =>
+              CampaignLauncher.launch(deviceRegistry, updateService, campaign, lc, messageBus).map(_ => NoContent)
           }
         }
-        complete(NoContent -> r)
+        complete(f)
       case Xor.Left(err) => complete(Conflict -> err)
     }
   }
@@ -94,19 +93,8 @@ class CampaignResource(namespaceExtractor: Directive1[AuthedNamespaceScope],
   }
 
   def toggleDelta(id: Campaign.Id): Route = {
-    val sha256size = 64
-    parameters(('deltaFromName.as[PackageId.Name].?,
-      'deltaFromVersion.as[PackageId.Version].?)) {
-      case (Some(name), Some(version)) =>
-        if (version.get.length != sha256size || !version.get.matches("-?[0-9a-fA-F]+")) {
-          complete(BadRequest -> "delta from version must be a valid ostree hash")
-        } else {
-          complete(db.run(Campaigns.setDeltaFrom(id, Some(PackageId(name, version)))))
-        }
-      case (None, None) =>
-        complete(db.run(Campaigns.setDeltaFrom(id, None)))
-      case _ =>
-        complete(BadRequest -> "Missing either 'deltaFromName' or 'deltaFromVersion'")
+    parameter('deltaFromVersion.as[Commit].?) { v =>
+      complete(db.run(Campaigns.setDeltaFrom(id, v)))
     }
   }
 

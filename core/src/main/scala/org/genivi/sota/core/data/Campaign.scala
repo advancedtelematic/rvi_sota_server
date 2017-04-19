@@ -15,6 +15,7 @@ import org.genivi.sota.data._
 import slick.driver.MySQLDriver.api._
 import Campaign._
 import org.genivi.sota.core.data.CampaignStatus.Status
+import org.genivi.sota.messaging.Commit.Commit
 
 case class Campaign (meta: CampaignMeta, packageId: Option[PackageId], groups: Seq[CampaignGroup]) {
   def canLaunch(): Throwable Xor Unit = {
@@ -45,7 +46,7 @@ object Campaign {
     status: Status = CampaignStatus.Draft,
     packageUuid: Option[Uuid] = None,
     createdAt: Instant,
-    deltaFrom: Option[PackageId] = None,
+    deltaFrom: Option[Commit] = None,
     size: Option[Long] = None
   )
   case class CreateCampaign(name: String)
