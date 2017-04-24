@@ -5,7 +5,7 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
         <meta name="viewport" content="width=device-width">
 
-        <title>GENIVI SOTA Project : Auto-generated Documentation</title>
+        <title>GENIVI SOTA Project : Package distribution to all users of the system</title>
         <meta name="description" content="Software Updates Over the Air">
 
         <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
@@ -136,36 +136,62 @@
                     <div id="content" class="col-sm-9">
                         <div id="content" class="col-sm-10">
                             <div class="page-header">
-    <h2>Auto-generated Documentation
+    <h2>Package distribution to all users of the system
         
     </h2>
 </div>
 
+<div id="preamble">
+<div class="sectionbody">
 <div class="paragraph">
-<p>The source code of each of the components of SOTA includes comments and documentation. The auto-generated docs from those comments is linked here.</p>
-</div>
-<div class="sect2">
-<h3 id="sota-server">SOTA Server</h3>
-<div class="paragraph">
-<p><a href="../gen_docs/core/index.html">ScalaDocs for SOTA Core</a></p>
-</div>
-<div class="paragraph">
-<p><a href="../gen_docs/resolver/index.html">ScalaDocs for SOTA Resolver</a></p>
+<p>This document describes a script which copies packages uploaded by a
+user to the other users of the system. The script queries an LDAP
+server to get all the users of the system and then sends a copy
+request to the sota core server. The script is meant to be run on a
+regular basis, e.g. in a <code>cron</code> job.</p>
 </div>
 <div class="paragraph">
-<p><a href="../gen_docs/device_registry/index.html">ScalaDocs for SOTA Device Registry</a></p>
+<p>The script is called <code>distribute_package.sh</code> and can be found in the
+<code>deploy</code> folder of the repository. It can be called as follows:</p>
 </div>
-<div class="paragraph">
-<p><a href="../gen_docs/webserver/index.html">ScalaDocs for SOTA Web Server</a></p>
-</div>
-<div class="paragraph">
-<p><a href="../gen_docs/common/index.html">ScalaDocs for SOTA common resources</a></p>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="sh"><span style="color: #19177C">LDAP_URL</span><span style="color: #666666">=</span>ldap://localhost:389 <span style="color: #19177C">LDAP_PASSWORD</span><span style="color: #666666">=</span>... <span style="color: #19177C">CORE_URL</span><span style="color: #666666">=</span>http://localhost:8080 ./distribute_package.sh user packageids...</code></pre>
 </div>
 </div>
-<div class="sect2">
-<h3 id="sota-client">SOTA Client</h3>
-<div class="paragraph">
-<p><a href="../gen_docs/client/sota/index.html">Rustdoc for SOTA Client</a></p>
+</div>
+</div>
+<div class="sect1">
+<h2 id="required-configuration">Required configuration</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>LDAP_URL (environment variable): URL of the LDAP server</p>
+</li>
+<li>
+<p>LDAP_PASSWORD (environment variable): password of the admin user</p>
+</li>
+<li>
+<p>userid (first argument): user from which to copy the packages</p>
+</li>
+<li>
+<p>packageids (following arguments): ids of packages to distribute</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="optional-configuration">Optional configuration</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>CORE_URL (environment variable): URL of the sota server, defaults to <code><a href="http://localhost:8080" class="bare">http://localhost:8080</a></code>.</p>
+</li>
+</ul>
+</div>
 </div>
 </div>
 
