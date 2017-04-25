@@ -12,7 +12,7 @@ import org.genivi.sota.device_registry.db.DeviceRepository
 import org.genivi.sota.http.AuthedNamespaceScope
 import org.genivi.sota.http.UuidDirectives.{allowExtractor, extractUuid}
 import org.genivi.sota.messaging.MessageBus
-import org.scalatest.prop.PropertyChecks
+import org.scalatest.prop.{Configuration, PropertyChecks}
 import org.scalatest.{BeforeAndAfterAll, Matchers, PropSpec, Suite}
 
 import scala.concurrent.Future
@@ -59,4 +59,7 @@ trait ResourceSpec extends
     new DeviceRegistryRoutes(namespaceExtractor, namespaceAuthorizer, messageBus).route
 }
 
-trait ResourcePropSpec extends PropSpec with ResourceSpec with PropertyChecks
+trait ResourcePropSpec extends PropSpec with ResourceSpec with PropertyChecks {
+  self: Suite =>
+  implicit override val generatorDrivenConfig = PropertyCheckConfig(minSuccessful = 20)
+}
