@@ -49,6 +49,13 @@
             "format": "int64"
           },
           {
+            "name": "ungrouped",
+            "description": "indicates to search for devices not belonging to a group (default is \"false\")",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
             "name": "limit",
             "description": "the maximum amount of devices to return, after the offset",
             "in": "query",
@@ -61,9 +68,29 @@
           "200": {
             "description": "OK",
             "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Device"
+              "type": "object",
+              "properties": {
+                "total": {
+                  "description": "The total number of results returnable",
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "limit": {
+                  "description": "The maximum number of results to be returned, after the offset",
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "offset": {
+                  "description": "The offset at which to begin returning results",
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "values": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Device"
+                  }
+                }
               }
             }
           }
@@ -364,8 +391,8 @@
           }
         ],
         "responses": {
-          "201": {
-            "description": "Created",
+          "200": {
+            "description": "A list of the device uuids in the group",
             "schema": {
               "type": "array",
               "items": {
@@ -510,7 +537,7 @@
     },
     "/device_packages/{name}": {
       "get": {
-        "description": "Get a count of devices on which the give package is installed, grouped by versions.",
+        "description": "Get a count of devices on which the given package is installed, grouped by versions.",
         "parameters": [
           {
             "name": "name",
@@ -540,9 +567,29 @@
           "200": {
             "description": "A map of package versions to count.",
             "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/PackageStat"
+              "type": "object",
+              "properties": {
+                "total": {
+                  "description": "The total number of results returnable",
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "limit": {
+                  "description": "The maximum number of results to be returned, after the offset",
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "offset": {
+                  "description": "The offset at which to begin returning results",
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "values": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/PackageStat"
+                  }
+                }
               }
             }
           }
@@ -675,7 +722,7 @@
     },
     "PackageStat": {
       "type": "object",
-      "description": "An association between a package and a filter.",
+      "description": "A count of how many devices have a particular version of a package installed",
       "properties": {
         "packageVersion": {
           "type": "string"
