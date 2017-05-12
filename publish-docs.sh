@@ -20,4 +20,4 @@ cd rvi_sota_server/
 git add -A :/
 git commit -m "doc updates for commit $(git -C ../../ describe --tags)"
 git show --numstat
-# git push origin gh-pages
+git push origin gh-pages
