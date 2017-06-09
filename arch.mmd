@@ -1,0 +1,24 @@
+%% Ensure when adding entities here they match what's defined in the internal-docs repo
+
+subgraph Core
+  core --> core_maria_db
+end
+
+subgraph Resolver
+  resolver --> resolver_maria_db
+end
+
+subgraph Device Registry
+  device_registry --> device_registry_maria_db
+end
+
+core --> auth_plus
+core --> device_registry
+core --> kafka
+core --> package_store
+core --> resolver
+core --> tuf_repo
+core --> user_profile
+device_registry --> kafka
+resolver --> device_registry
+resolver --> kafka
