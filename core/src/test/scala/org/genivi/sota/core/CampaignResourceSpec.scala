@@ -392,7 +392,7 @@ class CampaignResourceSpec extends FunSuite
     val fromCommit: Commit = Refined.unsafeApply("c62ede9bdc7b53f7497e98af4381f95fde24667fc829aea8d933b70afedb7a0a")
     val toCommit: Commit = Refined.unsafeApply("c62ede9bdc7b53f7497e98af4381f95fde24667fc829aea8d933b70afedb7a0b")
     val size = 100
-    val msg = GeneratedDelta(campaign.meta.id.underlying, Namespaces.defaultNs, fromCommit, toCommit, Uri(), size)
+    val msg = GeneratedDelta(campaign.meta.id.underlying, Namespaces.defaultNs, fromCommit, toCommit, size)
     new DeltaListener(deviceRegistry, updateService, messageBus).generatedDeltaAction(msg).futureValue
     val camp = fetchCampaignOk(campaign.meta.id)
     camp.meta.status shouldBe CampaignStatus.Active
