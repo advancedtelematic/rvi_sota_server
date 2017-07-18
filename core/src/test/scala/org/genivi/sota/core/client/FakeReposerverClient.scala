@@ -8,6 +8,7 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.util.FastFuture
 import com.advancedtelematic.libats.data.Namespace
 import com.advancedtelematic.libtuf.data.TufDataType.{Checksum, HardwareIdentifier, RepoId, TargetName, TargetVersion}
+import com.advancedtelematic.libtuf.data.TufDataType.TargetFormat.TargetFormat
 import com.advancedtelematic.libtuf.reposerver._
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -19,7 +20,7 @@ import scala.concurrent.Future
 object FakeReposerverClient extends ReposerverClient {
 
   case class FakeTarget(namespace: Namespace, fileName: String, uri: Uri, checksum: Checksum,
-                        length: Int, name: Option[TargetName],
+                        length: Int, targetFormat: TargetFormat, name: Option[TargetName],
                         version: Option[TargetVersion],
                         hardwareIds: Seq[HardwareIdentifier])
 
@@ -33,11 +34,12 @@ object FakeReposerverClient extends ReposerverClient {
   }
 
   override def addTarget(namespace: Namespace, fileName: String, uri: Uri, checksum: Checksum,
-                         length: Int, name: Option[TargetName], version: Option[TargetVersion],
-                         hardwareIds: Seq[HardwareIdentifier]): Future[Unit] =
+                         length: Int, targetFormat: TargetFormat, name: Option[TargetName],
+                         version: Option[TargetVersion], hardwareIds: Seq[HardwareIdentifier]): Future[Unit] =
     store.asScala.get(namespace) match {
       case Some(repoId) =>
-        val newFakeTarget = FakeTarget(namespace, fileName, uri, checksum, length, name, version, hardwareIds)
+        val newFakeTarget = FakeTarget(namespace, fileName, uri, checksum, length,
+                                       targetFormat, name, version, hardwareIds)
 
         targets.compute(repoId, new BiFunction[RepoId, Seq[FakeTarget], Seq[FakeTarget]] {
           override def apply(repo: RepoId, old: Seq[FakeTarget]): Seq[FakeTarget] =

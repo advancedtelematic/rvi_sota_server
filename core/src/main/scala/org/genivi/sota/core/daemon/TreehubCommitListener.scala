@@ -11,6 +11,7 @@ import cats.syntax.show._
 import com.advancedtelematic.libats.data.Namespace
 import com.advancedtelematic.libats.data.RefinedUtils.RefineTry
 import com.advancedtelematic.libtuf.data.TufDataType.{Checksum, TargetName, TargetVersion, ValidHardwareIdentifier}
+import com.advancedtelematic.libtuf.data.TufDataType.TargetFormat.OSTREE
 import com.advancedtelematic.libtuf.reposerver.ReposerverClient
 import java.util.UUID
 
@@ -61,16 +62,16 @@ class TreehubCommitListener(db: Database, updateService: UpdateService, tufClien
 
   private def publishToTuf(event: TreehubCommit, pid: PackageId): Future[Unit] = {
     val targetMetadata = for {
-      hardwareId ← event.refName.refineTry[ValidHardwareIdentifier]
+      hardwareId <- event.refName.refineTry[ValidHardwareIdentifier]
       name = TargetName(pid.name.value)
       version = TargetVersion(pid.version.value)
       hash <- event.commit.refineTry[ValidChecksum]
     } yield (hash, Some(name), Some(version), Seq(hardwareId))
 
     for {
-      (hash, name, version, hardwareIds) ← Future.fromTry(targetMetadata)
+      (hash, name, version, hardwareIds) <- Future.fromTry(targetMetadata)
       _ <- tufClient.addTarget(Namespace(event.ns.get), pid.show, event.uri,
-        Checksum(HashMethod.SHA256, hash), event.size, name, version, hardwareIds)
+        Checksum(HashMethod.SHA256, hash), event.size, OSTREE, name, version, hardwareIds)
     } yield ()
   }
 }
