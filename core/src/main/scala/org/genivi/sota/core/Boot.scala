@@ -122,10 +122,8 @@ trait AsyncListeners {
 
   def messageBusPublisher: MessageBusPublisher
 
-  def startTreehubCommitListener(db: Database, notifier: UpdateNotifier, tufClient: ReposerverClient): Unit = {
-    val updateService = new UpdateService(notifier, deviceRegistryClient)
-
-    val listenerFn = new TreehubCommitListener(db, updateService, tufClient, messageBusPublisher).action(_)
+  def startTreehubCommitListener(db: Database, tufClient: ReposerverClient): Unit = {
+    val listenerFn = new TreehubCommitListener(db, tufClient, messageBusPublisher).action(_)
     val listener = system.actorOf(MessageListener.props[TreehubCommit](config, listenerFn))
 
     listener ! Subscribe
@@ -252,7 +250,7 @@ object Boot extends BootApp
 
       if (startAsyncListeners) {
         if (tufClient.isDefined)
-          startTreehubCommitListener(db, updateNotifier, tufClient.get)
+          startTreehubCommitListener(db, tufClient.get)
 
         startDeltaListeners(db, updateNotifier)
       }
