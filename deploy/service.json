@@ -1,0 +1,190 @@
+[{
+  "id": "${DEPLOY_ENV}/${DEVICE_REGISTRY_JOB_NAME}",
+  "uris": ["/root/docker.tar.gz"],
+  "constraints": [["rack_id", "CLUSTER", "$MARATHON_CONSTRAINTS"]],
+  "cpus": 0.2,
+  "mem": 1048,
+  "instances": 1,
+  "container": {
+    "type": "DOCKER",
+    "docker": {
+      "image": "advancedtelematic/sota-device_registry:${DOCKER_TAG}",
+      "parameters": [{"key": "log-driver", "value": "syslog"},
+                     {"key": "log-opt", "value": "tag=${DEVICE_REGISTRY_JOB_NAME}"}],
+      "forcePullImage": true,
+      "network": "BRIDGE",
+      "portMappings": [{
+        "containerPort": 9001,
+        "hostPort": 0,
+        "protocol": "tcp"
+      }]
+    }
+  },
+  "env": {
+    "AUTH_PROTOCOL": "none",
+    "BIND_HOST": "0.0.0.0",
+    "BIND_PORT": "9001",
+    "DB_MIGRATE": "true",
+    "DEVICE_REGISTRY_DB_PASSWORD": "${DEVICE_REGISTRY_DB_PASSWORD}",
+    "DEVICE_REGISTRY_DB_URL": "${DEVICE_REGISTRY_DB_URL}",
+    "DEVICE_REGISTRY_DB_USER": "${DEVICE_REGISTRY_DB_USER}",
+    "ENV_PREFIX": "${ENV_PREFIX}",
+    "INFLUXDB_HOST": "${INFLUXDB_HOST}",
+    "INFLUXDB_PORT": "${INFLUXDB_PORT}",
+    "INFLUXDB_URI": "${INFLUXDB_URI}",
+    "JAVA_OPTS": "-Xmx800m",
+    "KAFKA_BOOTSTRAP_SERVERS": "${KAFKA_BOOTSTRAP_SERVERS}",
+    "KAFKA_HOST": "${KAFKA_HOST}",
+    "KAFKA_TOPIC_SUFFIX": "${KAFKA_TOPIC_SUFFIX}",
+    "MESSAGING_MODE": "kafka",
+    "METRICS_DB": "${METRICS_DB}",
+    "SERVICE_NAME": "${DEVICE_REGISTRY_JOB_NAME}",
+    "SERVICE_SCOPE": "internal",
+    "SERVICE_TYPE": "http",
+    "SERVICE_IMAGE": "advancedtelematic/sota-device_registry:${DOCKER_TAG}",
+    "SERVICE_HEALTH_CHECK": "curl --show-error --silent %<host>s:%<port>s/health"
+  },
+  "healthChecks": [{
+    "protocol": "HTTP",
+    "path": "/health",
+    "intervalSeconds": 30
+  }]
+},
+{
+  "id": "${DEPLOY_ENV}/${CORE_JOB_NAME}",
+  "uris": ["/root/docker.tar.gz"],
+  "constraints": [["rack_id", "CLUSTER", "$MARATHON_CONSTRAINTS"]],
+  "cpus": 0.2,
+  "mem": 1048,
+  "instances": 1,
+  "container": {
+    "type": "DOCKER",
+    "docker": {
+      "image": "advancedtelematic/sota-core:${DOCKER_TAG}",
+      "parameters": [{"key": "log-driver", "value": "syslog"},
+                     {"key": "log-opt", "value": "tag=${CORE_JOB_NAME}"}],
+      "forcePullImage": true,
+      "network": "BRIDGE",
+      "portMappings": [{
+        "containerPort": 9001,
+        "hostPort": 0,
+        "protocol": "tcp"
+      }]
+    }
+  },
+  "env": {
+    "AUTH_PROTOCOL": "none",
+    "BIND_HOST": "0.0.0.0",
+    "BIND_PORT": "9001",
+    "CORE_AWS_ACCESS_KEY": "${CORE_AWS_ACCESS_KEY}",
+    "CORE_AWS_BUCKET_ID": "${CORE_AWS_BUCKET_ID}",
+    "CORE_AWS_SECRET_KEY": "${CORE_AWS_SECRET_KEY}",
+    "CORE_DB_PASSWORD": "${CORE_DB_PASSWORD}",
+    "CORE_DB_URL": "${CORE_DB_URL}",
+    "CORE_DB_USER": "${CORE_DB_USER}",
+    "CORE_INTERACTION_PROTOCOL": "none",
+    "DB_MIGRATE": "true",
+    "DEVICE_REGISTRY_HOST": "${DEVICE_REGISTRY_HOST}",
+    "DEVICE_REGISTRY_PORT": "${DEVICE_REGISTRY_PORT}",
+    "ENV_PREFIX": "${ENV_PREFIX}",
+    "INFLUXDB_HOST": "${INFLUXDB_HOST}",
+    "INFLUXDB_PORT": "${INFLUXDB_PORT}",
+    "INFLUXDB_URI": "${INFLUXDB_URI}",
+    "JWT_SECRET": "${JWT_SECRET}",
+    "JAVA_OPTS": "-Xmx800m",
+    "KAFKA_BOOTSTRAP_SERVERS": "${KAFKA_BOOTSTRAP_SERVERS}",
+    "KAFKA_HOST": "${KAFKA_HOST}",
+    "KAFKA_TOPIC_SUFFIX": "${KAFKA_TOPIC_SUFFIX}",
+    "MESSAGING_MODE": "kafka",
+    "METRICS_DB": "${METRICS_DB}",
+    "PACKAGES_VERSION_FORMAT": ".+",
+    "SERVICE_NAME": "${CORE_JOB_NAME}",
+    "SERVICE_SCOPE": "internal",
+    "SERVICE_TYPE": "http",
+    "SERVICE_IMAGE": "advancedtelematic/sota-core:${DOCKER_TAG}",
+    "SERVICE_HEALTH_CHECK": "curl --show-error --silent %<host>s:%<port>s/health",
+    "TUF_REPOSERVER_HOST": "${TUF_REPOSERVER_HOST}",
+    "TUF_REPOSERVER_PORT": "${TUF_REPOSERVER_PORT}",
+    "USER_PROFILE_HOST": "${USER_PROFILE_HOST}",
+    "USER_PROFILE_PORT": "${USER_PROFILE_PORT}",
+    "USE_TUF": "true",
+    "USE_USER_PROFILE": "true"
+  },
+  "healthChecks": [{
+    "protocol": "HTTP",
+    "path": "/health",
+    "intervalSeconds": 30
+  }]
+},
+{
+  "id": "${DEPLOY_ENV}/${CORE_JOB_NAME}-pub",
+  "uris": ["/root/docker.tar.gz"],
+  "constraints": [["rack_id", "CLUSTER", "$MARATHON_CONSTRAINTS"]],
+  "cpus": 0.2,
+  "mem": 1048,
+  "instances": 1,
+  "container": {
+    "type": "DOCKER",
+    "docker": {
+      "image": "advancedtelematic/sota-core:${DOCKER_TAG}",
+      "parameters": [{"key": "log-driver", "value": "syslog"},
+                     {"key": "log-opt", "value": "tag=${CORE_JOB_NAME}-pub"}],
+      "forcePullImage": true,
+      "network": "BRIDGE",
+      "portMappings": [{
+        "containerPort": 9001,
+        "hostPort": 0,
+        "protocol": "tcp"
+      }]
+    }
+  },
+  "env": {
+    "AUTH_PLUS_CLIENT_ID": "${AUTH_PLUS_CLIENT_ID}",
+    "AUTH_PLUS_CLIENT_SECRET": "${AUTH_PLUS_CLIENT_SECRET}",
+    "AUTH_PLUS_HOST": "${AUTH_PLUS_HOST}",
+    "AUTH_PLUS_PORT": "${AUTH_PLUS_PORT}",
+    "AUTH_PLUS_SCHEME": "${AUTH_PLUS_SCHEME}",
+    "AUTH_PROTOCOL": "oauth.accesstoken",
+    "BIND_HOST": "0.0.0.0",
+    "BIND_PORT": "9001",
+    "CORE_AWS_ACCESS_KEY": "${CORE_AWS_ACCESS_KEY}",
+    "CORE_AWS_BUCKET_ID": "${CORE_AWS_BUCKET_ID}",
+    "CORE_AWS_SECRET_KEY": "${CORE_AWS_SECRET_KEY}",
+    "CORE_DB_PASSWORD": "${CORE_DB_PASSWORD}",
+    "CORE_DB_URL": "${CORE_DB_URL}",
+    "CORE_DB_USER": "${CORE_DB_USER}",
+    "CORE_INTERACTION_PROTOCOL": "none",
+    "DB_MIGRATE": "true",
+    "DEVICE_REGISTRY_HOST": "${DEVICE_REGISTRY_HOST}",
+    "DEVICE_REGISTRY_PORT": "${DEVICE_REGISTRY_PORT}",
+    "ENV_PREFIX": "${ENV_PREFIX}",
+    "INFLUXDB_HOST": "${INFLUXDB_HOST}",
+    "INFLUXDB_PORT": "${INFLUXDB_PORT}",
+    "INFLUXDB_URI": "${INFLUXDB_URI}",
+    "JWT_SECRET": "${JWT_SECRET}",
+    "JAVA_OPTS": "-Xmx800m",
+    "KAFKA_BOOTSTRAP_SERVERS": "${KAFKA_BOOTSTRAP_SERVERS}",
+    "KAFKA_HOST": "${KAFKA_HOST}",
+    "KAFKA_TOPIC_SUFFIX": "${KAFKA_TOPIC_SUFFIX}",
+    "MESSAGING_MODE": "kafka",
+    "METRICS_DB": "${METRICS_DB}",
+    "PACKAGES_VERSION_FORMAT": ".+",
+    "SERVICE_NAME": "${CORE_JOB_NAME}-pub",
+    "SERVICE_SCOPE": "public",
+    "SERVICE_TYPE": "http",
+    "SERVICE_IMAGE": "advancedtelematic/sota-core:${DOCKER_TAG}",
+    "SERVICE_HEALTH_CHECK": "curl --show-error --silent %<host>s:%<port>s/health",
+    "START_ASYNC_LISTENERS": "false",
+    "TUF_REPOSERVER_HOST": "${TUF_REPOSERVER_HOST}",
+    "TUF_REPOSERVER_PORT": "${TUF_REPOSERVER_PORT}",
+    "USER_PROFILE_HOST": "${USER_PROFILE_HOST}",
+    "USER_PROFILE_PORT": "${USER_PROFILE_PORT}",
+    "USE_TUF": "true",
+    "USE_USER_PROFILE": "true"
+  },
+  "healthChecks": [{
+    "protocol": "HTTP",
+    "path": "/health",
+    "intervalSeconds": 30
+  }]
+}]
