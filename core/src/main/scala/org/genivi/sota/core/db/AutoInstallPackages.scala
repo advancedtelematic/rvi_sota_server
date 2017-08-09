@@ -5,11 +5,12 @@
 package org.genivi.sota.core.db
 
 import org.genivi.sota.core.data.AutoInstall
-import org.genivi.sota.data.{Namespace, PackageId, Uuid}
+import org.genivi.sota.data.{Namespace, PackageId, PaginatedResult, Uuid}
+import org.genivi.sota.db.SlickExtensions
 import scala.concurrent.ExecutionContext
 import slick.jdbc.MySQLProfile.api._
 
-object AutoInstalls {
+object AutoInstalls extends SlickExtensions {
   import org.genivi.sota.refined.SlickRefined._
   import org.genivi.sota.db.SlickExtensions._
 
@@ -25,6 +26,12 @@ object AutoInstalls {
   }
 
   val all = TableQuery[AutoInstallTable]
+
+  def listAutoInstalls(ns: Namespace, offset: Option[Long], limit: Option[Long])
+                      (implicit ec: ExecutionContext): DBIO[PaginatedResult[AutoInstall]] =
+    all.filter(_.namespace === ns)
+      .paginatedResult(x => (x.pkgName, x.device), offset = offset, limit = limit)
+
 
   def listDevices(ns: Namespace, pkgName: PackageId.Name): DBIO[Seq[Uuid]]
     = all.filter(_.namespace === ns)

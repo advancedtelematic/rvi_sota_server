@@ -46,6 +46,11 @@ class AutoInstallResource
     complete(db.run(AutoInstalls.removeDevice(ns, pkgName, dev)))
   }
 
+  def listAllInNamespace(ns: Namespace): Route =
+    parameters(('offset.as[Long].?, 'limit.as[Long].?)) { (offset, limit) =>
+      complete(db.run(AutoInstalls.listAutoInstalls(ns, offset = offset, limit = limit)))
+    }
+
   val route = ErrorHandler.handleErrors {
     (pathPrefix("auto_install") & namespaceExtractor) { ns =>
       val scope = Scopes.updates(ns)
@@ -69,6 +74,12 @@ class AutoInstallResource
             removeDevice(ns, pkgName, devUuid)
           }
         }
+      }
+    } ~
+    (path("auto_install_migration") & namespaceExtractor) { ns =>
+      val scope = Scopes.updates(ns)
+      scope.get {
+        listAllInNamespace(ns)
       }
     }
   }
