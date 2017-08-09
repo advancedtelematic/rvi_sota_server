@@ -8,13 +8,14 @@ package org.genivi.sota.core
 import java.util.UUID
 
 import akka.http.scaladsl.model.{HttpRequest, StatusCodes, Uri}
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import cats.implicits._
 import org.genivi.sota.DefaultPatience
-import org.genivi.sota.core.data.Package
+import org.genivi.sota.core.data.{AutoInstall, Package}
 import org.genivi.sota.core.resolver.DefaultConnectivity
 import org.genivi.sota.core.transfer.DefaultUpdateNotifier
-import org.genivi.sota.data.{Namespace, Namespaces, PackageId, Uuid}
+import org.genivi.sota.data.{Namespace, Namespaces, PackageId, PaginatedResult, Uuid}
 import org.genivi.sota.data.DeviceGenerators._
 import org.genivi.sota.data.GeneratorOps._
 import org.genivi.sota.http.NamespaceDirectives.defaultNamespaceExtractor
@@ -217,5 +218,41 @@ class AutoInstallResourceSpec extends FunSuite
     val pkgId = uploadPackage(pkgName)
 
     howManyUpdateRequestsFor(pkgId) shouldBe 0
+  }
+
+  test("migration lists all updates in namespace") {
+    val migNs: Namespace = Namespace("migration-namespace")
+    def createDevice: Uuid = {
+      val device = genDevice.generate.copy(namespace = migNs)
+      deviceRegistry.addDevice(device)
+      device.uuid
+    }
+
+    def addDeviceOk(pkgName: PackageId.Name, device: Uuid): Unit =
+      addDevice(pkgName, device).addHeader(RawHeader("x-ats-namespace", migNs.get)) ~> service ~> check {
+        status shouldBe StatusCodes.OK
+      }
+
+    val listAllInNamespace = Get(Uri.Empty.withPath(Path("/auto_install_migration")))
+      .addHeader(RawHeader("x-ats-namespace", migNs.get))
+
+    val device1 = createDevice
+    val device2 = createDevice
+    val pkgName1 = PackageNameGen.generate
+    val pkgName2 = PackageNameGen.generate
+
+    addDeviceOk(pkgName1, device1)
+    addDeviceOk(pkgName2, device1)
+    addDeviceOk(pkgName2, device2)
+
+    listAllInNamespace ~> service ~> check {
+      status shouldBe StatusCodes.OK
+      val devs = responseAs[PaginatedResult[AutoInstall]]
+
+      devs.total shouldBe 3
+      devs.values should contain(AutoInstall(migNs, pkgName1, device1))
+      devs.values should contain(AutoInstall(migNs, pkgName2, device1))
+      devs.values should contain(AutoInstall(migNs, pkgName2, device2))
+    }
   }
 }
