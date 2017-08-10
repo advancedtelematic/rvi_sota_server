@@ -46,7 +46,7 @@ class TreehubCommitListener(db: Database, tufClient: ReposerverClient, bus: Mess
 
     for {
       (hash, name, version, hardwareIds) <- Future.fromTry(targetMetadata)
-      _ <- tufClient.addTarget(Namespace(event.ns.get), event.commit, event.uri,
+      _ <- tufClient.addTarget(Namespace(event.ns.get), s"${event.refName}-${event.commit}", event.uri,
         Checksum(HashMethod.SHA256, hash), event.size, OSTREE, name, version, hardwareIds)
     } yield ()
   }
