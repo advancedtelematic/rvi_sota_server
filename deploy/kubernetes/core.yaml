@@ -1,0 +1,40 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: core
+spec:
+  selector:
+    app: core
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: core
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: core
+    spec:
+      containers:
+      - name: core
+        image: advancedtelematic/sota-core
+        envFrom:
+        - configMapRef:
+          name: core-config
+        - secretRef:
+          name: core-secret
+        ports:
+        - name: core
+          containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 15
+          timeoutSeconds: 1

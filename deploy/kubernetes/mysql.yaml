@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: mysql
+  clusterIP: None
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: mysql
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - image: advancedtelematic/mariadb:stable
+        name: mysql
+        env:
+          # Use secret in real usage
+        - name: MYSQL_ROOT_PASSWORD
+          value: sota-test
+        - name: MYSQL_USER
+          value: sota
+        - name: MYSQL_PASSWORD
+          value: s0ta
+        - name: MYSQL_DATABASES
+          value: sota_resolver sota_resolver_test sota_resolver% sota_core sota_core_test sota_core% sota_device_registry% sota_device_registry sota_device_registry_test
+        ports:
+        - containerPort: 3306
+          name: mysql

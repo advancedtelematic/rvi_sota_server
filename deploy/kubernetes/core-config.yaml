@@ -1,0 +1,20 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: core-config
+data:
+  BIND_HOST: 0.0.0.0
+  CORE_DB_URL: jdbc:mariadb://mysql.default.svc.cluster.local:3306/sota_core
+  CORE_INTERACTION_PROTOCOL: none
+  DB_MIGRATE: 'true'
+  DEVICE_REGISTRY_HOST: 'device-registry'
+  DEVICE_REGISTRY_PORT: '80'
+  KAFKA_HOST: "kafka.default.svc.cluster.local:9092"
+  KAFKA_TOPIC_SUFFIX: sota
+  MESSAGING_MODE: kafka
+  SOTA_RESOLVER_HOST: 'resolver.default.svc.cluster.local'
+  SOTA_RESOLVER_PORT: '80'
+  PACKAGES_VERSION_FORMAT: .+
+  DB_ALIVE_URL: 'mysql.default.svc.cluster.local:3306'
+  AUTH_PROTOCOL: none

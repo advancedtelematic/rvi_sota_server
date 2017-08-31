@@ -1,0 +1,61 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: webserver
+spec:
+  selector:
+    app: webserver
+  ports:
+  - protocol: "TCP"
+    port: 80
+    targetPort: 9000
+  type: LoadBalancer
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: webserver
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: webserver
+    spec:
+      containers:
+      - name: webserver
+        image: advancedtelematic/sota-webserver
+        ports:
+        - containerPort: 9000
+          name: webserver
+        env:
+        - name: BIND_HOST
+          value: 0.0.0.0
+        - name: SOTA_CORE_HOST
+          value: 'core'
+        - name: SOTA_CORE_PORT
+          value: '80'
+        - name: DEVICE_REGISTRY_HOST
+          value: 'device-registry'
+        - name: DEVICE_REGISTRY_PORT
+          value: '80'
+        - name: KAFKA_HOST
+          value: "kafka.default.svc.cluster.local:9092"
+        - name: KAFKA_TOPIC_SUFFIX
+          value: sota
+        - name: MESSAGING_MODE
+          value: kafka
+        - name: SOTA_RESOLVER_HOST
+          value: 'resolver'
+        - name: SOTA_RESOLVER_PORT
+          value: '80'
+        - name: PLAY_CRYPTO_SECRET
+          value: "YM5B6o<ywKn4tTyA;tOZ<2xUEajF4DDi=O/PPm1Q^w2LqtKISd9oqYT6b>>C1gQa"
+        - name: LDAP_HOST
+          value: "ldap.default.svc.cluster.local"
+        - name: LDAP_PORT
+          value: "389"
+        - name: LDAP_AUTHN_ID
+          value: "cn=admin,dc=genivi,dc=org"
+        - name: LDAP_PASSWORD
+          value: "admin"
