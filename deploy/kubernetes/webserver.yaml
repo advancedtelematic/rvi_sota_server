@@ -7,7 +7,7 @@ spec:
   - port: 9000
   selector:
     app: webserver
-  clusterIP: ExternalName
+  type: LoadBalancer
 ---
 apiVersion: apps/v1beta1
 kind: Deployment
@@ -48,7 +48,7 @@ spec:
         - name: PLAY_CRYPTO_SECRET
           value: "YM5B6o<ywKn4tTyA;tOZ<2xUEajF4DDi=O/PPm1Q^w2LqtKISd9oqYT6b>>C1gQa"
         - name: LDAP_HOST
-          value: "ldapserver.default.svc.cluster.local"
+          value: "ldap.default.svc.cluster.local"
         - name: LDAP_PORT
           value: "389"
         - name: LDAP_AUTHN_ID

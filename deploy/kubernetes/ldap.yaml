@@ -25,7 +25,10 @@ spec:
       - image: advancedtelematic/openldap:genivi
         name: ldap
         command:
-          - "--loglevel debug"
+          - "/container/tool/run"
+        args:
+          - "--loglevel"
+          - "debug"
         ports:
         - containerPort: 389
           name: ldap
