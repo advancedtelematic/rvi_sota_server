@@ -22,7 +22,7 @@ spec:
         app: mysql
     spec:
       containers:
-      - image: mysql:5.6
+      - image: advancedtelematic/mariadb:stable
         name: mysql
         env:
           # Use secret in real usage
