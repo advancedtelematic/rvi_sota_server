@@ -22,7 +22,7 @@ spec:
         app: resolver
     spec:
       containers:
-      - image: advancedtelematic/sota-device_registry
+      - image: advancedtelematic/sota-resolver
         name: resolver
         env:
         - name: BIND_HOST
