@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: resolver
+spec:
+  ports:
+  - port: 8081
+  selector:
+    app: resolver
+  clusterIP: None
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: resolver
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: resolver
+    spec:
+      containers:
+      - image: advancedtelematic/sota-device_registry
+        name: resolver
+        env:
+        - name: BIND_HOST
+          value: 0.0.0.0
+        - name: RESOLVER_DB_URL
+          value: jdbc:mariadb://mysql.default.svc.cluster.local:3306/sota_resolver
+        - name: DB_MIGRATE
+          value: 'true'
+        - name: DEVICE_REGISTRY_HOST
+          value: 'device-registry.default.svc.cluster.local'
+        - name: DEVICE_REGISTRY_PORT
+          value: '8083'
+        - name: KAFKA_HOST
+          value: "kafka.default.svc.cluster.local:9092"
+        - name: KAFKA_TOPIC_SUFFIX
+          value: sota
+        - name: MESSAGING_MODE
+          value: kafka
+        - name: PACKAGES_VERSION_FORMAT
+          value: .+
+        - name: DB_ALIVE_URL
+          value: 'mysql.default.svc.cluster.local:3306'
+        - name: AUTH_PROTOCOL
+          value: none
+        ports:
+        - containerPort: 8081
+          name: resolver
