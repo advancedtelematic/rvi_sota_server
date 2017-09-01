@@ -8,7 +8,7 @@ spec:
   ports:
   - protocol: TCP
     port: 80
-    targetPort: 9001
+    targetPort: 8080
 ---
 apiVersion: apps/v1beta1
 kind: Deployment
@@ -26,12 +26,10 @@ spec:
         image: advancedtelematic/sota-core
         ports:
         - name: core
-          containerPort: 9001
+          containerPort: 8080
         env:
         - name: BIND_HOST
           value: 0.0.0.0
-        - name: BIND_PORT
-          value: 9001
         - name: CORE_DB_URL
           value: jdbc:mariadb://mysql.default.svc.cluster.local:3306/sota_core
         - name: CORE_INTERACTION_PROTOCOL

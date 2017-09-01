@@ -16,7 +16,7 @@ kind: Deployment
 metadata:
   name: webserver
 spec:
-  repilcas: 1
+  replicas: 1
   template:
     metadata:
       labels:
@@ -32,9 +32,9 @@ spec:
         - name: BIND_HOST
           value: 0.0.0.0
         - name: SOTA_CORE_HOST
-          value: 'core.default.svc.cluster.local'
+          value: 'core'
         - name: SOTA_CORE_PORT
-          value: '8080'
+          value: '80'
         - name: DEVICE_REGISTRY_HOST
           value: 'device-registry.default.svc.cluster.local'
         - name: DEVICE_REGISTRY_PORT
