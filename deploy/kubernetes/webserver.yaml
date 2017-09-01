@@ -1,12 +1,14 @@
-apiVersion: v1
 kind: Service
+apiVersion: v1
 metadata:
   name: webserver
 spec:
-  ports:
-  - port: 9000
   selector:
     app: webserver
+  ports:
+  - protocol: "TCP"
+    port: 80
+    targetPort: 9000
   type: LoadBalancer
 ---
 apiVersion: apps/v1beta1
@@ -14,16 +16,18 @@ kind: Deployment
 metadata:
   name: webserver
 spec:
-  strategy:
-    type: Recreate
+  repilcas: 1
   template:
     metadata:
       labels:
         app: webserver
     spec:
       containers:
-      - image: advancedtelematic/sota-webserver
-        name: webserver
+      - name: webserver
+        image: advancedtelematic/sota-webserver
+        ports:
+        - containerPort: 9000
+          name: webserver
         env:
         - name: BIND_HOST
           value: 0.0.0.0
@@ -55,6 +59,3 @@ spec:
           value: "cn=admin,dc=genivi,dc=org"
         - name: LDAP_PASSWORD
           value: "admin"
-        ports:
-        - containerPort: 9000
-          name: webserver
