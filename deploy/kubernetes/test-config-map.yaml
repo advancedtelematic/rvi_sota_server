@@ -1,0 +1,6 @@
+apiVersion: v1
+kind: ConfigMap
+date:
+  stuff.properties:
+    PUBLIC=stuff
+    MORE_PUBLIC=things
