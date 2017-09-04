@@ -49,7 +49,7 @@ spec:
         - name: SOTA_RESOLVER_HOST
           value: 'resolver.default.svc.cluster.local'
         - name: SOTA_RESOLVER_PORT
-          value: '8081'
+          value: '80'
         - name: PACKAGES_VERSION_FORMAT
           value: .+
         - name: DB_ALIVE_URL

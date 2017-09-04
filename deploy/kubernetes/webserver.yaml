@@ -46,9 +46,9 @@ spec:
         - name: MESSAGING_MODE
           value: kafka
         - name: SOTA_RESOLVER_HOST
-          value: 'resolver.default.svc.cluster.local'
+          value: 'resolver'
         - name: SOTA_RESOLVER_PORT
-          value: '8081'
+          value: '80'
         - name: PLAY_CRYPTO_SECRET
           value: "YM5B6o<ywKn4tTyA;tOZ<2xUEajF4DDi=O/PPm1Q^w2LqtKISd9oqYT6b>>C1gQa"
         - name: LDAP_HOST

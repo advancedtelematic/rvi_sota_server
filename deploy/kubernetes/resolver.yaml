@@ -1,29 +1,32 @@
-apiVersion: v1
 kind: Service
+apiVersion: v1
 metadata:
   name: resolver
 spec:
-  ports:
-  - port: 8081
   selector:
     app: resolver
-  clusterIP: None
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8081
 ---
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   name: resolver
 spec:
-  strategy:
-    type: Recreate
+  replicas: 1
   template:
     metadata:
       labels:
         app: resolver
     spec:
       containers:
-      - image: advancedtelematic/sota-resolver
-        name: resolver
+      - name: resolver
+        image: advancedtelematic/sota-resolver
+        ports:
+        - name: resolver
+          containerPort: 8081
         env:
         - name: BIND_HOST
           value: 0.0.0.0
@@ -47,6 +50,3 @@ spec:
           value: 'mysql.default.svc.cluster.local:3306'
         - name: AUTH_PROTOCOL
           value: none
-        ports:
-        - containerPort: 8081
-          name: resolver
