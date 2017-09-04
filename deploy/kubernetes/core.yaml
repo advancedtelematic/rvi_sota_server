@@ -27,6 +27,12 @@ spec:
         ports:
         - name: core
           containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 15
+          timeoutSeconds: 1
         env:
         - name: BIND_HOST
           value: 0.0.0.0
