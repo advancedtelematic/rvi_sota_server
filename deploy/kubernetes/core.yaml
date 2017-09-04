@@ -37,9 +37,9 @@ spec:
         - name: DB_MIGRATE
           value: 'true'
         - name: DEVICE_REGISTRY_HOST
-          value: 'device-registry.default.svc.cluster.local'
+          value: 'device-registry'
         - name: DEVICE_REGISTRY_PORT
-          value: '8083'
+          value: '80'
         - name: KAFKA_HOST
           value: "kafka.default.svc.cluster.local:9092"
         - name: KAFKA_TOPIC_SUFFIX

@@ -1,29 +1,32 @@
-apiVersion: v1
 kind: Service
+apiVersion: v1
 metadata:
   name: device-registry
 spec:
-  ports:
-  - port: 8083
   selector:
     app: device-registry
-  clusterIP: None
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8083
 ---
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   name: device-registry
 spec:
-  strategy:
-    type: Recreate
+  replicas: 1
   template:
     metadata:
       labels:
         app: device-registry
     spec:
       containers:
-      - image: advancedtelematic/sota-device_registry
-        name: device-registry
+      - name: device-registry
+        image: advancedtelematic/sota-device_registry
+        ports:
+        - name: device-registry
+          containerPort: 8083
         env:
         - name: BIND_HOST
           value: 0.0.0.0
@@ -41,6 +44,3 @@ spec:
           value: 'mysql.default.svc.cluster.local:3306'
         - name: AUTH_PROTOCOL
           value: none
-        ports:
-        - containerPort: 8083
-          name: device-registry
