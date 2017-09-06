@@ -24,6 +24,9 @@ spec:
       containers:
       - name: core
         image: advancedtelematic/sota-core
+        envFrom:
+        - configMapRef:
+          name: core-config
         ports:
         - name: core
           containerPort: 8080
@@ -33,32 +36,3 @@ spec:
             port: 8080
           initialDelaySeconds: 15
           timeoutSeconds: 1
-        env:
-        - name: BIND_HOST
-          value: 0.0.0.0
-        - name: CORE_DB_URL
-          value: jdbc:mariadb://mysql.default.svc.cluster.local:3306/sota_core
-        - name: CORE_INTERACTION_PROTOCOL
-          value: none
-        - name: DB_MIGRATE
-          value: 'true'
-        - name: DEVICE_REGISTRY_HOST
-          value: 'device-registry'
-        - name: DEVICE_REGISTRY_PORT
-          value: '80'
-        - name: KAFKA_HOST
-          value: "kafka.default.svc.cluster.local:9092"
-        - name: KAFKA_TOPIC_SUFFIX
-          value: sota
-        - name: MESSAGING_MODE
-          value: kafka
-        - name: SOTA_RESOLVER_HOST
-          value: 'resolver.default.svc.cluster.local'
-        - name: SOTA_RESOLVER_PORT
-          value: '80'
-        - name: PACKAGES_VERSION_FORMAT
-          value: .+
-        - name: DB_ALIVE_URL
-          value: 'mysql.default.svc.cluster.local:3306'
-        - name: AUTH_PROTOCOL
-          value: none
