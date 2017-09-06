@@ -27,6 +27,8 @@ spec:
         envFrom:
         - configMapRef:
           name: core-config
+        - secretRef:
+          name: core-secret
         ports:
         - name: core
           containerPort: 8080
