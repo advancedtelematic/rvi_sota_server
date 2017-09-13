@@ -34,7 +34,12 @@ class TreehubCommitListener(db: Database, tufClient: ReposerverClient, bus: Mess
 
   private val log = LoggerFactory.getLogger(this.getClass)
 
-  def action(event: TreehubCommit): Future[Unit] = publishToTuf(event)
+  def action(event: TreehubCommit): Future[Unit] = {
+    publishToTuf(event).recover {
+      case ex @ ReposerverClient.OfflineKey =>
+        log.error(s"Could not create tuf target: ${ex.desc}")
+    }
+  }
 
   private def publishToTuf(event: TreehubCommit): Future[Unit] = {
     val targetMetadata = for {
