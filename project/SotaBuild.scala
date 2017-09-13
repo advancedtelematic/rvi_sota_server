@@ -237,7 +237,7 @@ object Dependencies {
 
   val JsonWebSecurityVersion = "0.4.5"
 
-  val libTufV = "0.1.0-42-g149dcae"
+  val libTufV = "0.1.0-125-g26a9c02"
 
   val libAtsV = "0.0.1-67-g052b15d"
 
