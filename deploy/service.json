@@ -10,7 +10,7 @@
     "docker": {
       "image": "advancedtelematic/sota-device_registry:${DOCKER_TAG}",
       "parameters": [{"key": "log-driver", "value": "syslog"},
-                     {"key": "log-opt", "value": "tag=${DEVICE_REGISTRY_JOB_NAME}"}],
+                     {"key": "log-opt", "value": "tag=${DEVICE_REGISTRY_SERVICE_NAME}"}],
       "forcePullImage": true,
       "network": "BRIDGE",
       "portMappings": [{
@@ -38,7 +38,7 @@
     "KAFKA_TOPIC_SUFFIX": "${KAFKA_TOPIC_SUFFIX}",
     "MESSAGING_MODE": "kafka",
     "METRICS_DB": "${METRICS_DB}",
-    "SERVICE_NAME": "${DEVICE_REGISTRY_JOB_NAME}",
+    "SERVICE_NAME": "${DEVICE_REGISTRY_SERVICE_NAME}",
     "SERVICE_SCOPE": "internal",
     "SERVICE_TYPE": "http",
     "SERVICE_IMAGE": "advancedtelematic/sota-device_registry:${DOCKER_TAG}",
@@ -62,7 +62,7 @@
     "docker": {
       "image": "advancedtelematic/sota-core:${DOCKER_TAG}",
       "parameters": [{"key": "log-driver", "value": "syslog"},
-                     {"key": "log-opt", "value": "tag=${CORE_JOB_NAME}"}],
+                     {"key": "log-opt", "value": "tag=${CORE_SERVICE_NAME}"}],
       "forcePullImage": true,
       "network": "BRIDGE",
       "portMappings": [{
@@ -98,7 +98,7 @@
     "MESSAGING_MODE": "kafka",
     "METRICS_DB": "${METRICS_DB}",
     "PACKAGES_VERSION_FORMAT": ".+",
-    "SERVICE_NAME": "${CORE_JOB_NAME}",
+    "SERVICE_NAME": "${CORE_SERVICE_NAME}",
     "SERVICE_SCOPE": "internal",
     "SERVICE_TYPE": "http",
     "SERVICE_IMAGE": "advancedtelematic/sota-core:${DOCKER_TAG}",
@@ -128,7 +128,7 @@
     "docker": {
       "image": "advancedtelematic/sota-core:${DOCKER_TAG}",
       "parameters": [{"key": "log-driver", "value": "syslog"},
-                     {"key": "log-opt", "value": "tag=${CORE_JOB_NAME}-pub"}],
+                     {"key": "log-opt", "value": "tag=${CORE_SERVICE_NAME}-pub"}],
       "forcePullImage": true,
       "network": "BRIDGE",
       "portMappings": [{
@@ -169,7 +169,7 @@
     "MESSAGING_MODE": "kafka",
     "METRICS_DB": "${METRICS_DB}",
     "PACKAGES_VERSION_FORMAT": ".+",
-    "SERVICE_NAME": "${CORE_JOB_NAME}-pub",
+    "SERVICE_NAME": "${CORE_SERVICE_NAME}-pub",
     "SERVICE_SCOPE": "public",
     "SERVICE_TYPE": "http",
     "SERVICE_IMAGE": "advancedtelematic/sota-core:${DOCKER_TAG}",
