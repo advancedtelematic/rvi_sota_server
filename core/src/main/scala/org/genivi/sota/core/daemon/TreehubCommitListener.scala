@@ -51,8 +51,14 @@ class TreehubCommitListener(db: Database, tufClient: ReposerverClient, bus: Mess
 
     for {
       (hash, name, version, hardwareIds) <- Future.fromTry(targetMetadata)
-      _ <- tufClient.addTarget(Namespace(event.ns.get), s"${event.refName}-${event.commit}", event.uri,
-        Checksum(HashMethod.SHA256, hash), event.size, OSTREE, name, version, hardwareIds)
+      filepath = s"${event.refName}-${event.commit}"
+      _ <- if (filepath.length < 254) {
+        tufClient.addTarget(Namespace(event.ns.get), filepath, event.uri,
+                            Checksum(HashMethod.SHA256, hash), event.size, OSTREE, name, version, hardwareIds)
+      } else {
+        log.error(s"Can not add tuf target since filepath is too long: $filepath (will ignore)")
+        Future.successful(())
+      }
     } yield ()
   }
 }

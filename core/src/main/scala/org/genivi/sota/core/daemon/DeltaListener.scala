@@ -11,12 +11,9 @@ import slick.jdbc.MySQLProfile.api._
 import org.genivi.sota.core.data.Campaign
 import org.slf4j.LoggerFactory
 import org.genivi.sota.messaging.Commit.Commit
-import cats.syntax._
-import cats.implicits._
 
 import scala.concurrent.{ExecutionContext, Future}
 import SotaCoreErrors._
-import org.genivi.sota.data.PackageId
 
 import scala.util.control.NoStackTrace
 
@@ -32,7 +29,6 @@ class DeltaListener(deviceRegistry: DeviceRegistry, updateService: UpdateService
     */
   private def validateMessage(campaign: Campaign, from: Commit, to: Commit)
                              (implicit ec: ExecutionContext): DBIO[Done] = {
-    import org.genivi.sota.data.Uuid
     import cats.implicits._
 
     val meta = campaign.meta
