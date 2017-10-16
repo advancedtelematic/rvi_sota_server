@@ -9,8 +9,9 @@ import cats.syntax.show._
 import eu.timepit.refined.api.Refined
 import io.circe.generic.auto._
 import java.util.Base64
-import org.genivi.sota.device_registry.PublicCredentialsResource.FetchPublicCredentials
+import org.genivi.sota.data.CredentialsType.CredentialsType
 import org.genivi.sota.data.{Device, DeviceT, Uuid}
+import org.genivi.sota.device_registry.PublicCredentialsResource.FetchPublicCredentials
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
 
 import scala.concurrent.ExecutionContext
@@ -35,13 +36,17 @@ trait PublicCredentialsRequests {self: ResourceSpec =>
     }
   }
 
-  def updatePublicCredentials(device: DeviceId, creds: Array[Byte])(implicit ec: ExecutionContext): HttpRequest = {
-    val devT = DeviceT(Refined.unsafeApply(device.underlying), Some(device), credentials = Some(base64Encoder.encodeToString(creds)))
+  def createDeviceWithCredentials(devT: DeviceT)(implicit ec: ExecutionContext): HttpRequest =
     Put(Resource.uri(credentialsApi), devT)
+
+  def updatePublicCredentials(device: DeviceId, creds: Array[Byte], cType: Option[CredentialsType])(implicit ec: ExecutionContext): HttpRequest = {
+    val devT = DeviceT(Refined.unsafeApply(device.underlying), Some(device),
+                       credentials = Some(base64Encoder.encodeToString(creds)), credentialsType = cType)
+    createDeviceWithCredentials(devT)
   }
 
-  def updatePublicCredentialsOk(device: DeviceId, creds: Array[Byte])(implicit ec: ExecutionContext): Uuid =
-    updatePublicCredentials(device, creds) ~> route ~> check {
+  def updatePublicCredentialsOk(device: DeviceId, creds: Array[Byte], cType: Option[CredentialsType] = None)(implicit ec: ExecutionContext): Uuid =
+    updatePublicCredentials(device, creds, cType) ~> route ~> check {
       val uuid = responseAs[Uuid]
       status shouldBe OK
       uuid

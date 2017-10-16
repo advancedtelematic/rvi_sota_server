@@ -6,11 +6,17 @@ package org.genivi.sota.device_registry
 
 import akka.http.scaladsl.model.StatusCodes._
 import io.circe.generic.auto._
-import org.genivi.sota.data.{Device, DeviceT, Uuid}
+import org.genivi.sota.data.{CredentialsType, Device, DeviceT, Uuid}
+import org.genivi.sota.device_registry.PublicCredentialsResource.FetchPublicCredentials
 import org.genivi.sota.marshalling.CirceMarshallingSupport._
+import org.scalacheck.{Arbitrary, Gen}
 
 class PublicCredentialsResourceSpec extends ResourcePropSpec {
   import Device._
+
+  val genCredentialsType: Gen[CredentialsType.CredentialsType] = Gen.oneOf(CredentialsType.values.toSeq)
+
+  implicit lazy val arbCredentialsType: Arbitrary[CredentialsType.CredentialsType] = Arbitrary(genCredentialsType)
 
   property("GET requests fails on non-existent device") {
     forAll { (uuid:Uuid) =>
@@ -30,11 +36,7 @@ class PublicCredentialsResourceSpec extends ResourcePropSpec {
     forAll { (devId: DeviceId, mdevT: DeviceT, creds: Array[Byte]) =>
       val devT = mdevT.copy(deviceId = Some(devId))
       val uuid = createDeviceOk(devT)
-      updatePublicCredentials(devId, creds) ~> route ~> check {
-        status shouldBe OK
-        val uuid2 = responseAs[Uuid]
-        uuid2 shouldBe uuid
-      }
+      uuid shouldBe updatePublicCredentialsOk(devId, creds)
 
       // updatePublicCredentials didn't change the device
       fetchDevice(uuid) ~> route ~> check {
@@ -53,6 +55,25 @@ class PublicCredentialsResourceSpec extends ResourcePropSpec {
       updatePublicCredentialsOk(deviceId, creds2)
 
       fetchPublicCredentialsOk(uuid) shouldBe creds2
+    }
+  }
+
+  property("Type of credentials is set correctly") {
+    forAll { (deviceId: DeviceId, mdevT: DeviceT, creds: String, cType: CredentialsType.CredentialsType) =>
+      val devT = mdevT.copy(deviceId = Some(deviceId), credentials = Some(creds), credentialsType = Some(cType))
+      val uuid = createDeviceWithCredentials(devT) ~> route ~> check {
+        status shouldBe OK
+        responseAs[Uuid]
+      }
+
+      fetchPublicCredentials(uuid) ~> route ~> check {
+        status shouldBe OK
+        val dev = responseAs[FetchPublicCredentials]
+
+        dev.uuid shouldBe uuid
+        dev.credentialsType shouldBe cType
+        dev.credentials shouldBe creds
+      }
     }
   }
 }
