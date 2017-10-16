@@ -9,6 +9,7 @@ import java.time.{Instant, OffsetDateTime}
 import cats.Show
 import cats.syntax.show._
 import eu.timepit.refined.api.{Refined, Validate}
+import org.genivi.sota.data.CredentialsType.CredentialsType
 import org.genivi.sota.data.Device._
 import org.genivi.sota.data.DeviceStatus._
 
@@ -21,7 +22,8 @@ final case class DeviceT(
   deviceName: DeviceName,
   deviceId: Option[Device.DeviceId] = None,
   deviceType: Device.DeviceType = Device.DeviceType.Other,
-  credentials: Option[String] = None
+  credentials: Option[String] = None,
+  credentialsType: Option[CredentialsType] = None
 )
 
 

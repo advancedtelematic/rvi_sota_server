@@ -14,7 +14,8 @@ import akka.stream.ActorMaterializer
 import io.circe.generic.auto._
 import java.util.Base64
 
-import org.genivi.sota.data.{DeviceT, Namespace, Uuid}
+import org.genivi.sota.data.{CredentialsType, DeviceT, Namespace, Uuid}
+import org.genivi.sota.data.CredentialsType.CredentialsType
 import org.genivi.sota.device_registry.db.{DeviceRepository, PublicCredentialsRepository}
 import org.genivi.sota.device_registry.common.Errors
 import org.genivi.sota.http.{AuthedNamespaceScope, Scopes}
@@ -26,7 +27,7 @@ import slick.jdbc.MySQLProfile.api._
 import scala.concurrent.{ExecutionContext, Future}
 
 object PublicCredentialsResource {
-  final case class FetchPublicCredentials(uuid: Uuid, credentials: String)
+  final case class FetchPublicCredentials(uuid: Uuid, credentialsType: CredentialsType, credentials: String)
 }
 
 class PublicCredentialsResource(authNamespace: Directive1[AuthedNamespaceScope],
@@ -41,15 +42,16 @@ class PublicCredentialsResource(authNamespace: Directive1[AuthedNamespaceScope],
 
   def fetchPublicCredentials(uuid: Uuid): Route =
     complete(db.run(PublicCredentialsRepository.findByUuid(uuid)).map { creds =>
-               FetchPublicCredentials(uuid, new String(creds))
+               FetchPublicCredentials(uuid, creds.typeCredentials, new String(creds.credentials))
              })
 
   def createDeviceWithPublicCredentials(ns: Namespace, devT: DeviceT): Route = {
     val act = (devT.deviceId, devT.credentials) match {
       case (Some(devId), Some(credentials)) => {
+        val cType = devT.credentialsType.getOrElse(CredentialsType.PEM)
         val dbact = for {
           (created, uuid) <- DeviceRepository.findUuidFromUniqueDeviceIdOrCreate(ns, devId, devT)
-          _ <- PublicCredentialsRepository.update(uuid, credentials.getBytes)
+          _ <- PublicCredentialsRepository.update(uuid, cType, credentials.getBytes)
         } yield (created, uuid)
 
         for {
@@ -57,7 +59,7 @@ class PublicCredentialsResource(authNamespace: Directive1[AuthedNamespaceScope],
           _ <- if (created) {
             messageBus.publish(DeviceCreated(ns, uuid, devT.deviceName, devT.deviceId, devT.deviceType, Instant.now()))
           } else {Future.successful(())}
-          _ <- messageBus.publish(DevicePublicCredentialsSet(ns, uuid, credentials, Instant.now()))
+          _ <- messageBus.publish(DevicePublicCredentialsSet(ns, uuid, cType, credentials, Instant.now()))
         } yield uuid
       }
       case (None, _) => FastFuture.failed(Errors.RequestNeedsDeviceId)

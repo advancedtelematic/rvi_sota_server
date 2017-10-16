@@ -9,6 +9,7 @@ import io.circe.generic.decoding.DerivedDecoder
 import io.circe.generic.encoding.DerivedObjectEncoder
 import io.circe.{Decoder, Encoder, Json}
 import io.circe.parser._
+import org.genivi.sota.data.CredentialsType.CredentialsType
 import org.genivi.sota.data.DeviceStatus.DeviceStatus
 import org.genivi.sota.data.UpdateStatus.UpdateStatus
 import org.genivi.sota.marshalling.CirceInstances._
@@ -52,6 +53,7 @@ object Messages {
   final case class DevicePublicCredentialsSet(
     namespace: Namespace,
     uuid: Uuid,
+    credentialsType: CredentialsType,
     credentials: String,
     timestamp: Instant = Instant.now()) extends BusMessage
 
