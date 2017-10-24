@@ -82,8 +82,15 @@ object InstallHistories {
    */
   def list(device: Uuid)
           (implicit ec: ExecutionContext): DBIO[Seq[(InstallHistory, PackageId :: Boolean :: HNil)]] = {
+    val uniqueUpdate =
+      installHistories
+        .filter(_.device === device)
+        .groupBy(x => x.updateId)
+        .map{case (_, x) => x.map(_.id).max}
+
     installHistories
       .filter(_.device === device)
+      .join(uniqueUpdate).on(_.id === _).map(_._1)
       .join(Packages.packages).on(_.packageUuid === _.uuid)
       .joinLeft(UpdateSpecs.updateSpecs).on((ih, us) => ih._1.updateId === us.requestId && ih._1.device === us.device)
       .map { case ((ih, pkg), us) => (ih, LiftedPackageId(pkg.name, pkg.version), us.map(_.status)) }
