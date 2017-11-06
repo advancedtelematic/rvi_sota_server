@@ -6,13 +6,11 @@ package org.genivi.sota.core.daemon
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import com.advancedtelematic.libats.data.Namespace
+import com.advancedtelematic.libats.data.DataType.{Checksum, HashMethod, Namespace, ValidChecksum}
 import com.advancedtelematic.libats.data.RefinedUtils.RefineTry
-import com.advancedtelematic.libtuf.data.TufDataType.{Checksum, TargetName, TargetVersion, ValidHardwareIdentifier}
+import com.advancedtelematic.libtuf.data.TufDataType.{TargetName, TargetVersion, ValidHardwareIdentifier}
 import com.advancedtelematic.libtuf.data.TufDataType.TargetFormat.OSTREE
-import com.advancedtelematic.libtuf.reposerver.ReposerverClient
-
-import com.advancedtelematic.libats.messaging_datatype.DataType.{HashMethod, ValidChecksum}
+import com.advancedtelematic.libtuf_server.reposerver.ReposerverClient
 import org.genivi.sota.core.Settings
 import org.genivi.sota.messaging.MessageBusPublisher
 import org.genivi.sota.messaging.Messages._
@@ -36,8 +34,10 @@ class TreehubCommitListener(db: Database, tufClient: ReposerverClient, bus: Mess
 
   def action(event: TreehubCommit): Future[Unit] = {
     publishToTuf(event).recover {
-      case ex @ ReposerverClient.OfflineKey =>
-        log.error(s"Could not create tuf target: ${ex.desc}")
+      case ReposerverClient.OfflineKey =>
+        log.error(s"Could not create tuf target (keys are offline) for namespace ${event.ns}")
+      case ReposerverClient.UserRepoNotFound =>
+        log.error(s"Could not create tuf target (repo doesn't exist) for namespace ${event.ns}")
     }
   }
 

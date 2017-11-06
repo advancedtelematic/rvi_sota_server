@@ -52,7 +52,7 @@ class TreehubCommitListenerSpec extends FunSuite
       size = 1234, uri = "some_uri")
 
     for {
-      repoId   <- tufClient.createRoot(com.advancedtelematic.libats.data.Namespace(defaultNs.get))
+      repoId   <- tufClient.createRoot(com.advancedtelematic.libats.data.DataType.Namespace(defaultNs.get))
       _   <- listener.action(event)
     } yield (repoId, event)
   }
