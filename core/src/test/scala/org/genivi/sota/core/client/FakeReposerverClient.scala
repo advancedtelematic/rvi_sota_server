@@ -6,10 +6,10 @@ package org.genivi.sota.core.client
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.util.FastFuture
-import com.advancedtelematic.libats.data.Namespace
-import com.advancedtelematic.libtuf.data.TufDataType.{Checksum, HardwareIdentifier, RepoId, TargetName, TargetVersion}
+import com.advancedtelematic.libats.data.DataType.{Checksum, Namespace}
+import com.advancedtelematic.libtuf.data.TufDataType.{HardwareIdentifier, RepoId, TargetName, TargetVersion}
 import com.advancedtelematic.libtuf.data.TufDataType.TargetFormat.TargetFormat
-import com.advancedtelematic.libtuf.reposerver._
+import com.advancedtelematic.libtuf_server.reposerver._
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.BiFunction

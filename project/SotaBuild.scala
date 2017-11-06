@@ -124,8 +124,7 @@ object SotaBuild extends Build {
 
   lazy val core = Project(id = "sota-core", base = file("core"))
     .settings( commonSettings ++ Migrations.settings ++ lintOptions ++ Seq(
-      libraryDependencies ++= Dependencies.Rest ++ Dependencies.Circe :+ Dependencies.Cats :+ Dependencies.AmazonS3 :+
-        Dependencies.LibTuf :+ Dependencies.LibAts,
+      libraryDependencies ++= Dependencies.Rest ++ Dependencies.LibTuf ++ Dependencies.Circe :+ Dependencies.Cats :+ Dependencies.AmazonS3 :+ Dependencies.LibAts,
       testOptions in UnitTests += Tests.Argument(TestFrameworks.ScalaTest, "-l", "RequiresRvi", "-l", "IntegrationTest"),
       testOptions in IntegrationTests += Tests.Argument(TestFrameworks.ScalaTest, "-n", "RequiresRvi", "-n", "IntegrationTest"),
       parallelExecution in Test := true,
@@ -237,9 +236,9 @@ object Dependencies {
 
   val JsonWebSecurityVersion = "0.4.5"
 
-  val libTufV = "0.1.0-125-g26a9c02"
+  val libTufV = "0.2.0-16-ga0d6f7a"
 
-  val libAtsV = "0.0.1-67-g052b15d"
+  val libAtsV = "0.1.0-5-g6b585f0"
 
   val AkkaHttp = "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion
 
@@ -327,7 +326,10 @@ object Dependencies {
 
   lazy val Kafka = "com.typesafe.akka" %% "akka-stream-kafka" % "0.16"
 
-  lazy val LibTuf = "com.advancedtelematic" %% "libtuf" % libTufV
+  lazy val LibTuf = Seq(
+    "com.advancedtelematic" %% "libtuf" % libTufV,
+    "com.advancedtelematic" %% "libtuf-server" % libTufV
+  )
 
   lazy val LibAts = "com.advancedtelematic" %% "libats" % libAtsV
 

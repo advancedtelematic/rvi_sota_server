@@ -12,7 +12,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Directive1, Route}
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.ActorMaterializer
-import com.advancedtelematic.libtuf.reposerver.{ReposerverClient, ReposerverHttpClient}
+import com.advancedtelematic.libtuf_server.reposerver.{ReposerverClient, ReposerverHttpClient}
 import com.typesafe.config.ConfigFactory
 import org.genivi.sota.client.DeviceRegistryClient
 import org.genivi.sota.core.daemon.{DeltaListener, TreehubCommitListener}
@@ -218,7 +218,7 @@ object Boot extends BootApp
         MessageBusPublisher.ignore
     }
 
-  val tufClient = tufEndpoint.map(uri => new ReposerverHttpClient(uri))
+  val tufClient = tufEndpoint.map(uri => ReposerverHttpClient(uri))
 
   val interactionProtocol = config.getString("core.interactionProtocol")
 
