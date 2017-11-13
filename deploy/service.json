@@ -128,7 +128,7 @@
     "docker": {
       "image": "advancedtelematic/sota-core:${DOCKER_TAG}",
       "parameters": [{"key": "log-driver", "value": "syslog"},
-                     {"key": "log-opt", "value": "tag=${CORE_SERVICE_NAME}-pub"}],
+                     {"key": "log-opt", "value": "tag=${CORE_SERVICE_NAME_PUB}"}],
       "forcePullImage": true,
       "network": "BRIDGE",
       "portMappings": [{
@@ -169,7 +169,7 @@
     "MESSAGING_MODE": "kafka",
     "METRICS_DB": "${METRICS_DB}",
     "PACKAGES_VERSION_FORMAT": ".+",
-    "SERVICE_NAME": "${CORE_SERVICE_NAME}-pub",
+    "SERVICE_NAME": "${CORE_SERVICE_NAME_PUB}",
     "SERVICE_SCOPE": "public",
     "SERVICE_TYPE": "http",
     "SERVICE_IMAGE": "advancedtelematic/sota-core:${DOCKER_TAG}",
