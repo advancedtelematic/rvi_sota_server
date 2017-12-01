@@ -28,3 +28,5 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-web" % "1.2.2")
 addSbtPlugin("com.typesafe.sbt" % "sbt-digest" % "1.1.0")
 
 addSbtPlugin("com.github.ddispaltro" % "sbt-reactjs" % "0.5.2")
+
+addSbtPlugin("net.vonbuchholtz" % "sbt-dependency-check" % "0.1.10")
