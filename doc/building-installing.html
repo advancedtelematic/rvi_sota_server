@@ -318,7 +318,7 @@ Java HotSpot(TM) 64-Bit Server VM (build 25.45-b02, mixed mode)</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="sql">mysql <span style="color: #666666">-</span>u root <span style="color: #666666">-</span>p
+<pre class="pygments highlight"><code data-lang="sql"><span></span>mysql <span style="color: #666666">-</span>u root <span style="color: #666666">-</span>p
 <span style="color: #008000; font-weight: bold">CREATE</span> <span style="color: #008000; font-weight: bold">DATABASE</span> sota_core <span style="color: #008000">CHARACTER</span> <span style="color: #008000; font-weight: bold">SET</span> utf8;
 <span style="color: #008000; font-weight: bold">CREATE</span> <span style="color: #008000; font-weight: bold">DATABASE</span> sota_core_test <span style="color: #008000">CHARACTER</span> <span style="color: #008000; font-weight: bold">SET</span> utf8;
 <span style="color: #008000; font-weight: bold">CREATE</span> <span style="color: #008000; font-weight: bold">DATABASE</span> sota_resolver <span style="color: #008000">CHARACTER</span> <span style="color: #008000; font-weight: bold">SET</span> utf8;
@@ -367,7 +367,7 @@ If you are having trouble with flywayMigrate after an update, try <code>sbt flyw
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="sh"><span style="color: #008000">export</span> <span style="color: #19177C">CORE_INTERACTION_PROTOCOL</span><span style="color: #666666">=</span><span style="color: #BA2121">&quot;none&quot;</span>
+<pre class="pygments highlight"><code data-lang="sh"><span></span><span style="color: #008000">export</span> <span style="color: #19177C">CORE_INTERACTION_PROTOCOL</span><span style="color: #666666">=</span><span style="color: #BA2121">&quot;none&quot;</span>
 sbt sota-core/run</code></pre>
 </div>
 </div>
@@ -381,7 +381,7 @@ sbt sota-core/run</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="sh">sbt sota-resolver/run
+<pre class="pygments highlight"><code data-lang="sh"><span></span>sbt sota-resolver/run
 sbt sota-core/run
 sbt sota-device_registry/run
 sbt sota-webserver/run</code></pre>

@@ -319,7 +319,7 @@ multiple lines. In such cases, put each argument on a line by itself,
 indented two spaces from the current indent level:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="scala">foo<span style="color: #666666">(</span>
+<pre class="pygments highlight"><code data-lang="scala"><span></span>foo<span style="color: #666666">(</span>
   someVeryLongFieldName<span style="color: #666666">,</span>
   andAnotherVeryLongFieldName<span style="color: #666666">,</span>
   <span style="color: #BA2121">&quot;this is a string&quot;</span><span style="color: #666666">,</span>
@@ -339,7 +339,7 @@ indented two spaces from the current indent level:</p>
 style with the first letter capitalized.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="scala"><span style="color: #008000; font-weight: bold">class</span> <span style="color: #0000FF; font-weight: bold">RedFox</span>
+<pre class="pygments highlight"><code data-lang="scala"><span></span><span style="color: #008000; font-weight: bold">class</span> <span style="color: #0000FF; font-weight: bold">RedFox</span>
 
 <span style="color: #008000; font-weight: bold">trait</span> <span style="color: #0000FF; font-weight: bold">LazyDog</span></code></pre>
 </div>
@@ -350,7 +350,7 @@ style with the first letter capitalized.</p>
 mimic a package or a function.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="scala"><span style="color: #008000; font-weight: bold">object</span> <span style="color: #0000FF; font-weight: bold">ast</span> <span style="color: #666666">{</span>
+<pre class="pygments highlight"><code data-lang="scala"><span></span><span style="color: #008000; font-weight: bold">object</span> <span style="color: #0000FF; font-weight: bold">ast</span> <span style="color: #666666">{</span>
   <span style="color: #008000; font-weight: bold">sealed</span> <span style="color: #008000; font-weight: bold">trait</span> <span style="color: #0000FF; font-weight: bold">Expr</span>
   <span style="color: #008000; font-weight: bold">case</span> <span style="color: #008000; font-weight: bold">class</span> <span style="color: #0000FF; font-weight: bold">Plus</span><span style="color: #666666">(</span>e1<span style="color: #008000; font-weight: bold">:</span> <span style="color: #B00040">Expr</span><span style="color: #666666">,</span> e2<span style="color: #008000; font-weight: bold">:</span> <span style="color: #B00040">Expr</span><span style="color: #666666">)</span> <span style="color: #008000; font-weight: bold">extends</span> <span style="color: #0000FF; font-weight: bold">Expr</span>
   <span style="color: #666666">...</span>
@@ -366,7 +366,7 @@ mimic a package or a function.</p>
 <p>Scala packages should follow the Java package naming conventions</p>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="scala"><span style="color: #008000; font-weight: bold">package</span> <span style="color: #0000FF; font-weight: bold">com.databricks.resourcemanager</span></code></pre>
+<pre class="pygments highlight"><code data-lang="scala"><span></span><span style="color: #008000; font-weight: bold">package</span> <span style="color: #0000FF; font-weight: bold">com.databricks.resourcemanager</span></code></pre>
 </div>
 </div>
 </li>
@@ -376,7 +376,7 @@ is final, immutable and it belongs to a package object or an object, it
 may be considered a constant (similar to Java’s static final members):</p>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="scala"><span style="color: #008000; font-weight: bold">object</span> <span style="color: #0000FF; font-weight: bold">Foo</span> <span style="color: #666666">{</span>
+<pre class="pygments highlight"><code data-lang="scala"><span></span><span style="color: #008000; font-weight: bold">object</span> <span style="color: #0000FF; font-weight: bold">Foo</span> <span style="color: #666666">{</span>
   <span style="color: #008000; font-weight: bold">val</span> <span style="color: #0000FF; font-weight: bold">Bar</span> <span style="color: #008000; font-weight: bold">=</span> <span style="color: #666666">10</span>
 <span style="color: #666666">}</span></code></pre>
 </div>
@@ -431,7 +431,8 @@ operator overloading).</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="scala"><span style="color: #408080; font-style: italic">// Correct</span>
+<pre class="pygments highlight"><code data-lang="scala"><span></span>
+<span style="color: #408080; font-style: italic">// Correct</span>
 list<span style="color: #666666">.</span>map<span style="color: #666666">(</span>func<span style="color: #666666">)</span>
 string<span style="color: #666666">.</span>contains<span style="color: #666666">(</span><span style="color: #BA2121">&quot;foo&quot;</span><span style="color: #666666">)</span>
 
@@ -452,7 +453,7 @@ arrayBuffer <span style="color: #666666">+=</span> elem</code></pre>
 <p>Use Java docs style instead of Scala docs style.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="scala"><span style="color: #408080; font-style: italic">/**</span>
+<pre class="pygments highlight"><code data-lang="scala"><span></span><span style="color: #408080; font-style: italic">/**</span>
 <span style="color: #408080; font-style: italic">  * Style mandated by &quot;Scala Style Guide&quot;</span>
 <span style="color: #408080; font-style: italic">  */</span>
 
@@ -490,7 +491,7 @@ way to assign two variables in one expression.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="scala"><span style="color: #008000; font-weight: bold">val</span> <span style="color: #666666">(</span>a<span style="color: #666666">,</span> b<span style="color: #666666">)</span> <span style="color: #008000; font-weight: bold">=</span> <span style="color: #666666">(1,</span> <span style="color: #666666">2)</span></code></pre>
+<pre class="pygments highlight"><code data-lang="scala"><span></span><span style="color: #008000; font-weight: bold">val</span> <span style="color: #666666">(</span>a<span style="color: #666666">,</span> b<span style="color: #666666">)</span> <span style="color: #008000; font-weight: bold">=</span> <span style="color: #666666">(1,</span> <span style="color: #666666">2)</span></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -500,7 +501,8 @@ Tuple2 field that will not be transient for the above example.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="scala"><span style="color: #008000; font-weight: bold">class</span> <span style="color: #0000FF; font-weight: bold">MyClass</span> <span style="color: #666666">{</span>
+<pre class="pygments highlight"><code data-lang="scala"><span></span>
+<span style="color: #008000; font-weight: bold">class</span> <span style="color: #0000FF; font-weight: bold">MyClass</span> <span style="color: #666666">{</span>
   <span style="color: #408080; font-style: italic">// This will NOT work because the compiler generates a non-transient Tuple2</span>
   <span style="color: #408080; font-style: italic">// that points to both a and b.</span>
   <span style="color: #AA22FF">@transient</span> <span style="color: #008000; font-weight: bold">private</span> <span style="color: #008000; font-weight: bold">val</span> <span style="color: #666666">(</span>a<span style="color: #666666">,</span> b<span style="color: #666666">)</span> <span style="color: #008000; font-weight: bold">=</span> someFuncThatReturnsTuple2<span style="color: #666666">()</span>
@@ -572,7 +574,8 @@ transformations.)</p>
 <code>scala.util.control.NonFatal</code>:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="scala"><span style="color: #008000; font-weight: bold">try</span> <span style="color: #666666">{</span>
+<pre class="pygments highlight"><code data-lang="scala"><span></span>
+<span style="color: #008000; font-weight: bold">try</span> <span style="color: #666666">{</span>
   <span style="color: #666666">...</span>
 <span style="color: #666666">}</span> <span style="color: #008000; font-weight: bold">catch</span> <span style="color: #666666">{</span>
   <span style="color: #008000; font-weight: bold">case</span> <span style="color: #0000FF; font-weight: bold">NonFatal</span><span style="color: #666666">(</span>e<span style="color: #666666">)</span> <span style="color: #008000; font-weight: bold">=&gt;</span>
@@ -600,7 +603,8 @@ transformations.)</p>
 guard against <code>null</code> values.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="scala"><span style="color: #008000; font-weight: bold">def</span> myMethod1<span style="color: #666666">(</span>input<span style="color: #008000; font-weight: bold">:</span> <span style="color: #B00040">String</span><span style="color: #666666">)</span><span style="color: #008000; font-weight: bold">:</span> <span style="color: #B00040">Option</span><span style="color: #666666">[</span><span style="color: #B00040">String</span><span style="color: #666666">]</span> <span style="color: #008000; font-weight: bold">=</span> <span style="color: #0000FF; font-weight: bold">Option</span><span style="color: #666666">(</span>transform<span style="color: #666666">(</span>input<span style="color: #666666">))</span>
+<pre class="pygments highlight"><code data-lang="scala"><span></span>
+<span style="color: #008000; font-weight: bold">def</span> myMethod1<span style="color: #666666">(</span>input<span style="color: #008000; font-weight: bold">:</span> <span style="color: #B00040">String</span><span style="color: #666666">)</span><span style="color: #008000; font-weight: bold">:</span> <span style="color: #B00040">Option</span><span style="color: #666666">[</span><span style="color: #B00040">String</span><span style="color: #666666">]</span> <span style="color: #008000; font-weight: bold">=</span> <span style="color: #0000FF; font-weight: bold">Option</span><span style="color: #666666">(</span>transform<span style="color: #666666">(</span>input<span style="color: #666666">))</span>
 
 <span style="color: #408080; font-style: italic">// This is not as robust because transform can return null, and then</span>
 <span style="color: #408080; font-style: italic">// myMethod2 will return Some(null).</span>
@@ -652,7 +656,7 @@ the same class, so protecting it with <code>this.synchronized</code> (or just
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="scala"><span style="color: #408080; font-style: italic">// The following is still unsafe.</span>
+<pre class="pygments highlight"><code data-lang="scala"><span></span><span style="color: #408080; font-style: italic">// The following is still unsafe.</span>
 <span style="color: #008000; font-weight: bold">class</span> <span style="color: #0000FF; font-weight: bold">Foo</span> <span style="color: #666666">{</span>
   <span style="color: #008000; font-weight: bold">private</span> <span style="color: #008000; font-weight: bold">var</span> count<span style="color: #008000; font-weight: bold">:</span> <span style="color: #B00040">Int</span> <span style="color: #666666">=</span> <span style="color: #666666">0</span>
   <span style="color: #008000; font-weight: bold">def</span> inc<span style="color: #666666">()</span><span style="color: #008000; font-weight: bold">:</span> <span style="color: #B00040">Unit</span> <span style="color: #666666">=</span> synchronized <span style="color: #666666">{</span> count <span style="color: #666666">+</span> <span style="color: #666666">1</span> <span style="color: #666666">}</span>
@@ -673,7 +677,8 @@ the same class, so protecting it with <code>this.synchronized</code> (or just
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="scala"><span style="color: #408080; font-style: italic">// Breaks Java interoperability</span>
+<pre class="pygments highlight"><code data-lang="scala"><span></span>
+<span style="color: #408080; font-style: italic">// Breaks Java interoperability</span>
 <span style="color: #008000; font-weight: bold">def</span> sample<span style="color: #666666">(</span>ratio<span style="color: #008000; font-weight: bold">:</span> <span style="color: #B00040">Double</span><span style="color: #666666">,</span> withReplacement<span style="color: #008000; font-weight: bold">:</span> <span style="color: #B00040">Boolean</span> <span style="color: #666666">=</span> <span style="color: #008000; font-weight: bold">false</span><span style="color: #666666">)</span><span style="color: #008000; font-weight: bold">:</span> <span style="color: #B00040">RDD</span><span style="color: #666666">[</span><span style="color: #B00040">T</span><span style="color: #666666">]</span> <span style="color: #008000; font-weight: bold">=</span> <span style="color: #666666">{</span> <span style="color: #666666">...</span> <span style="color: #666666">}</span>
 
 <span style="color: #408080; font-style: italic">// The following two work</span>

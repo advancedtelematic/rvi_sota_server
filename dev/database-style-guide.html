@@ -266,7 +266,7 @@ the domain object and SQL table names can match exactly.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="sql">    <span style="color: #408080; font-style: italic">-- Good</span>
+<pre class="pygments highlight"><code data-lang="sql"><span></span>    <span style="color: #408080; font-style: italic">-- Good</span>
     <span style="color: #008000; font-weight: bold">CREATE</span> <span style="color: #008000; font-weight: bold">TABLE</span> Person (
       id <span style="color: #008000">int</span> <span style="color: #008000; font-weight: bold">PRIMARY</span> <span style="color: #008000; font-weight: bold">KEY</span>,
       ...
@@ -278,7 +278,7 @@ the domain object and SQL table names can match exactly.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="sql">    <span style="color: #408080; font-style: italic">-- BAD</span>
+<pre class="pygments highlight"><code data-lang="sql"><span></span>    <span style="color: #408080; font-style: italic">-- BAD</span>
     <span style="color: #008000; font-weight: bold">CREATE</span> <span style="color: #008000; font-weight: bold">TABLE</span> Person (
       personId <span style="color: #008000">int</span> <span style="color: #008000; font-weight: bold">PRIMARY</span> <span style="color: #008000; font-weight: bold">KEY</span>, <span style="color: #408080; font-style: italic">-- BAD: should be &#39;id&#39;</span>
       ...
