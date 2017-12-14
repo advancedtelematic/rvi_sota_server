@@ -132,6 +132,17 @@ class GroupsResourceSpec extends FunSuite with ResourceSpec {
     }
   }
 
+  test("rename group to existing group returns bad request") {
+    val groupAName = genGroupName.sample.get
+    val groupBName = genGroupName.sample.get
+    val groupAId = createGroupOk(groupAName)
+    val groupBId = createGroupOk(groupBName)
+
+    renameGroup(groupAId, groupBName) ~> route ~> check {
+      status shouldBe Conflict
+    }
+  }
+
   test("removing devices from groups") {
     val groupName = genGroupName.sample.get
     val deviceId = createDeviceOk(genDeviceT.sample.get)
