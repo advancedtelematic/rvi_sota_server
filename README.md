@@ -1,7 +1,8 @@
-[![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
-[![TravisCI Build Status](https://travis-ci.org/advancedtelematic/rvi_sota_server.svg?branch=master)](https://travis-ci.org/advancedtelematic/rvi_sota_server)
-[![codecov](https://codecov.io/gh/advancedtelematic/rvi_sota_server/branch/master/graph/badge.svg)](https://codecov.io/gh/advancedtelematic/rvi_sota_server)
-[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/538/badge)](https://bestpractices.coreinfrastructure.org/projects/538)
+⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔ **DEPRECATED** ⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔
+
+This project is no longer maintained. Try [OTA Community Edition](https://github.com/advancedtelematic/ota-community-edition) for a newer, better OTA updating solution.
+
+⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔ **DEPRECATED** ⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔⛔
 
 # GENIVI SOTA Project
 
